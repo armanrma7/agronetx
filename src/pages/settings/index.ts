@@ -1,0 +1,2 @@
+export { LanguagesPage } from './LanguagesPage'
+

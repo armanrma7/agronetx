@@ -1,0 +1,2 @@
+export { MyAnnouncementsPage } from './MyAnnouncementsPage'
+

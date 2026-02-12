@@ -1,0 +1,188 @@
+# OSX
+#
+.DS_Store
+
+# Xcode
+#
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+ios/.xcode.env.local
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Android/IntelliJ
+#
+build/
+.idea
+.gradle
+local.properties
+*.iml
+*.hprof
+.cxx/
+*.keystore
+!debug.keystore
+android/app/build/
+android/build/
+android/.gradle/
+android/app/debug.keystore
+android/app/release.keystore
+android/keystores/
+android/app/src/main/assets/index.android.bundle.map
+
+# node.js
+#
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+package-lock.json
+
+# Bundle artifacts
+*.jsbundle
+
+# CocoaPods
+#
+ios/Pods/
+
+# Ruby / CocoaPods
+#
+vendor/
+.bundle/
+*.gem
+*.bundle
+
+# fastlane
+#
+# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
+# screenshots whenever they are needed.
+# For more information about the recommended setup visit:
+# https://docs.fastlane.tools/best-practices/source-control/
+
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+
+# Metro
+#
+.metro-health-check*
+
+# Testing
+#
+/coverage
+*.log
+
+# Temporary files
+#
+*.swp
+*~.nib
+*.tmp
+*.temp
+
+# React Native
+#
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Environment variables
+#
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# TypeScript
+#
+*.tsbuildinfo
+
+# Misc
+#
+*.pem
+*.p12
+*.key
+*.cert
+*.crt
+
+# Logs
+#
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Editor directories and files
+#
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+#
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Build outputs
+#
+*.apk
+*.aab
+*.ap_
+*.aab
+
+# Debug files
+#
+*.dSYM.zip
+*.dSYM
+
+# Flipper
+#
+.flipper/
+
+# Watchman
+#
+.watchmanconfig
+
+# Bundle artifacts
+#
+*.jsbundle
+
+# Hermes
+#
+*.hbc
+
+# React Native Debugger
+#
+.vscode/launch.json
+
+# Temporary files
+#
+tmp/
+temp/

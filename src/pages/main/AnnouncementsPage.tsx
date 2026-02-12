@@ -1,0 +1,235 @@
+import React, { useState, useEffect, useContext } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
+import { colors } from '../../theme/colors'
+import { Announcement, AnnouncementType } from '../../types'
+import Icon from '../../components/Icon'
+import { AnnouncementCard } from '../../components/AnnouncementCard'
+import { FilterValues } from '../../components/FilterModal'
+import { FilterContext } from '../../navigation/HomeTabs'
+import * as announcementsAPI from '../../lib/api/announcements.api'
+
+type TabType = 'offer' | 'service' | 'rent'
+
+export function AnnouncementsPage() {
+  const { t } = useTranslation()
+  const navigation = useNavigation()
+  const route = useRoute()
+  const filterContext = useContext(FilterContext)
+  const [activeTab, setActiveTab] = useState<TabType>('offer')
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState<FilterValues | undefined>(undefined)
+
+  // Get filters from context (preferred) or route params (fallback)
+  useEffect(() => {
+    if (filterContext?.filters && Object.keys(filterContext.filters).length > 0) {
+      console.log('✅ AnnouncementsPage: Setting filters from context:', filterContext.filters)
+      setFilters(filterContext.filters)
+    } else {
+      // Fallback to route params
+      const routeParams = route.params as { filters?: FilterValues } | undefined
+      if (routeParams?.filters && Object.keys(routeParams.filters).length > 0) {
+        console.log('✅ AnnouncementsPage: Setting filters from route params:', routeParams.filters)
+        setFilters(routeParams.filters)
+      } else {
+        console.log('❌ AnnouncementsPage: No filters found, clearing filters')
+        setFilters(undefined)
+      }
+    }
+  }, [filterContext?.filters, route.params])
+
+  useEffect(() => {
+    fetchAnnouncements()
+  }, [activeTab, filters])
+
+  const fetchAnnouncements = async () => {
+    setLoading(true)
+    try {
+      // Map tab to API category: 'offer' -> 'goods', 'service' -> 'service', 'rent' -> 'rent'
+      const apiCategory = activeTab === 'offer' ? 'goods' : activeTab as AnnouncementType
+      
+      // Build API params
+      const params: announcementsAPI.GetAnnouncementsParams = {
+        category: apiCategory,
+        status: 'published', // Default to published announcements
+      }
+      
+      // Apply filters if they exist
+      if (filters) {
+        console.log('🔍 Applying filters:', filters)
+        if (filters.status) {
+          params.status = filters.status as 'published' | 'active' | 'completed' | 'cancelled'
+        }
+        if (filters.regions && filters.regions.length > 0) {
+          params.region = filters.regions
+        }
+        if (filters.villages && filters.villages.length > 0) {
+          params.village = filters.villages
+        }
+        if (filters.created_from) {
+          params.created_from = filters.created_from
+        }
+        if (filters.created_to) {
+          params.created_to = filters.created_to
+        }
+      }
+      
+      console.log('📡 Fetching announcements with params:', params)
+      
+      // Fetch from API with category, status, and filters
+      const data = await announcementsAPI.getAnnouncementsAPI(params)
+      
+      setAnnouncements(data || [])
+      } catch (err) {
+        console.error('❌ Error fetching announcements:', err)
+      setAnnouncements([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getTabLabel = (tab: TabType) => {
+    return t(`announcements.${tab}`)
+  }
+
+  const handleApply = (announcement: Announcement) => {
+    const parent = navigation.getParent()
+    if (parent) {
+      parent.navigate('ApplicationForm', {
+        announcementId: announcement.id,
+        announcementType: announcement.type,
+        announcementTitle: announcement.title,
+      })
+    } else {
+      ;(navigation as any).navigate('ApplicationForm', {
+        announcementId: announcement.id,
+        announcementType: announcement.type,
+        announcementTitle: announcement.title,
+      })
+    }
+  }
+
+  const handleView = (announcement: Announcement) => {
+    const parent = navigation.getParent()
+    if (parent) {
+      parent.navigate('AnnouncementDetail', { announcementId: announcement.id })
+    } else {
+      ;(navigation as any).navigate('AnnouncementDetail', { announcementId: announcement.id })
+    }
+  }
+
+  const renderAnnouncementItem = ({ item }: { item: Announcement }) => (
+    <AnnouncementCard
+      announcement={item}
+      onApply={handleApply}
+      onView={handleView}
+    />
+  )
+
+  return (
+    <View style={styles.container}>
+      {/* Top Tabs */}
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'offer' && styles.tabActive]}
+          onPress={() => setActiveTab('offer')}
+        >
+          <Icon name="repeat" size={20} color={activeTab === 'offer' ? colors.primary : colors.textTertiary} />
+          <Text style={[styles.tabText, activeTab === 'offer' && styles.tabTextActive]}>
+            {getTabLabel('offer')}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'service' && styles.tabActive]}
+          onPress={() => setActiveTab('service')}
+        >
+          <Icon name="build" size={20} color={activeTab === 'service' ? colors.primary : colors.textTertiary} />
+          <Text style={[styles.tabText, activeTab === 'service' && styles.tabTextActive]}>
+            {getTabLabel('service')}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'rent' && styles.tabActive]}
+          onPress={() => setActiveTab('rent')}
+        >
+          <Icon name="key" size={20} color={activeTab === 'rent' ? colors.primary : colors.textTertiary} />
+          <Text style={[styles.tabText, activeTab === 'rent' && styles.tabTextActive]}>
+            {getTabLabel('rent')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Announcements */}
+      <FlatList
+        data={announcements}
+        renderItem={renderAnnouncementItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContainer}
+        refreshing={loading}
+        onRefresh={fetchAnnouncements}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {loading ? t('common.loading') : t('announcements.empty')}
+            </Text>
+          </View>
+        }
+      />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 4,
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 12,
+    color: colors.textTertiary,
+  },
+  tabTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  listContainer: {
+    padding: 16,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textTertiary,
+  },
+})
+

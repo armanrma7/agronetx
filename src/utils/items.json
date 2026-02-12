@@ -1,0 +1,814 @@
+{
+  "categories": [
+    {
+      "id": "vegetables",
+      "code": "VEG",
+      "label": {
+        "hy": "Բանջարեղեն",
+        "ru": "Овощи",
+        "en": "Vegetables"
+      },
+      "sub_categories": [
+        {
+          "id": "potato_family",
+          "code": "VEG_POTATO",
+          "label": {
+            "hy": "Կարտոֆիլայիններ",
+            "ru": "Картофельные",
+            "en": "Potato family"
+          },
+          "items": [
+            {
+              "id": "potato",
+              "code": "POTATO",
+              "label": {
+                "hy": "Կարտոֆիլ",
+                "ru": "Картофель",
+                "en": "Potato"
+              },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "sweet_potato",
+              "code": "SWEET_POTATO",
+              "label": {
+                "hy": "Բատատ (քաղցր կարտոֆիլ)",
+                "ru": "Батат (сладкий картофель)",
+                "en": "Sweet potato"
+              },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "root_vegetables",
+          "code": "VEG_ROOT",
+          "label": {
+            "hy": "Արմատայիններ",
+            "ru": "Корнеплоды",
+            "en": "Root vegetables"
+          },
+          "items": [
+            {
+              "id": "carrot",
+              "code": "CARROT",
+              "label": { "hy": "Գազար", "ru": "Морковь", "en": "Carrot" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "beet",
+              "code": "BEET",
+              "label": { "hy": "Բազուկ", "ru": "Свёкла", "en": "Beet" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "radish",
+              "code": "RADISH",
+              "label": { "hy": "Նափա (ռեդիս)", "ru": "Редис", "en": "Radish" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "celery_root",
+              "code": "CELERY_ROOT",
+              "label": { "hy": "Սելդերի (արմատային)", "ru": "Корень сельдерея", "en": "Celery root" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "turnip",
+              "code": "TURNIP",
+              "label": { "hy": "Շալգամ", "ru": "Репа", "en": "Turnip" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "alliums",
+          "code": "VEG_ALLIUM",
+          "label": { "hy": "Սոխազգիներ", "ru": "Луковые", "en": "Alliums" },
+          "items": [
+            {
+              "id": "onion",
+              "code": "ONION",
+              "label": { "hy": "Սոխ", "ru": "Лук", "en": "Onion" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "green_onion",
+              "code": "GREEN_ONION",
+              "label": { "hy": "Կանաչ սոխ", "ru": "Зелёный лук", "en": "Green onion" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "garlic",
+              "code": "GARLIC",
+              "label": { "hy": "Սխտոր", "ru": "Чеснок", "en": "Garlic" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "leek",
+              "code": "LEEK",
+              "label": { "hy": "Գործի սոխ (լյուք)", "ru": "Лук-порей", "en": "Leek" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "ramsons",
+              "code": "RAMSONS",
+              "label": { "hy": "Չերեմշա", "ru": "Черемша", "en": "Wild garlic (ramsons)" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "red_onion",
+              "code": "RED_ONION",
+              "label": { "hy": "Կարմիր սոխ", "ru": "Красный лук", "en": "Red onion" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "cabbage_family",
+          "code": "VEG_CABBAGE",
+          "label": { "hy": "Կաղամբազգիներ", "ru": "Капустные", "en": "Cabbage family" },
+          "items": [
+            {
+              "id": "cabbage",
+              "code": "CABBAGE",
+              "label": { "hy": "Կաղամբ", "ru": "Капуста", "en": "Cabbage" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "red_cabbage",
+              "code": "RED_CABBAGE",
+              "label": { "hy": "Կարմիր կաղամբ", "ru": "Краснокочанная капуста", "en": "Red cabbage" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "cauliflower",
+              "code": "CAULIFLOWER",
+              "label": { "hy": "Գունավոր կաղամբ", "ru": "Цветная капуста", "en": "Cauliflower" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "broccoli",
+              "code": "BROCCOLI",
+              "label": { "hy": "Բրոկոլի", "ru": "Брокколи", "en": "Broccoli" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "kohlrabi",
+              "code": "KOHLRABI",
+              "label": { "hy": "Կոլրաբի", "ru": "Кольраби", "en": "Kohlrabi" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "brussels_sprouts",
+              "code": "BRUSSELS_SPROUTS",
+              "label": { "hy": "Բրյուսելյան կաղամբ", "ru": "Брюссельская капуста", "en": "Brussels sprouts" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "tomatoes",
+          "code": "VEG_TOMATO",
+          "label": { "hy": "Պոմիդորայիններ", "ru": "Томатные", "en": "Tomatoes" },
+          "items": [
+            {
+              "id": "tomato",
+              "code": "TOMATO",
+              "label": { "hy": "Լոլիկ", "ru": "Помидор", "en": "Tomato" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "cherry_tomato",
+              "code": "CHERRY_TOMATO",
+              "label": { "hy": "Չերի լոլիկ", "ru": "Помидоры черри", "en": "Cherry tomato" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "spring_tomato",
+              "code": "SPRING_TOMATO",
+              "label": { "hy": "Գարնանային լոլիկ", "ru": "Весенний томат", "en": "Spring tomato" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "greenhouse_tomato",
+              "code": "GREENHOUSE_TOMATO",
+              "label": { "hy": "Ջերմատան լոլիկ", "ru": "Тепличный томат", "en": "Greenhouse tomato" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "peppers",
+          "code": "VEG_PEPPER",
+          "label": { "hy": "Պղպեղազգիներ", "ru": "Перцевые", "en": "Peppers" },
+          "items": [
+            {
+              "id": "sweet_pepper",
+              "code": "SWEET_PEPPER",
+              "label": { "hy": "Քաղցր պղպեղ", "ru": "Сладкий перец", "en": "Sweet pepper" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "hot_pepper",
+              "code": "HOT_PEPPER",
+              "label": { "hy": "Սուր պղպեղ (մաղադանոսային կծու)", "ru": "Острый перец", "en": "Hot pepper" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "bell_pepper",
+              "code": "BELL_PEPPER",
+              "label": { "hy": "Բուլղարական պղպեղ", "ru": "Болгарский перец", "en": "Bell pepper" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "jalapeno",
+              "code": "JALAPENO",
+              "label": { "hy": "Ջալապենյո (ինչ-որ գյուղերում աճեցվում է)", "ru": "Халапеньо", "en": "Jalapeño" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "cucurbits",
+          "code": "VEG_CUCURBITS",
+          "label": { "hy": "Եռանդուն (դդմազգիներ)", "ru": "Тыквенные", "en": "Cucurbits" },
+          "items": [
+            {
+              "id": "cucumber",
+              "code": "CUCUMBER",
+              "label": { "hy": "Վարունգ", "ru": "Огурец", "en": "Cucumber" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "zucchini",
+              "code": "ZUCCHINI",
+              "label": { "hy": "Գետնախնձոր (ցուկինի)", "ru": "Цукини", "en": "Zucchini" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "summer_squash",
+              "code": "SUMMER_SQUASH",
+              "label": { "hy": "Դդմիկ", "ru": "Кабачок", "en": "Summer squash" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "pumpkin",
+              "code": "PUMPKIN",
+              "label": { "hy": "Դդում (ամեն տեսակ)", "ru": "Тыква (все виды)", "en": "Pumpkin (all types)" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "vegetable_legumes",
+          "code": "VEG_LEGUMES",
+          "label": { "hy": "Բանջարանոցային հատիկաուղեղայիններ", "ru": "Бобовые (овощные)", "en": "Vegetable legumes" },
+          "items": [
+            {
+              "id": "beans",
+              "code": "BEANS",
+              "label": { "hy": "Լոբի (կանաչ, հատիկ)", "ru": "Фасоль (стручковая, зерновая)", "en": "Beans (green, dry)" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "soybean",
+              "code": "SOYBEAN",
+              "label": { "hy": "Սոյա (ոչ բոլոր շրջաններում բայց հանդիպում է)", "ru": "Соя", "en": "Soybean" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "chickpea",
+              "code": "CHICKPEA",
+              "label": { "hy": "Սիսեռ (բաշ)", "ru": "Нут", "en": "Chickpea" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "greens",
+          "code": "VEG_GREENS",
+          "label": { "hy": "Կանաչիներ", "ru": "Зелень", "en": "Greens" },
+          "items": [
+            {
+              "id": "parsley",
+              "code": "PARSLEY",
+              "label": { "hy": "Մաղադանոս", "ru": "Петрушка", "en": "Parsley" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "green_onion",
+              "code": "GREEN_ONION",
+              "label": { "hy": "Կանաչ սոխ", "ru": "Зелёный лук", "en": "Green onion" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "dill",
+              "code": "DILL",
+              "label": { "hy": "Դիլ (սամիթ)", "ru": "Укроп", "en": "Dill" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "arjatsaghik",
+              "code": "ARJATSAGHIK",
+              "label": { "hy": "Արջածաղիկ", "ru": "Арджацагик", "en": "Arjatsaghik" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "spinach",
+              "code": "SPINACH",
+              "label": { "hy": "Սպանախ", "ru": "Шпинат", "en": "Spinach" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "arugula",
+              "code": "ARUGULA",
+              "label": { "hy": "Ռուքոլա", "ru": "Руккола", "en": "Arugula" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "tomato_leaf",
+              "code": "TOMATO_LEAF",
+              "label": { "hy": "Լոլիկի տերև (սեզոնային վաճառք)", "ru": "Листья томата (сезонно)", "en": "Tomato leaf (seasonal)" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "sherep",
+              "code": "SHEREP",
+              "label": { "hy": "Շերեփ", "ru": "Шереп", "en": "Sherep" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "sprouts",
+              "code": "SPROUTS",
+              "label": { "hy": "Կաղամբ բողբոջ (լոբի/սոյա սպրաութ)", "ru": "Проростки (фасоль/соя)", "en": "Sprouts (beans/soy)" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "other_vegetables",
+          "code": "VEG_OTHER",
+          "label": { "hy": "Այլ բանջարեղենային խմբեր", "ru": "Другие овощные группы", "en": "Other vegetables" },
+          "items": [
+            {
+              "id": "corn",
+              "code": "CORN",
+              "label": { "hy": "Եգիպտացորեն (քաղցր եգիպտացորեն – թեթև բանջարեղեն է)", "ru": "Кукуруза (сладкая)", "en": "Corn (sweet)" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "okra",
+              "code": "OKRA",
+              "label": { "hy": "Բամյա", "ru": "Бамия", "en": "Okra" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "taposk_artichoke",
+              "code": "ARTICHOKE",
+              "label": { "hy": "Տապոսկ (արտիճոկ)", "ru": "Артишок", "en": "Artichoke" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            },
+            {
+              "id": "maca_root",
+              "code": "MACA_ROOT",
+              "label": { "hy": "Մակա արմատ", "ru": "Корень маки", "en": "Maca root" },
+              "default_unit_code": "KG",
+              "units": [
+                { "code": "PCS", "label": { "hy": "հատ", "ru": "шт.", "en": "pcs" } },
+                { "code": "KG", "label": { "hy": "կգ", "ru": "кг", "en": "kg" } },
+                { "code": "T", "label": { "hy": "տն", "ru": "т", "en": "t" } },
+                { "code": "BAG", "label": { "hy": "պարկ", "ru": "мешок", "en": "bag" } },
+                { "code": "BUNDLE", "label": { "hy": "կապ", "ru": "связка", "en": "bundle" } },
+                { "code": "BASKET", "label": { "hy": "զամբյուղ", "ru": "корзина", "en": "basket" } },
+                { "code": "PACK", "label": { "hy": "փաթեթ", "ru": "упаковка", "en": "pack" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
