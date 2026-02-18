@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { colors } from '../theme/colors'
 import { AnnouncementType } from '../types'
 import Icon from './Icon'
@@ -17,6 +18,8 @@ interface AddAnnouncementModalProps {
 }
 
 export function AddAnnouncementModal({ visible, onClose, onSelectType }: AddAnnouncementModalProps) {
+  const { t } = useTranslation()
+  
   const handleSelect = (type: AnnouncementType) => {
     onSelectType(type)
     onClose()
@@ -40,7 +43,7 @@ export function AddAnnouncementModal({ visible, onClose, onSelectType }: AddAnno
             <View style={styles.dragHandle} />
             
             {/* Title */}
-            <Text style={styles.modalTitle}>Նոր հայտարարություն</Text>
+            <Text style={styles.modalTitle}>{t('addAnnouncement.title')}</Text>
 
             {/* Options */}
             <View style={styles.optionsContainer}>
@@ -52,7 +55,7 @@ export function AddAnnouncementModal({ visible, onClose, onSelectType }: AddAnno
                   <View style={styles.iconContainer}>
                     <Icon name="compare-arrows" size={24} color={colors.primary} />
                   </View>
-                  <Text style={styles.optionText}>Այրանք</Text>
+                  <Text style={styles.optionText}>{t('addAnnouncement.product')}</Text>
                 </View>
                 <Icon name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -67,7 +70,7 @@ export function AddAnnouncementModal({ visible, onClose, onSelectType }: AddAnno
                   <View style={styles.iconContainer}>
                     <Icon name="build" size={24} color={colors.primary} />
                   </View>
-                  <Text style={styles.optionText}>Ցարապլպա</Text>
+                  <Text style={styles.optionText}>{t('addAnnouncement.service')}</Text>
                 </View>
                 <Icon name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -82,7 +85,7 @@ export function AddAnnouncementModal({ visible, onClose, onSelectType }: AddAnno
                   <View style={styles.iconContainer}>
                     <Icon name="vpn-key" size={24} color={colors.primary} />
                   </View>
-                  <Text style={styles.optionText}>Վարձույք</Text>
+                  <Text style={styles.optionText}>{t('addAnnouncement.rent')}</Text>
                 </View>
                 <Icon name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>

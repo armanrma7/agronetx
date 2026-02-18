@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
@@ -9,10 +9,14 @@ interface MyAnnouncementCardProps {
   announcement: Announcement
   onCancel?: (announcement: Announcement) => void
   onView?: (announcement: Announcement) => void
-  showMyApplications?: boolean // If true, show "My applications" count instead of total applicants
+  onCloseApplication?: (applicationId: string) => void
+  onApplicationsPress?: (announcement: Announcement) => void
+  showMyApplications?: boolean
+  cancelling?: boolean
+  closingApplicationId?: string | null
 }
 
-export function MyAnnouncementCard({ announcement, onCancel, onView, showMyApplications = false }: MyAnnouncementCardProps) {
+export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseApplication, onApplicationsPress, showMyApplications = false, cancelling = false, closingApplicationId = null }: MyAnnouncementCardProps) {
   const { t, i18n } = useTranslation()
   
   // Get translated item name based on current language
@@ -31,52 +35,52 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, showMyAppli
       return announcementData.name_hy || announcementData.name_am || ''
     }
     
-    // Fallback to title or item_name
-    return announcement.title || announcementData.item_name || 'No title'
+    const item = announcement.item
+    return (item?.name_am || item?.name_en || item?.name_ru) || announcementData.title || announcementData.item_name || 'No title'
   }
 
   const getStatusColor = (status: string) => {
+    console.info('status', status)
     switch (status) {
       case 'active':
       case 'published':
         return colors.success
       case 'completed':
         return colors.textTertiary
-      case 'cancelled':
+      case 'canceled':
+      case 'closed':
         return colors.error
       default:
         return colors.textTertiary
     }
   }
-
+ console.info('announcement.status')
   const getTypeLabel = (announcement: Announcement) => {
-    // Check if there's a subtype field (sell/buy)
     const subtype = (announcement as any).subtype || (announcement as any).sub_type
-    const category = announcement.type // This is the category: goods, service, rent
-    const apiType = (announcement as any).apiType || subtype // API type: sell, buy, rent
+    const category = announcement.category || announcement.type
+    const apiType = announcement.type || (announcement as any).apiType || subtype
     
-    // Check API type first (this comes from the server and is already mapped)
-    if (apiType === 'sell' || subtype === 'sell' || subtype === 'sellGoods' || subtype === 'offer') {
-      return 'Վաճառք'
+    if (apiType === 'sell' || subtype === 'sell' || subtype === 'offer') {
+      return t('announcementDetail.sell')
     }
-    if (apiType === 'buy' || subtype === 'buy' || subtype === 'buyGoods' || subtype === 'requirement') {
-      return 'Գնում'
+    if (apiType === 'buy' || subtype === 'buy' || subtype === 'requirement') {
+      return t('announcementDetail.buy')
     }
     if (apiType === 'rent' || category === 'rent') {
-      return 'Վարձակալություն'
+      return t('announcementDetail.rent')
     }
     
     // Fallback to category-based logic
     const categoryType = category as 'goods' | 'service' | 'rent'
     switch (categoryType) {
       case 'goods':
-        return 'Գնում'
+        return t('announcementDetail.buy')
       case 'service':
-        return 'Վաճառք'
+        return t('announcementDetail.sell')
       case 'rent':
-        return 'Վարձակալություն'
+        return t('announcementDetail.rent')
       default:
-        return 'Գնում'
+        return t('announcementDetail.buy')
     }
   }
 
@@ -107,7 +111,8 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, showMyAppli
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    const months = ['Հուն', 'Փետ', 'Մար', 'Ապր', 'Մայ', 'Հուն', 'Հուլ', 'Օգս', 'Սեպ', 'Հոկ', 'Նոյ', 'Դեկ']
+    const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+    const months = monthKeys.map(key => t(`months.${key}`))
     return `${months[date.getMonth()]}.${date.getDate()}, ${date.getFullYear()}`
   }
 
@@ -123,8 +128,8 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, showMyAppli
         </View>
         <View style={styles.dateRow}>
           <Text style={styles.dateText}>
-            {(announcement as any).date_to || announcement.expires_at 
-              ? `Վերջնաժամկետ։ ${formatDate((announcement as any).date_to || announcement.expires_at)}`
+            {announcement.date_to
+              ? `Վերջնաժամկետ։ ${formatDate(announcement.date_to)}`
               : formatDate(announcement.created_at)
             }
           </Text>
@@ -135,21 +140,20 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, showMyAppli
       <View style={styles.content}>
         <Text style={styles.title}>{getItemName()}</Text>
         <Text style={styles.price}>
-          {announcement.price?.toLocaleString() || 0} դր {translateUnit(announcement.price_unit)}
+          {Number(announcement.price || 0).toLocaleString()} դր {translateUnit((announcement as any).price_unit ?? announcement.unit)}
         </Text>
       </View>
 
       {/* Details */}
-      {announcement.quantity && (
+      {announcement.available_quantity ? (
         <Text style={styles.detail}>
-          {t('announcements.availableQuantity')}: {announcement.quantity.toLocaleString()} {translateUnit(announcement.quantity_unit)}
+          {t('announcements.availableQuantity')}: {Number(announcement.available_quantity).toLocaleString()} {translateUnit(announcement.unit)}
         </Text>
-      )}
+      ) : null}
 
       {(() => {
-        const announcementData = announcement as any
-        const regions = announcementData.regions || (announcement.location_region ? [announcement.location_region] : [])
-        const villages = announcementData.villages || (announcement.location_city ? [announcement.location_city] : [])
+        const regions = announcement.regions || []
+        const villages = announcement.villages || []
         const regionCount = regions.length
         const villageCount = villages.length
         
@@ -172,13 +176,25 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, showMyAppli
 
       {/* Footer */}
       <View style={styles.footer}>
-        <View style={styles.participantsRow}>
+        <TouchableOpacity
+          style={styles.participantsRow}
+          onPress={() => {
+            if (!onApplicationsPress) return
+            if (showMyApplications) {
+              onApplicationsPress(announcement)
+              return
+            }
+            const count = announcement.applications_count ?? 0
+            if (count > 0) onApplicationsPress(announcement)
+          }}
+          activeOpacity={onApplicationsPress ? 0.7 : 1}
+          disabled={!onApplicationsPress || (!showMyApplications && (announcement.applications_count ?? 0) === 0)}
+        >
           <Icon name={showMyApplications ? "document" : "people"} size={16} color={colors.buttonPrimary} />
           {showMyApplications ? (
             <Text style={styles.participantsText}>
               {(() => {
                 const announcementData = announcement as any
-                // Get user's application count - check various possible field names
                 const myApplicationsCount = announcementData.my_applications_count !== undefined 
                   ? announcementData.my_applications_count
                   : (announcementData.myApplicationsCount !== undefined 
@@ -186,31 +202,84 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, showMyAppli
                     : (Array.isArray(announcementData.applications) 
                       ? announcementData.applications.length 
                       : 1))
-                
                 if (myApplicationsCount > 1) {
-                  return `Իմ դիմումները: ${myApplicationsCount}`
+                  return t('announcements.myApplicationsPlural', { count: myApplicationsCount })
                 } else {
-                  return 'Իմ դիմումը'
+                  return t('announcements.myApplications')
                 }
               })()}
             </Text>
           ) : (
-            <Text style={styles.participantsText}>Դիմորդներ: {(announcement as any).applications_count !== undefined ? (announcement as any).applications_count : (announcement.participants_count || 0)}</Text>
+            <Text style={styles.participantsText}>{t('announcements.applicants')}: {announcement.applications_count ?? 0}</Text>
           )}
-        </View>
+        </TouchableOpacity>
+
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.buttonCancel}
-            onPress={() => onCancel?.(announcement)}
-          >
-            <Text style={styles.buttonCancelText}>Չեղարկել</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.buttonView}
-            onPress={() => onView?.(announcement)}
-          >
-            <Text style={styles.buttonViewText}>Դիտել</Text>
-          </TouchableOpacity>
+          {showMyApplications ? (
+            // For "applied" tab - show close application button
+            <>
+              {(() => {
+                const announcementData = announcement as any
+                const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
+                // Get first active application ID (applications that are not closed)
+                const activeApplication = applications.find((app: any) => app.status !== 'closed' && app.status !== 'cancelled')
+                
+                if (activeApplication && onCloseApplication) {
+                  const isClosing = closingApplicationId === activeApplication.id
+                  return (
+                    isClosing ? (
+                      <View style={styles.buttonClose}>
+                        <ActivityIndicator size="small" color={colors.error} />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.buttonClose}
+                        onPress={() => {
+                          onCloseApplication(activeApplication.id)
+                        }}
+                      >
+                        <Text style={styles.buttonCloseText}>{t('announcements.closeApplication')}</Text>
+                      </TouchableOpacity>
+                    )
+                  )
+                }
+                return null
+              })()}
+              <TouchableOpacity
+                style={styles.buttonView}
+                onPress={() => onView?.(announcement)}
+              >
+                <Text style={styles.buttonViewText}>{t('announcements.view')}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            // For "published" tab - show cancel announcement button
+            <>
+              {/* Only show cancel button if announcement is not already cancelled */}
+              {announcement.status !== 'canceled' && announcement.status !== 'closed' && (
+                cancelling ? (
+                  <View style={styles.buttonCancel}>
+                    <ActivityIndicator size="small" color={colors.error} />
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.buttonCancel}
+                    onPress={() => {
+                      onCancel?.(announcement)
+                    }}
+                  >
+                    <Text style={styles.buttonCancelText}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+              <TouchableOpacity
+                style={styles.buttonView}
+                onPress={() => onView?.(announcement)}
+              >
+                <Text style={styles.buttonViewText}>{t('announcements.view')}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -246,14 +315,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   typeBadge: {
-    backgroundColor: '#E3F2FD', // Light blue background
+    backgroundColor: colors.backgroundSecondary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   typeText: {
     fontSize: 12,
-    color: '#1976D2', // Light blue text
+    color: colors.buttonPrimary,
     fontWeight: '500',
   },
   dateRow: {
@@ -315,10 +384,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB', // Light gray border
+    borderColor: colors.borderLight,
   },
   buttonCancelText: {
-    color: colors.error, // Red text
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  buttonClose: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  buttonCloseText: {
+    color: colors.error,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -328,10 +410,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB', // Light gray border
+    borderColor: colors.borderLight,
   },
   buttonViewText: {
-    color: colors.textPrimary, // Dark gray text
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

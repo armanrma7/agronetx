@@ -1,18 +1,75 @@
-import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../theme/colors'
 import { Announcement } from '../types'
 import Icon from './Icon'
+import * as announcementsAPI from '../lib/api/announcements.api'
+import { useAuth } from '../context/AuthContext'
 
 interface AnnouncementCardProps {
   announcement: Announcement
   onApply?: (announcement: Announcement) => void
   onView?: (announcement: Announcement) => void
+  isFavorite?: boolean
+  onFavoriteChange?: () => void
+  /** When list API doesn't include applications, parent can pass IDs the user has already applied to. */
+  appliedAnnouncementIds?: Set<string>
 }
 
-export function AnnouncementCard({ announcement, onApply, onView }: AnnouncementCardProps) {
+/** True if the current user has an application for this announcement (no Apply button). */
+function hasUserApplied(
+  announcement: Announcement,
+  userId: string | undefined,
+  appliedAnnouncementIds?: Set<string>
+): boolean {
+  if (appliedAnnouncementIds?.has(announcement.id)) return true
+  if (!userId) return false
+  const a = announcement as any
+  if (a.my_applications_count !== undefined && a.my_applications_count > 0) return true
+  const apps = a.applications
+  if (Array.isArray(apps) && apps.some((app: any) => (app.user_id || app.userId) === userId)) return true
+  return false
+}
+
+export function AnnouncementCard({ announcement, onApply, onView, isFavorite: initialIsFavorite, onFavoriteChange, appliedAnnouncementIds }: AnnouncementCardProps) {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  const [isFavorite, setIsFavorite] = useState(initialIsFavorite || false)
+  const [togglingFavorite, setTogglingFavorite] = useState(false)
+  const hasApplied = hasUserApplied(announcement, user?.id, appliedAnnouncementIds)
+
+  // Update favorite status when prop changes
+  useEffect(() => {
+    if (initialIsFavorite !== undefined) {
+      setIsFavorite(initialIsFavorite)
+    }
+  }, [initialIsFavorite])
+
+  const handleFavoritePress = async () => {
+    if (togglingFavorite) return // Prevent double taps
+    
+    try {
+      setTogglingFavorite(true)
+      if (isFavorite) {
+        await announcementsAPI.removeFavoriteAPI(announcement.id)
+        setIsFavorite(false)
+      } else {
+        await announcementsAPI.addFavoriteAPI(announcement.id)
+        setIsFavorite(true)
+      }
+      // Notify parent component if callback provided
+      onFavoriteChange?.()
+    } catch (error: any) {
+      console.error('Error toggling favorite:', error)
+      Alert.alert(
+        t('common.error'),
+        error?.response?.data?.message || t('favorites.toggleError')
+      )
+    } finally {
+      setTogglingFavorite(false)
+    }
+  }
   
   // Get translated item name based on current language
   const getItemName = (): string => {
@@ -30,8 +87,9 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
       return announcementData.name_hy || announcementData.name_am || ''
     }
     
-    // Fallback to title or item_name
-    return announcement.title || announcementData.item_name || 'No title'
+    // Fallback to item names or legacy
+    const item = announcement.item
+    return (item?.name_am || item?.name_en || item?.name_ru) || announcementData.title || announcementData.item_name || 'No title'
   }
 
   const getStatusColor = (status: string) => {
@@ -49,37 +107,32 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
   }
 
   const getTypeLabel = (announcement: Announcement) => {
-    // Check if there's a subtype field (sell/buy)
     const subtype = (announcement as any).subtype || (announcement as any).sub_type
-    const category = announcement.type // This is the category: goods, service, rent
-    const apiType = (announcement as any).apiType || subtype // API type: sell, buy, rent
+    const category = announcement.category || announcement.type
+    const apiType = announcement.type || (announcement as any).apiType || subtype
     
-    // Check API type first (this comes from the server and is already mapped)
-    // For service: offer -> sell, requirement -> buy
-    // For goods: sell -> sell, buy -> buy
-    if (apiType === 'sell' || subtype === 'sell' || subtype === 'sellGoods' || subtype === 'offer') {
-      return 'Վաճառք'
+    if (apiType === 'sell' || subtype === 'sell' || subtype === 'offer') {
+      return t('announcementDetail.sell')
     }
-    if (apiType === 'buy' || subtype === 'buy' || subtype === 'buyGoods' || subtype === 'requirement') {
-      return 'Գնում'
+    if (apiType === 'buy' || subtype === 'buy' || subtype === 'requirement') {
+      return t('announcementDetail.buy')
     }
     if (apiType === 'rent' || category === 'rent') {
-      return 'Վարձակալություն'
+      return t('announcementDetail.rent')
     }
     
-    // Fallback to category-based logic
     const categoryType = category as 'goods' | 'service' | 'rent'
     switch (categoryType) {
       case 'goods':
         // Default to buy for goods if no subtype
-        return 'Գնում'
+        return t('announcementDetail.buy')
       case 'service':
         // Default to sell for service if no subtype
-        return 'Վաճառք'
+        return t('announcementDetail.sell')
       case 'rent':
-        return 'Վարձակալություն'
+        return t('announcementDetail.rent')
       default:
-        return 'Գնում'
+        return t('announcementDetail.buy')
     }
   }
 
@@ -110,7 +163,8 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    const months = ['Հուն', 'Փետ', 'Մար', 'Ապր', 'Մայ', 'Հուն', 'Հուլ', 'Օգս', 'Սեպ', 'Հոկ', 'Նոյ', 'Դեկ']
+    const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+    const months = monthKeys.map(key => t(`months.${key}`))
     return `${months[date.getMonth()]}.${date.getDate()}, ${date.getFullYear()}`
   }
 
@@ -126,12 +180,26 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
         </View>
         <View style={styles.dateRow}>
           <Text style={styles.dateText}>
-            {(announcement as any).date_to || announcement.expires_at 
-              ? `Վերջնաժամկետ։ ${formatDate((announcement as any).date_to || announcement.expires_at)}`
+            {announcement.date_to
+              ? `${t('announcements.deadline')}: ${formatDate(announcement.date_to)}`
               : formatDate(announcement.created_at)
             }
           </Text>
-          <Icon name="bookmark" size={20} color={colors.textTertiary} />
+          <TouchableOpacity 
+            onPress={handleFavoritePress}
+            disabled={togglingFavorite}
+            style={styles.favoriteButton}
+          >
+            {togglingFavorite ? (
+              <ActivityIndicator size="small" color={colors.buttonPrimary} />
+            ) : (
+              <Icon 
+                name={isFavorite ? "bookmark" : "bookmark-border"} 
+                size={20} 
+                color={isFavorite ? colors.buttonPrimary : colors.textTertiary} 
+              />
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -139,21 +207,20 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
       <View style={styles.content}>
         <Text style={styles.title}>{getItemName()}</Text>
         <Text style={styles.price}>
-          {announcement.price?.toLocaleString() || 0} դր {translateUnit(announcement.price_unit)}
+          {Number(announcement.price || 0).toLocaleString()} դր {translateUnit((announcement as any).price_unit ?? announcement.unit)}
         </Text>
       </View>
 
       {/* Details */}
-      {announcement.quantity && (
+      {announcement.available_quantity ? (
         <Text style={styles.detail}>
-          {t('announcements.availableQuantity')}: {announcement.quantity.toLocaleString()} {translateUnit(announcement.quantity_unit)}
+          {t('announcements.availableQuantity')}: {Number(announcement.available_quantity).toLocaleString()} {translateUnit(announcement.unit)}
         </Text>
-      )}
+      ) : null}
 
       {(() => {
-        const announcementData = announcement as any
-        const regions = announcementData.regions || (announcement.location_region ? [announcement.location_region] : [])
-        const villages = announcementData.villages || (announcement.location_city ? [announcement.location_city] : [])
+        const regions = announcement.regions || []
+        const villages = announcement.villages || []
         const regionCount = regions.length
         const villageCount = villages.length
         
@@ -178,20 +245,22 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
       <View style={styles.footer}>
         <View style={styles.participantsRow}>
           <Icon name="people" size={16} color={colors.textTertiary} />
-          <Text style={styles.participantsText}>Դիմորդներ։ {(announcement as any).applications_count !== undefined ? (announcement as any).applications_count : (announcement.participants_count || 0)}</Text>
+          <Text style={styles.participantsText}>{t('announcements.applicants')}: {announcement.applications_count ?? 0}</Text>
         </View>
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.buttonPrimary}
-            onPress={() => onApply?.(announcement)}
-          >
-            <Text style={styles.buttonPrimaryText}>Դիմել</Text>
-          </TouchableOpacity>
+          {!hasApplied && (
+            <TouchableOpacity
+              style={styles.buttonPrimary}
+              onPress={() => onApply?.(announcement)}
+            >
+              <Text style={styles.buttonPrimaryText}>{t('announcements.apply')}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.buttonSecondary}
             onPress={() => onView?.(announcement)}
           >
-            <Text style={styles.buttonSecondaryText}>Դիտել</Text>
+            <Text style={styles.buttonSecondaryText}>{t('announcements.view')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -313,6 +382,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary, // Dark text on light gray
     fontSize: 14,
     fontWeight: '600',
+  },
+  favoriteButton: {
+    padding: 4,
   },
 })
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 import { useAuth } from '../../context/AuthContext'
@@ -17,34 +17,211 @@ export function MyAnnouncementsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('published')
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
-
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [closingApplicationId, setClosingApplicationId] = useState<string | null>(null)
+  const limit = 8
+  const abortControllerRef = useRef<AbortController | null>(null)
   useEffect(() => {
-    fetchAnnouncements()
+    // Abort previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    // Create new abort controller for this request
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+    
+    // Clear announcements immediately when tab changes
+    setLoading(true)
+    setLoadingMore(false)
+    setAnnouncements([])
+    setPage(1)
+    setTotal(0)
+    setHasMore(true)
+    fetchAnnouncements(1, true, abortController.signal)
+    
+    // Cleanup: abort request when component unmounts or tab changes
+    return () => {
+      abortController.abort()
+    }
   }, [activeTab])
 
-  const fetchAnnouncements = async () => {
-    setLoading(true)
+  const fetchAnnouncements = async (pageNum: number = 1, reset: boolean = false, signal?: AbortSignal) => {
+    if (reset) {
+      setLoading(true)
+    } else {
+      setLoadingMore(true)
+    }
+    
     try {
       if (activeTab === 'published') {
-        // Fetch all announcements from /announcements/me without any filter
-        const data = await announcementsAPI.getMyAnnouncementsAPI()
-        setAnnouncements(data || [])
+        // Fetch paginated announcements from /announcements/me
+        const response = await announcementsAPI.getMyAnnouncementsAPI({ page: pageNum, limit, signal })
+        
+        // Check if request was aborted
+        if (signal?.aborted) {
+          return
+        }
+        
+        if (reset) {
+          setAnnouncements(response.announcements || [])
+        } else {
+          setAnnouncements(prev => [...prev, ...(response.announcements || [])])
+        }
+        
+        setTotal(response.total || 0)
+        // Only update page if it matches what we requested (prevents race conditions)
+        if (response.page === pageNum) {
+          setPage(response.page)
+        }
+        setHasMore((response.page || pageNum) * limit < (response.total || 0))
       } else {
-        // Fetch announcements user has applied to
-        const data = await announcementsAPI.getAppliedAnnouncementsAPI()
-        setAnnouncements(data || [])
+        // Fetch paginated announcements user has applied to
+        const response = await announcementsAPI.getAppliedAnnouncementsAPI({ page: pageNum, limit, signal })
+        
+        // Check if request was aborted
+        if (signal?.aborted) {
+          return
+        }
+        
+        if (reset) {
+          setAnnouncements(response.announcements || [])
+        } else {
+          setAnnouncements(prev => [...prev, ...(response.announcements || [])])
+        }
+        
+        setTotal(response.total || 0)
+        // Only update page if it matches what we requested (prevents race conditions)
+        if (response.page === pageNum) {
+          setPage(response.page)
+        }
+        setHasMore((response.page || pageNum) * limit < (response.total || 0))
       }
-    } catch (err) {
-      console.error('Error fetching announcements:', err)
-      setAnnouncements([])
+    } catch (err: any) {
+      // Ignore abort errors
+      if (err.name === 'AbortError' || err.name === 'CanceledError' || signal?.aborted) {
+        return
+      }
+      
+      if (reset) {
+        setAnnouncements([])
+      }
+      setHasMore(false)
     } finally {
-      setLoading(false)
+      // Only update loading state if request wasn't aborted
+      if (!signal?.aborted) {
+        setLoading(false)
+        setLoadingMore(false)
+      }
     }
   }
 
-  const handleCancel = (announcement: Announcement) => {
-    console.log('Cancel announcement:', announcement.id)
-    // TODO: Implement cancel functionality
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore && !loading) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      fetchAnnouncements(nextPage, false)
+    }
+  }, [loadingMore, hasMore, loading, page])
+
+  const handleCancel = async (announcement: Announcement) => {
+    try {
+      // Show confirmation dialog
+      Alert.alert(
+        t('announcements.cancelTitle') || 'Չեղարկել հայտարարությունը',
+        t('announcements.cancelConfirm') || 'Դուք համոզված եք, որ ցանկանում եք չեղարկել այս հայտարարությունը?',
+        [
+          {
+            text: t('common.cancel') || 'Չեղարկել',
+            style: 'cancel',
+          },
+          {
+            text: t('common.confirm') || 'Հաստատել',
+            style: 'destructive',
+            onPress: async () => {
+              setCancellingId(announcement.id)
+              try {
+                // Call the cancel API
+                await announcementsAPI.cancelAnnouncementAPI(announcement.id)
+                
+                // Refresh the announcements list
+                setPage(1)
+                setHasMore(true)
+                await fetchAnnouncements(1, true)
+                
+                // Show success message
+                Alert.alert(
+                  t('common.success') || 'Հաջողություն',
+                  t('announcements.cancelled') || 'Հայտարարությունը չեղարկված է'
+                )
+              } catch (error: any) {
+                console.error('Error cancelling announcement:', error)
+                Alert.alert(
+                  t('common.error') || 'Սխալ',
+                  error.response?.data?.message || t('announcements.cancelError') || 'Հայտարարությունը չեղարկելը ձախողվեց'
+                )
+              } finally {
+                setCancellingId(null)
+              }
+            },
+          },
+        ]
+      )
+    } catch (error) {
+      console.error('Error showing cancel confirmation:', error)
+    }
+  }
+
+  const handleCloseApplication = async (applicationId: string) => {
+    try {
+      // Show confirmation dialog
+      Alert.alert(
+        t('applications.closeTitle') || 'Փակել դիմումը',
+        t('applications.closeConfirm') || 'Դուք համոզված եք, որ ցանկանում եք փակել այս դիմումը?',
+        [
+          {
+            text: t('common.cancel') || 'Չեղարկել',
+            style: 'cancel',
+          },
+          {
+            text: t('common.confirm') || 'Հաստատել',
+            style: 'destructive',
+            onPress: async () => {
+              setClosingApplicationId(applicationId)
+              try {
+                // Call the close API
+                await announcementsAPI.closeApplicationAPI(applicationId)
+                
+                // Refresh the announcements list
+                setPage(1)
+                setHasMore(true)
+                await fetchAnnouncements(1, true)
+                
+                // Show success message
+                Alert.alert(
+                  t('common.success') || 'Հաջողություն',
+                  t('applications.closed') || 'Դիմումը փակված է'
+                )
+              } catch (error: any) {
+                console.error('Error closing application:', error)
+                Alert.alert(
+                  t('common.error') || 'Սխալ',
+                  error.response?.data?.message || t('applications.closeError') || 'Դիմումը փակելը ձախողվեց'
+                )
+              } finally {
+                setClosingApplicationId(null)
+              }
+            },
+          },
+        ]
+      )
+    } catch (error) {
+      console.error('Error showing close confirmation:', error)
+    }
   }
 
   const handleView = (announcement: Announcement) => {
@@ -56,13 +233,32 @@ export function MyAnnouncementsPage() {
     }
   }
 
+  const handleApplicationsPress = (announcement: Announcement) => {
+    const parent = navigation.getParent()
+    if (parent) {
+      (parent as any).navigate('AnnouncementApplications', { announcementId: announcement.id })
+    } else {
+      ;(navigation as any).navigate('AnnouncementApplications', { announcementId: announcement.id })
+    }
+  }
+
   const renderAnnouncementCard = ({ item }: { item: Announcement }) => {
+    // Get the application ID that is being closed for this announcement
+    const announcementData = item as any
+    const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
+    const activeApplication = applications.find((app: any) => app.status !== 'closed' && app.status !== 'cancelled')
+    const isClosingApplication = activeApplication && closingApplicationId === activeApplication.id
+    
     return (
       <MyAnnouncementCard
         announcement={item}
         onCancel={handleCancel}
         onView={handleView}
+        onCloseApplication={handleCloseApplication}
+        onApplicationsPress={handleApplicationsPress}
         showMyApplications={activeTab === 'applied'}
+        cancelling={cancellingId === item.id}
+        closingApplicationId={isClosingApplication ? closingApplicationId : null}
       />
     )
   }
@@ -73,19 +269,37 @@ export function MyAnnouncementsPage() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'published' && styles.tabActive]}
-          onPress={() => setActiveTab('published')}
+          onPress={() => {
+            // Abort previous request
+            if (abortControllerRef.current) {
+              abortControllerRef.current.abort()
+            }
+            
+            setAnnouncements([])
+            setLoading(true)
+            setActiveTab('published')
+          }}
         >
           <Text style={[styles.tabText, activeTab === 'published' && styles.tabTextActive]}>
-            Հրապարակված
+            {t('announcements.published')}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'applied' && styles.tabActive]}
-          onPress={() => setActiveTab('applied')}
+          onPress={() => {
+            // Abort previous request
+            if (abortControllerRef.current) {
+              abortControllerRef.current.abort()
+            }
+            
+            setAnnouncements([])
+            setLoading(true)
+            setActiveTab('applied')
+          }}
         >
           <Text style={[styles.tabText, activeTab === 'applied' && styles.tabTextActive]}>
-            Դիմած
+            {t('announcements.applied')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -95,15 +309,42 @@ export function MyAnnouncementsPage() {
         data={announcements}
         renderItem={renderAnnouncementCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={
+          announcements.length === 0 && !loading 
+            ? [styles.listContainer, { flexGrow: 1 }] 
+            : styles.listContainer
+        }
         refreshing={loading}
-        onRefresh={fetchAnnouncements}
+        onRefresh={() => {
+          // Abort previous request
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+          }
+          
+          const abortController = new AbortController()
+          abortControllerRef.current = abortController
+          
+          setPage(1)
+          setHasMore(true)
+          fetchAnnouncements(1, true, abortController.signal)
+        }}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {loading ? 'Բեռնվում է...' : 'Դատարկ է'}
-            </Text>
-          </View>
+          !loading && !loadingMore && announcements.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {t('common.empty')}
+              </Text>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          loadingMore && hasMore ? (
+            <View style={styles.footerLoader}>
+              <Text style={styles.footerText}>{t('common.loading')}</Text>
+            </View>
+          ) : null
         }
       />
     </View>
@@ -150,6 +391,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    color: colors.textTertiary,
+  },
+  footerLoader: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
     color: colors.textTertiary,
   },
 })

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { colors } from '../../theme/colors'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { AnnouncementType } from '../../types'
+import { AnnouncementType, Announcement } from '../../types'
 import type { ItemsJson, SupportedLang } from '../../types/items'
 import { AppHeader } from '../../components/AppHeader'
 import { Select } from '../../components/Select'
@@ -24,9 +24,12 @@ import { ActivityIndicator, Modal, Alert, Image } from 'react-native'
 import Icon from '../../components/Icon'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { launchImageLibrary, launchCamera, Asset } from 'react-native-image-picker'
+import { API_CONFIG } from '../../config/api.config'
 
 interface RouteParams {
   type: AnnouncementType
+  announcementId?: string
+  announcement?: Announcement
 }
 
 
@@ -36,7 +39,8 @@ export function NewAnnouncementFormPage() {
   const { t, i18n } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
-  const { type } = (route.params as RouteParams) || { type: 'goods' }
+  const { type, announcementId, announcement: routeAnnouncement } = (route.params as RouteParams) || { type: 'goods' }
+  const isEditMode = !!announcementId
 
   const currentLang: SupportedLang = ((): SupportedLang => {
     const lang = (i18n.language ?? 'hy').split('-')[0]
@@ -92,6 +96,151 @@ export function NewAnnouncementFormPage() {
   const [selectedRegions, setSelectedRegions] = useState<string[]>([])
   const [selectedVillages, setSelectedVillages] = useState<string[]>([])
 
+  // Store announcement data for edit mode
+  const [editAnnouncementData, setEditAnnouncementData] = useState<any>(null)
+  const [editItemId, setEditItemId] = useState<string>('')
+  const [editUnit, setEditUnit] = useState<string>('')
+
+  // Load announcement data when editing
+  useEffect(() => {
+    if (isEditMode && announcementId) {
+      const loadAnnouncement = (announcement: Announcement) => {
+        const a = announcement as any
+        const apiType = announcement.type || a.apiType || (a.subtype || 'sell')
+        const category = announcement.category || type
+        
+        // Map subtype correctly based on category
+        let mappedSubtype = ''
+        if (category === 'goods') {
+          // For goods, subtype is directly 'sell' or 'buy'
+          mappedSubtype = (apiType === 'sell' || apiType === 'buy') ? apiType : 'sell'
+        } else {
+          // For service/rent, map 'sell' -> 'offer', 'buy' -> 'requirement'
+          mappedSubtype = apiType === 'sell' ? 'offer' : apiType === 'buy' ? 'requirement' : 'offer'
+        }
+        
+        // Store for later use
+        setEditAnnouncementData(a)
+        setEditItemId(a.item_id || '')
+        setEditUnit(a.unit || '')
+        
+        // Set form data (group will trigger subcategory fetch)
+        setFormData(prev => ({
+          ...prev,
+          applicationType: type,
+          subtype: mappedSubtype,
+          group: a.group_id || '',
+          quantity: typeof (a.count || a.available_quantity) === 'string' ? (a.count || a.available_quantity) : ((a.count || a.available_quantity)?.toString() || ''),
+          pricePerUnit: typeof a.price === 'string' ? a.price : (a.price?.toString() || ''),
+          dailyMaxQuantity: typeof a.daily_limit === 'string' ? a.daily_limit : (a.daily_limit?.toString() || ''),
+          totalArea: a.min_area?.toString() || '',
+          salesPeriod: a.date_to || '',
+          periodStart: a.date_from || '',
+          description: a.description || '',
+        }))
+        
+        // Set regions and villages
+        if (a.regions && Array.isArray(a.regions)) {
+          setSelectedRegions(a.regions)
+        }
+        if (a.villages && Array.isArray(a.villages)) {
+          setSelectedVillages(a.villages)
+        }
+        
+        // Set images if available - check both announcement.images and a.images
+        const imagesArray = announcement.images || a.images || []
+        if (imagesArray && Array.isArray(imagesArray) && imagesArray.length > 0) {
+          const imageAssets = imagesArray
+            .filter((img: any) => {
+              if (!img) return false
+              if (typeof img === 'string') return img.trim() !== ''
+              return !!(img.uri || img.url)
+            })
+            .map((img: any) => {
+              // Handle different image formats: string URL, object with uri/url
+              let imageUri = typeof img === 'string' ? img.trim() : (img.uri || img.url || '').trim()
+              
+              // If it's a relative URL, prepend base URL
+              if (imageUri && !imageUri.startsWith('http://') && !imageUri.startsWith('https://') && !imageUri.startsWith('file://')) {
+                const baseURL = API_CONFIG.baseURL
+                imageUri = imageUri.startsWith('/') ? `${baseURL}${imageUri.slice(1)}` : `${baseURL}${imageUri}`
+              }
+              
+              return {
+                uri: imageUri,
+                type: (typeof img === 'object' && img.type) ? img.type : 'image/jpeg',
+                fileName: (typeof img === 'object' && img.fileName) ? img.fileName : (imageUri.split('/').pop() || 'image.jpg'),
+              } as Asset
+            })
+            .filter((asset: Asset) => asset.uri && asset.uri.trim() !== '') as Asset[]
+          
+          if (imageAssets.length > 0) {
+            console.log('Setting images for edit mode:', imageAssets.length, 'images')
+            setSelectedImages(imageAssets)
+          } else {
+            console.log('No valid images found in announcement')
+            setSelectedImages([])
+          }
+        } else {
+          // Clear images if none available
+          console.log('No images array found in announcement')
+          setSelectedImages([])
+        }
+      }
+      
+      if (routeAnnouncement) {
+        loadAnnouncement(routeAnnouncement)
+      } else {
+        announcementsAPI.getAnnouncementByIdAPI(announcementId)
+          .then(loadAnnouncement)
+          .catch((error) => {
+            console.error('Error loading announcement:', error)
+            Alert.alert(t('common.error'), 'Failed to load announcement')
+          })
+      }
+    }
+  }, [isEditMode, announcementId, routeAnnouncement, type])
+
+  // Set item name after subcategories are loaded (for edit mode)
+  useEffect(() => {
+    if (isEditMode && editItemId && apiSubcategories.length > 0) {
+      // Check if the item exists in loaded subcategories
+      const itemExists = apiSubcategories.some(sub => 
+        sub.items?.some(item => item.id === editItemId)
+      )
+      if (itemExists && formData.name !== editItemId) {
+        // Subcategories are loaded and item exists, now set it
+        setFormData(prev => ({ ...prev, name: editItemId }))
+      }
+    }
+  }, [isEditMode, editItemId, apiSubcategories, formData.name])
+
+  // Set measurement unit after item is selected and measurements are loaded
+  useEffect(() => {
+    if (isEditMode && editUnit && formData.name && measurementOptions.length > 0 && !formData.measurementUnit) {
+      // Find matching unit in measurement options
+      // Try exact match first, then case-insensitive, then by label
+      const unitLower = editUnit.toLowerCase().trim()
+      const matchingOption = measurementOptions.find(opt => {
+        const valueLower = opt.value.toLowerCase().trim()
+        const labelLower = opt.label.toLowerCase().trim()
+        return valueLower === unitLower || 
+               labelLower === unitLower ||
+               valueLower.includes(unitLower) ||
+               labelLower.includes(unitLower)
+      })
+      if (matchingOption) {
+        setFormData(prev => ({ ...prev, measurementUnit: matchingOption.value }))
+      } else if (measurementOptions.length === 1) {
+        // If only one option, use it
+        setFormData(prev => ({ ...prev, measurementUnit: measurementOptions[0].value }))
+      } else {
+        // Fallback: try to set directly (might work if API accepts it)
+        setFormData(prev => ({ ...prev, measurementUnit: editUnit }))
+      }
+    }
+  }, [isEditMode, editUnit, formData.name, measurementOptions, formData.measurementUnit])
+
   // Fetch categories when component mounts or type changes
   useEffect(() => {
     fetchCategories()
@@ -103,9 +252,12 @@ export function NewAnnouncementFormPage() {
       fetchSubcategories(formData.group)
     } else {
       setApiSubcategories([])
-      setFormData(prev => ({ ...prev, name: '', measurementUnit: '' })) // Clear name and measurement when group is cleared
+      // Only clear name and measurement if not in edit mode (user manually cleared group)
+      if (!isEditMode) {
+        setFormData(prev => ({ ...prev, name: '', measurementUnit: '' }))
+      }
     }
-  }, [formData.group])
+  }, [formData.group, isEditMode])
 
   // Extract measurements from selected ITEM (no API request)
   useEffect(() => {
@@ -140,17 +292,33 @@ export function NewAnnouncementFormPage() {
         
         setMeasurementOptions(options)
         
-        // Clear selection to let user choose from the measurements
-        setFormData(prev => ({ ...prev, measurementUnit: '' }))
+        // In edit mode, check if editUnit matches any option before clearing
+        if (isEditMode && editUnit) {
+          const unitMatches = options.some(opt => 
+            opt.value.toLowerCase() === editUnit.toLowerCase() ||
+            opt.label.toLowerCase() === editUnit.toLowerCase()
+          )
+          if (!unitMatches) {
+            // Unit doesn't match, clear it so matching effect can set it
+            setFormData(prev => ({ ...prev, measurementUnit: '' }))
+          }
+        } else if (!isEditMode) {
+          // Not edit mode, clear selection to let user choose
+          setFormData(prev => ({ ...prev, measurementUnit: '' }))
+        }
       } else {
         setMeasurementOptions([])
-        setFormData(prev => ({ ...prev, measurementUnit: '' }))
+        if (!isEditMode) {
+          setFormData(prev => ({ ...prev, measurementUnit: '' }))
+        }
       }
     } else {
       setMeasurementOptions([])
-      setFormData(prev => ({ ...prev, measurementUnit: '' }))
+      if (!isEditMode) {
+        setFormData(prev => ({ ...prev, measurementUnit: '' }))
+      }
     }
-  }, [formData.name, apiSubcategories, currentLang])
+  }, [formData.name, apiSubcategories, currentLang, isEditMode, editUnit])
 
   const fetchCategories = async () => {
     setLoadingCategories(true)
@@ -460,30 +628,70 @@ export function NewAnnouncementFormPage() {
         announcementData.villages = selectedVillages
       }
 
-      // Call API to create announcement (pass images for FormData upload)
+      // Call API to create or update announcement
       const validImages = selectedImages.filter(img => img.uri)
-      const response = await announcementsAPI.createAnnouncementAPI(
-        announcementData,
-        validImages.length > 0 ? validImages : undefined
-      )
+      
+      if (isEditMode && announcementId) {
+        // Update existing announcement
+        // Separate existing URLs from new file uploads
+        const existingImageUrls: string[] = validImages
+          .filter(img => img.uri && (img.uri.startsWith('http://') || img.uri.startsWith('https://')))
+          .map(img => img.uri!)
+        
+        const newImageFiles = validImages.filter(img => 
+          img.uri && (img.uri.startsWith('file://') || img.uri.startsWith('content://'))
+        )
+        
+        // Always include images array in announcementData (even if empty, to handle deletions)
+        // This tells the backend which images to keep - includes existing URLs
+        announcementData.images = existingImageUrls as any
+        
+        // Send new file uploads separately via images parameter
+        // The API will combine existing URLs (from announcementData.images) with new file uploads
+        const imagesToSend = newImageFiles.length > 0 ? newImageFiles : undefined
+        
+        const response = await announcementsAPI.updateAnnouncementAPI(
+          announcementId,
+          announcementData,
+          imagesToSend
+        )
+        
+        // Show success message
+        Alert.alert(
+          t('common.success'),
+          'Announcement updated successfully',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        )
+      } else {
+        // Create new announcement (pass images for FormData upload)
+        const response = await announcementsAPI.createAnnouncementAPI(
+          announcementData,
+          validImages.length > 0 ? validImages : undefined
+        )
 
-      // Show success message
-      Alert.alert(
-        'Success',
-        t('addAnnouncement.publishSuccess'),
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack()
-          }
-        ]
-      )
+        // Show success message
+        Alert.alert(
+          t('common.success'),
+          t('addAnnouncement.publishSuccess'),
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        )
+      }
 
     } catch (error: any) {
-      console.error('Error creating announcement:', error)
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} announcement:`, error)
       Alert.alert(
-        'Error',
-        error.response?.data?.message || error.message || t('addAnnouncement.publishError')
+        t('common.error'),
+        error.response?.data?.message || error.message || (isEditMode ? 'Failed to update announcement' : t('addAnnouncement.publishError'))
       )
     } finally {
       setUpdating(false)
@@ -495,7 +703,9 @@ export function NewAnnouncementFormPage() {
   }
 
   const getSubtypeOptions = () => {
-    switch (type) {
+    // Use announcement category if in edit mode, otherwise use route type
+    const category = (isEditMode && editAnnouncementData?.category) ? editAnnouncementData.category : type
+    switch (category) {
       case 'goods':
         return [
           { value: 'sell', label: t('announcementSubtype.sellGoods') },
@@ -518,21 +728,27 @@ export function NewAnnouncementFormPage() {
 
   const subtypeOptions = getSubtypeOptions()
 
+  // Get display name for category/subcategory/item (supports name_am, name_hy, name_ru, name_en, name)
+  const getOptionLabel = (o: { name_hy?: string; name_am?: string; name_ru?: string; name_en?: string; name?: string }): string => {
+    const hy = o.name_hy ?? o.name_am
+    const ru = o.name_ru
+    const en = o.name_en
+    const name = o.name
+    if (currentLang === 'hy' && hy) return hy
+    if (currentLang === 'ru' && ru) return ru
+    if (currentLang === 'en' && en) return en
+    return en || ru || hy || name || ''
+  }
+
   // Convert API categories to select options
   const categoryOptions = apiCategories.map(category => ({
     value: category.id,
-    label: currentLang === 'hy' ? (category.name_hy || category.name)
-      : currentLang === 'ru' ? (category.name_ru || category.name)
-      : currentLang === 'en' ? (category.name_en || category.name)
-      : category.name
+    label: getOptionLabel(category)
   }))
 
   // Convert API subcategories with items to grouped select options
   const subcategoryOptions = apiSubcategories.flatMap(subcategory => {
-    const subcategoryLabel = currentLang === 'hy' ? (subcategory.name_hy || subcategory.name)
-      : currentLang === 'ru' ? (subcategory.name_ru || subcategory.name)
-      : currentLang === 'en' ? (subcategory.name_en || subcategory.name)
-      : subcategory.name
+    const subcategoryLabel = getOptionLabel(subcategory)
 
     // Only process subcategories that have items
     if (!subcategory.items || subcategory.items.length === 0) {
@@ -549,10 +765,7 @@ export function NewAnnouncementFormPage() {
       // Item options (selectable) - only items are selectable (e.g., "Strawberry", "Blueberry")
       ...subcategory.items.map((item: announcementsAPI.APIItem) => ({
         value: item.id,
-        label: currentLang === 'hy' ? (item.name_hy || item.name)
-          : currentLang === 'ru' ? (item.name_ru || item.name)
-          : currentLang === 'en' ? (item.name_en || item.name)
-          : item.name,
+        label: getOptionLabel(item),
         // No headerLabel - show only item name in button
         isHeader: false,
       }))
@@ -567,7 +780,7 @@ export function NewAnnouncementFormPage() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
        <AppHeader
           showBack
-          title={t('addAnnouncement.title')}
+          title={isEditMode ? t('common.edit') : t('addAnnouncement.title')}
         />
       <ScrollView
         style={styles.scrollView}
@@ -817,7 +1030,7 @@ export function NewAnnouncementFormPage() {
               {updating ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.publishButtonText}>{t('addAnnouncement.publish')}</Text>
+                <Text style={styles.publishButtonText}>{isEditMode ? t('common.save') : t('addAnnouncement.publish')}</Text>
               )}
             </TouchableOpacity>
           </View>

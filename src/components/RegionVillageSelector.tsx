@@ -221,10 +221,15 @@ export function RegionVillageSelector({
   }, [selectedRegions, villages])
 
   const getLocalizedName = (item: Region | Village): string => {
-    if (currentLang === 'hy' && item.name_hy) return item.name_hy
-    if (currentLang === 'ru' && item.name_ru) return item.name_ru
-    if (currentLang === 'en' && item.name_en) return item.name_en
-    return item.name
+    const o = item as unknown as Record<string, unknown>
+    const nameHy = (o.name_hy ?? o.name_am) as string | undefined
+    const nameRu = o.name_ru as string | undefined
+    const nameEn = o.name_en as string | undefined
+    const name = o.name as string | undefined
+    if (currentLang === 'hy' && nameHy) return nameHy
+    if (currentLang === 'ru' && nameRu) return nameRu
+    if (currentLang === 'en' && nameEn) return nameEn
+    return nameEn || nameRu || nameHy || name || ''
   }
 
   // Filtered regions for search

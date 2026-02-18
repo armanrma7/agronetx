@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useNavigation, useNavigationState, useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
-import { AnnouncementsPage, AddAnnouncementPage, NotificationsPage } from '../pages/main'
+import { AnnouncementsPage, AddAnnouncementPage, NotificationsPage, FavoritesPage } from '../pages/main'
 import { MyAnnouncementsPage } from '../pages/profile/MyAnnouncementsPage'
 import Icon from '../components/Icon'
 import { FilterModal, FilterValues } from '../components/FilterModal'
@@ -33,9 +33,11 @@ function HeaderRight({ onSearchPress, onFilterPress, onProfilePress }: {
 }) {
   return (
     <View style={styles.headerActions}>
+      {/* Search icon commented out
       <TouchableOpacity onPress={onSearchPress} style={{ marginRight: 16 }}>
         <Icon name="search" size={24} color={colors.white} />
       </TouchableOpacity>
+      */}
       <TouchableOpacity onPress={onProfilePress} style={{ marginRight: 12 }}>
         <View style={styles.headerAvatar}>
           <Icon name="person" size={20} color={colors.white} />
@@ -128,11 +130,18 @@ export function HomeTabs() {
               if (route.name === 'Announcements') {
                 iconName = 'home'
               } else if (route.name === 'AddAnnouncement') {
+                // Modern floating button style
                 return (
-                  <Icon name="add" size={24} style={{ backgroundColor: colors.buttonPrimary, borderRadius: 24 }}  color={colors.white} />
+                  <View style={styles.addButtonContainer}>
+                    <View style={styles.addButtonCircle}>
+                      <Icon name="add" size={24} color={colors.white} />
+                    </View>
+                  </View>
                 )
               } else if (route.name === 'Notifications') {
                 iconName = 'notifications'
+              } else if (route.name === 'Favorites') {
+                iconName = 'bookmark'
               } else if (route.name === 'MyAnnouncements') {
                 iconName = 'campaign'
               }
@@ -153,11 +162,12 @@ export function HomeTabs() {
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 8,
+              position: 'relative',
             },
             tabBarLabelStyle: {
-              fontSize: 11,
-              fontWeight: '500',
+              display: 'none', // Hide tab labels
             },
+            tabBarShowLabel: false, // Hide tab labels
             headerStyle: {
               backgroundColor: colors.buttonPrimary,
               elevation: 0,
@@ -190,7 +200,13 @@ export function HomeTabs() {
         component={AnnouncementsPage}
         options={{
           title: t('appName'),
-          tabBarLabel: t('tabs.home'),
+        }}
+      />
+      <Tab.Screen
+        name="Favorites"
+        component={FavoritesPage}
+        options={{
+          title: t('appName'),
         }}
       />
       <Tab.Screen
@@ -204,7 +220,6 @@ export function HomeTabs() {
         }}
         options={{
           headerShown: false,
-          tabBarLabel: t('tabs.addAnnouncement'),
         }}
       />
       <Tab.Screen
@@ -212,7 +227,6 @@ export function HomeTabs() {
         component={NotificationsPage}
         options={{
           title: t('appName'),
-          tabBarLabel: t('tabs.notifications'),
         }}
       />
       <Tab.Screen
@@ -221,7 +235,6 @@ export function HomeTabs() {
         options={{
           headerShown: true,
           title: t('appName'),
-          tabBarLabel: t('tabs.myAnnouncements'),
         }}
       />
       </Tab.Navigator>
@@ -261,7 +274,24 @@ export function HomeTabs() {
 
 const styles = StyleSheet.create({
   addButtonContainer: {
-    marginTop: -24,
+    marginTop: -20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.buttonPrimary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    borderWidth: 3,
+    borderColor: colors.white,
   },
   addButton: {
     width: 48,

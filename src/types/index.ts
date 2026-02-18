@@ -86,32 +86,104 @@ export interface AuthContextType {
 
 // Announcement types
 export type AnnouncementType = 'goods' | 'service' | 'rent'
-export type AnnouncementStatus = 'active' | 'completed' | 'cancelled' | 'published'
+export type AnnouncementStatus = 'active' | 'completed' | 'canceled' | 'published' | 'closed'
+
+export interface Translation {
+  name_am: string;
+  name_en: string;
+  name_ru: string;
+}
+
+export interface RegionVillage {
+  id: string;
+  name_am: string;
+  name_en: string;
+  name_ru: string;
+}
+
+export interface Measurement {
+  en: string;
+  hy: string;
+  ru: string;
+}
+
+export interface Owner {
+  id: string;
+  full_name: string;
+  phone: string;
+  region_id: string;
+  village_id: string;
+  region: RegionVillage;
+  village: RegionVillage;
+}
+
+export interface Group extends Translation {
+  id: string;
+}
+
+export interface Item extends Translation {
+  id: string;
+  measurements: Measurement[];
+}
+
+export interface ClosedByUser {
+  id: string;
+  full_name: string;
+}
+
+export interface AnnouncementApplication {
+  id?: string;
+  // add more fields later if needed
+}
 
 export interface Announcement {
-  id: string
-  user_id: string
-  type: AnnouncementType
-  status: AnnouncementStatus
-  title: string
-  description?: string
-  price: number
-  price_unit: string // e.g., "դր/կգ", "դր/ծառա", "դր/օր"
-  quantity?: number
-  quantity_unit?: string // e.g., "կգ", "լիտր"
-  location_region: string
-  location_city?: string
-  participants_count?: number
-  created_at: string
-  updated_at: string
-  expires_at?: string
-  
-  // Relations
-  user?: {
-    name: string
-    surname: string
-  }
+  id: string;
+  type: 'sell' | 'buy' | string;
+  category: string;
+
+  group_id: string;
+  item_id: string;
+
+  price: string;
+  description: string;
+
+  owner_id: string;
+  status: 'published' | 'pending' | 'closed' | 'rejected' | string;
+
+  closed_by: string | null;
+
+  count: string;
+  daily_limit: string;
+  available_quantity: string;
+  unit: string;
+
+  images: string[];
+
+  date_from: string | null;
+  date_to: string | null;
+
+  min_area: number | null;
+
+  regions: string[];
+  villages: string[];
+
+  views_count: number;
+
+  created_at: string;
+  updated_at: string;
+
+  owner: Owner;
+  group: Group;
+  item: Item;
+  closedByUser: ClosedByUser | null;
+
+  regions_data: RegionVillage[];
+  villages_data: RegionVillage[];
+
+  applications_count: number;
+  applications: AnnouncementApplication[];
 }
+
 
 // Backward compatibility aliases
 export type ListingType = AnnouncementType

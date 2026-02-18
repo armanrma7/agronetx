@@ -54,11 +54,13 @@ export function AppHeader({
 
       {/* Right Side */}
       <View style={styles.headerRight}>
+        {/* Search icon commented out
         {showSearch && (
           <TouchableOpacity onPress={onSearchPress} style={styles.headerIconButton}>
             <Icon name="search" size={24} color={colors.white} />
           </TouchableOpacity>
         )}
+        */}
         {showProfile && (
           <TouchableOpacity onPress={handleProfilePress} style={styles.headerIconButton}>
             <View style={styles.headerAvatar}>

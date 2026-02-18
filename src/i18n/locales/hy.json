@@ -1,5 +1,8 @@
 {
   "appName": "AgronetX",
+  "splash": {
+    "tagline": "Այստեղ է սկսվում գյուղատնտեսական բիզնեսը"
+  },
   "common": {
     "loading": "Բեռնվում է...",
     "save": "Պահպանել",
@@ -16,7 +19,6 @@
     "add": "Ավելացնել",
     "clear": "Մաքրել",
     "done": "Պատրաստ",
-    "search": "Փնտրել",
     "noResults": "Արդյունքներ չեն գտնվել",
     "email": "Email",
     "whatsapp": "WhatsApp",
@@ -24,7 +26,12 @@
     "telegram": "Telegram",
     "farmer": "Ֆերմեր",
     "organization": "Կազմակերպություն",
-    "buyer": "Գնորդ"
+    "buyer": "Գնորդ",
+    "ok": "Լավ",
+    "confirm": "Հաստատել",
+    "success": "Հաջողություն",
+    "error": "Սխալ",
+    "empty": "Դատարկ է"
   },
   "register": {
     "title": "Գրանցում",
@@ -104,13 +111,14 @@
     "myAnnouncements": "Իմ"
   },
   "announcements": {
-    "offer": "Ազդամ",
+    "offer": "Ապրանք",
     "service": "Ծառայություններ",
     "rent": "Վարձույթ",
     "status": {
       "active": "Գնում",
       "completed": "Ավարտված",
-      "cancelled": "Չեղարկված"
+      "cancelled": "Չեղարկված",
+      "published": "Հրապարակված"
     },
     "deadline": "Վերջնաժամկետ",
     "minQuantity": "Առնվազն քանակ",
@@ -119,10 +127,20 @@
     "applicants": "Դիմողներ",
     "apply": "Դիմել",
     "view": "Դիտել",
-    "empty": "Ցուցակը դատարկ է"
+    "empty": "Ցուցակը դատարկ է",
+    "cancelTitle": "Չեղարկել հայտարարությունը",
+    "cancelConfirm": "Դուք համոզված եք, որ ցանկանում եք չեղարկել այս հայտարարությունը?",
+    "cancelled": "Հայտարարությունը չեղարկված է",
+    "cancelError": "Հայտարարությունը չեղարկելը ձախողվեց",
+    "myApplications": "Իմ դիմումը",
+    "myApplicationsPlural": "Իմ դիմումները: {{count}}",
+    "applicantsCount": "Դիմորդներ: {{count}}",
+    "closeApplication": "Փակել դիմումը",
+    "published": "Հրապարակված",
+    "applied": "Դիմած"
   },
   "listings": {
-    "offer": "Ազդամ",
+    "goods": "Ապրանք",
     "service": "Ծառայություններ",
     "rent": "Վարձույթ",
     "status": {
@@ -153,7 +171,7 @@
     "newAnnouncement": "Նոր",
     "announcement": "հայտարարություն",
     "product": "Ապրանք",
-    "service": "Ծառայություն",
+    "service": "Ծառայություններ",
     "rent": "Վարձույթ",
     "applicationType": "Հայտի տեսակ",
     "productType": "Ապրանքի տեսակ",
@@ -260,5 +278,95 @@
   "search": {
     "placeholder": "Որոնել...",
     "recentSearches": "Վերջին որոնումներ"
+  },
+  "favorites": {
+    "empty": "Դուք չունեք նախընտրած հայտարարություններ",
+    "toggleError": "Նախընտրած ավելացնելը/հեռացնելը ձախողվեց"
+  },
+  "settings": {
+    "languages": "Լեզուներ"
+  },
+  "applications": {
+    "title": "Դիմում",
+    "goodsApplication": "Ապրանքի Դիմում",
+    "serviceApplication": "Ծառայության Դիմում",
+    "rentApplication": "Վարձակալության Դիմում",
+    "deliveryDates": "Առաքման ամսաթվեր",
+    "selectDates": "Ընտրել",
+    "selectedDates": "Ընտրված է {{count}} ամսաթիվ",
+    "quantity": "Քանակ",
+    "unit": "Միավոր",
+    "rentUnit": "Վարձակալության միավոր*",
+    "serviceUnit": "Ծառայության միավոր*",
+    "notes": "Ծանոթություն",
+    "notesPlaceholder": "Լրացնել",
+    "submit": "Ուղարկել",
+    "submitSuccess": "Ձեր դիմումը հաջողությամբ ուղարկվել է",
+    "submitError": "Դիմումը ուղարկելը ձախողվեց",
+    "fillIn": "Լրացնել",
+    "dateNotAvailable": "Ամսաթիվը հասանելի չէ",
+    "dateTaken": "Այս ամսաթիվը արդեն զբաղված է հաստատված դիմումով",
+    "selectAtLeastOneDate": "Խնդրում ենք ընտրել առնվազն մեկ առաքման ամսաթիվ",
+    "enterQuantity": "Խնդրում ենք մուտքագրել քանակ",
+    "quantityMustBePositive": "Քանակը պետք է լինի դրական թիվ",
+    "quantityExceedsLimit": "Քանակը չի կարող գերազանցել օրական սահմանաչափը ({{limit}} {{unit}})",
+    "selectUnit": "Խնդրում ենք ընտրել միավոր",
+    "loadError": "Հայտարարությունը բեռնելը ձախողվեց",
+    "closeTitle": "Փակել դիմումը",
+    "closeConfirm": "Դուք համոզված եք, որ ցանկանում եք փակել այս դիմումը?",
+    "closed": "Դիմումը փակված է",
+    "closeError": "Դիմումը փակելը ձախողվեց",
+    "postSubmissionInfo": "Հայտի հաստատումից հետո դուք կարող եք տեսնել միմյանց կոնտակտային տվյալները",
+    "applicantsCountLabel": "Դիմորդներ",
+    "transactionDate": "Գործարքի օր",
+    "location": "Գտնվելու վայր",
+    "view": "Դիտել",
+    "approve": "Հաստատել",
+    "reject": "Մերժել",
+    "statusInProgress": "Ընթացքի մեջ",
+    "statusApproved": "Հաստատված",
+    "statusRejected": "Մերժված",
+    "approveConfirm": "Հաստատել այս դիմումը?",
+    "rejectConfirm": "Մերժել այս դիմումը?"
+  },
+  "units": {
+    "daily": "Օրական",
+    "monthly": "Ամսական",
+    "yearly": "Տարեկան",
+    "hourly": "Ժամային"
+  },
+  "months": {
+    "jan": "Հուն",
+    "feb": "Փետ",
+    "mar": "Մար",
+    "apr": "Ապր",
+    "may": "Մայ",
+    "jun": "Հուն",
+    "jul": "Հուլ",
+    "aug": "Օգս",
+    "sep": "Սեպ",
+    "oct": "Հոկ",
+    "nov": "Նոյ",
+    "dec": "Դեկ"
+  },
+  "announcementDetail": {
+    "active": "Ակտիվ",
+    "closed": "Փակված",
+    "sell": "Վաճառք",
+    "buy": "Գնում",
+    "rent": "Վարձակալություն",
+    "serviceOffer": "Ծառայության առաջարկ",
+    "contact": "Կապ",
+    "availability": "Առկայություն",
+    "price": "Գին",
+    "limit": "Սահմանաչափ",
+    "availableFrom": "Հասանելի է՝",
+    "region": "Մարզ՝",
+    "village": "Գյուղ՝",
+    "categoryFruit": "Միրգ",
+    "categoryWork": "Աշխատանք",
+    "categoryEquipment": "Գյուղատնտեսական տեխնիկա",
+    "defaultItemName": "Ծիրան",
+    "call": "Զանգահարել"
   }
 }

@@ -30,7 +30,7 @@ interface RouteParams {
 type UnitType = 'daily' | 'monthly' | 'yearly' | 'hourly'
 
 export function ApplicationFormPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
   const { announcementId, announcementType } = (route.params as RouteParams) || {}
@@ -62,7 +62,7 @@ export function ApplicationFormPage() {
       setAnnouncement(data)
     } catch (error) {
       console.error('Error fetching announcement:', error)
-      Alert.alert('Սխալ', 'Հայտարարությունը բեռնելը ձախողվեց')
+      Alert.alert(t('common.error'), t('applications.loadError'))
       navigation.goBack()
     } finally {
       setLoading(false)
@@ -73,13 +73,13 @@ export function ApplicationFormPage() {
   const getPageTitle = () => {
     switch (announcementType) {
       case 'goods':
-        return 'Ապրանքի Դիմում'
+        return t('applications.goodsApplication')
       case 'service':
-        return 'Ծառայության Դիմում'
+        return t('applications.serviceApplication')
       case 'rent':
-        return 'Վարձակալության Դիմում'
+        return t('applications.rentApplication')
       default:
-        return 'Դիմում'
+        return t('applications.title')
     }
   }
 
@@ -97,13 +97,13 @@ export function ApplicationFormPage() {
   const getUnitLabel = (unit: UnitType): string => {
     switch (unit) {
       case 'daily':
-        return 'Օրական'
+        return t('units.daily')
       case 'monthly':
-        return 'Ամսական'
+        return t('units.monthly')
       case 'yearly':
-        return 'Տարեկան'
+        return t('units.yearly')
       case 'hourly':
-        return 'Ժամային'
+        return t('units.hourly')
       default:
         return unit
     }
@@ -111,8 +111,10 @@ export function ApplicationFormPage() {
 
   // Format date for display
   const formatDate = (date: Date): string => {
-    const months = ['Հուն', 'Փետ', 'Մար', 'Ապր', 'Մայ', 'Հուն', 'Հուլ', 'Օգս', 'Սեպ', 'Հոկ', 'Նոյ', 'Դեկ']
-    return `${months[date.getMonth()]}. ${date.getDate()}, ${date.getFullYear()}`
+    const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+    const monthKey = monthKeys[date.getMonth()]
+    const month = t(`months.${monthKey}`)
+    return `${month}. ${date.getDate()}, ${date.getFullYear()}`
   }
 
   // Format date to YYYY-MM-DD string
@@ -134,9 +136,42 @@ export function ApplicationFormPage() {
     return new Date(year, month - 1, day)
   }
 
+  // Get approved applications' delivery dates to disable them
+  const getDisabledDates = (): Set<string> => {
+    const disabledDates = new Set<string>()
+    
+    if (announcement) {
+      const announcementData = announcement as any
+      const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
+      
+      // Get all delivery dates from approved applications
+      applications.forEach((app: any) => {
+        // Only consider approved applications
+        if (app.status === 'approved' || app.status === 'accepted') {
+          const deliveryDatesArray = Array.isArray(app.delivery_dates) 
+            ? app.delivery_dates 
+            : (app.delivery_dates ? [app.delivery_dates] : [])
+          
+          deliveryDatesArray.forEach((dateStr: string) => {
+            if (dateStr) {
+              // Convert to YYYY-MM-DD format if needed
+              const dateKey = dateStr.split('T')[0] // Remove time if present
+              disabledDates.add(dateKey)
+            }
+          })
+        }
+      })
+    }
+    
+    return disabledDates
+  }
+
   // Get marked dates for Calendar component
   const getMarkedDates = () => {
     const marked: any = {}
+    const disabledDates = getDisabledDates()
+    
+    // Mark selected dates
     deliveryDates.forEach(date => {
       const key = dateToKey(date)
       marked[key] = {
@@ -145,13 +180,37 @@ export function ApplicationFormPage() {
         selectedTextColor: colors.white,
       }
     })
+    
+    // Mark disabled dates (from approved applications)
+    disabledDates.forEach(dateKey => {
+      // Don't override selected dates
+      if (!marked[dateKey]) {
+        marked[dateKey] = {
+          disabled: true,
+          disableTouchEvent: true,
+          textColor: colors.textTertiary,
+        }
+      }
+    })
+    
     return marked
   }
 
   // Handle calendar date selection
   const handleCalendarDayPress = (day: DateData) => {
-    const selectedDate = keyToDate(day.dateString)
     const dateKey = day.dateString
+    const disabledDates = getDisabledDates()
+    
+    // Don't allow selection of disabled dates (from approved applications)
+    if (disabledDates.has(dateKey)) {
+      Alert.alert(
+        t('applications.dateNotAvailable'),
+        t('applications.dateTaken')
+      )
+      return
+    }
+    
+    const selectedDate = keyToDate(day.dateString)
     
     // Check if date is already selected
     const isSelected = deliveryDates.some(d => dateToKey(d) === dateKey)
@@ -174,28 +233,28 @@ export function ApplicationFormPage() {
   const validateForm = (): boolean => {
     if (announcementType === 'goods') {
       if (deliveryDates.length === 0) {
-        Alert.alert('Սխալ', 'Խնդրում ենք ընտրել առնվազն մեկ առաքման ամսաթիվ')
+        Alert.alert(t('common.error'), t('applications.selectAtLeastOneDate'))
         return false
       }
       if (!quantity || quantity.trim() === '') {
-        Alert.alert('Սխալ', 'Խնդրում ենք մուտքագրել քանակ')
+        Alert.alert(t('common.error'), t('applications.enterQuantity'))
         return false
       }
       const qty = parseFloat(quantity)
       if (isNaN(qty) || qty <= 0) {
-        Alert.alert('Սխալ', 'Քանակը պետք է լինի դրական թիվ')
+        Alert.alert(t('common.error'), t('applications.quantityMustBePositive'))
         return false
       }
       // Check daily limit if exists
       const announcementData = announcement as any
       const dailyLimit = announcementData?.daily_limit
       if (dailyLimit && qty > dailyLimit) {
-        Alert.alert('Սխալ', `Քանակը չի կարող գերազանցել օրական սահմանաչափը (${dailyLimit} ${announcement?.quantity_unit || ''})`)
+        Alert.alert(t('common.error'), t('applications.quantityExceedsLimit', { limit: dailyLimit, unit: announcement?.quantity_unit || '' }))
         return false
       }
     } else if (announcementType === 'rent' || announcementType === 'service') {
       if (!selectedUnit) {
-        Alert.alert('Սխալ', 'Խնդրում ենք ընտրել միավոր')
+        Alert.alert(t('common.error'), t('applications.selectUnit'))
         return false
       }
     }
@@ -233,15 +292,15 @@ export function ApplicationFormPage() {
 
       await announcementsAPI.submitApplicationAPI(applicationData)
       
-      Alert.alert('Հաջողություն', 'Ձեր դիմումը հաջողությամբ ուղարկվել է', [
+      Alert.alert(t('common.success'), t('applications.submitSuccess'), [
         {
-          text: 'Լավ',
+          text: t('common.ok'),
           onPress: () => navigation.goBack(),
         },
       ])
     } catch (error: any) {
       console.error('Error submitting application:', error)
-      Alert.alert('Սխալ', error?.response?.data?.message || 'Դիմումը ուղարկելը ձախողվեց')
+      Alert.alert(t('common.error'), error?.response?.data?.message || t('applications.submitError'))
     } finally {
       setSubmitting(false)
     }
@@ -311,13 +370,13 @@ export function ApplicationFormPage() {
           
           {/* Instructional Text */}
           <Text style={styles.instructionText}>
-            Ուղարկեք ձեր հայտը հայտարարատուին
+            {t('applications.title')}
           </Text>
 
           {/* Daily Limit Banner - Only for goods */}
           {dailyLimitInfo && (
             <View style={styles.limitBanner}>
-              <Text style={styles.limitText}>Սահմանաչափ: {dailyLimitInfo}</Text>
+              <Text style={styles.limitText}>{t('announcementDetail.limit')}: {dailyLimitInfo}</Text>
               <View style={styles.infoIcon}>
                 <Icon name="info" size={16} color={colors.buttonPrimary} />
               </View>
@@ -327,13 +386,13 @@ export function ApplicationFormPage() {
           {/* Delivery Dates - Only for goods */}
           {announcementType === 'goods' && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Առաքման ամսաթիվ*</Text>
+              <Text style={styles.fieldLabel}>{t('applications.deliveryDates')}*</Text>
               <TouchableOpacity 
                 style={styles.dateInput} 
                 onPress={handleOpenDatePicker}
               >
                 <Text style={styles.dateInputText}>
-                  {deliveryDates.length > 0 ? `Ընտրված է ${deliveryDates.length} ամսաթիվ` : 'Ընտրել'}
+                  {deliveryDates.length > 0 ? t('applications.selectedDates', { count: deliveryDates.length }) : t('common.select')}
                 </Text>
                 <Icon name="calendar" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -344,14 +403,14 @@ export function ApplicationFormPage() {
           {(announcementType === 'rent' || announcementType === 'service') && (
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>
-                {announcementType === 'rent' ? 'Վարձակալության միավոր*' : 'Ծառայության միավոր*'}
+                {announcementType === 'rent' ? t('applications.rentUnit') : t('applications.serviceUnit')}
               </Text>
               <TouchableOpacity 
                 style={styles.unitInput} 
                 onPress={() => setShowUnitPicker(true)}
               >
                 <Text style={[styles.unitInputText, !selectedUnit && styles.unitInputPlaceholder]}>
-                  {selectedUnit ? getUnitLabel(selectedUnit) : 'Ընտրել'}
+                  {selectedUnit ? getUnitLabel(selectedUnit) : t('common.select')}
                 </Text>
                 <Icon name="chevronDown" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -367,18 +426,18 @@ export function ApplicationFormPage() {
           {/* Quantity - Only for goods */}
           {announcementType === 'goods' && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Քանակ*</Text>
+              <Text style={styles.fieldLabel}>{t('applications.quantity')}*</Text>
               <TextInput
                 style={styles.quantityInput}
                 value={quantity}
                 onChangeText={setQuantity}
-                placeholder="Լրացնել"
+                placeholder={t('applications.fillIn')}
                 placeholderTextColor={colors.textTertiary}
                 keyboardType="numeric"
               />
               {dailyLimitInfo && (
                 <Text style={styles.quantityHint}>
-                  Քանակը չի կարող գերազանցել օրական սահմանաչափը
+                  {t('applications.quantityExceedsLimit', { limit: '', unit: '' }).split('(')[0].trim()}
                 </Text>
               )}
             </View>
@@ -386,12 +445,12 @@ export function ApplicationFormPage() {
 
           {/* Notes */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Նշումներ</Text>
+            <Text style={styles.fieldLabel}>{t('applications.notes')}</Text>
             <TextInput
               style={styles.textArea}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Լրացնել"
+              placeholder={t('applications.notesPlaceholder')}
               placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
@@ -401,7 +460,7 @@ export function ApplicationFormPage() {
 
           {/* Post-submission info */}
           <Text style={styles.postSubmissionInfo}>
-            Հայտի հաստատումից հետո դուք կարող եք տեսնել միմյանց կոնտակտային տվյալները
+            {t('applications.postSubmissionInfo')}
           </Text>
         </ScrollView>
 
@@ -412,7 +471,7 @@ export function ApplicationFormPage() {
             onPress={handleCancel}
             disabled={submitting}
           >
-            <Text style={styles.cancelButtonText}>Չեղարկել</Text>
+            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.submitButton, submitting && styles.submitButtonDisabled]} 
@@ -422,7 +481,7 @@ export function ApplicationFormPage() {
             {submitting ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={styles.submitButtonText}>Դիմել</Text>
+              <Text style={styles.submitButtonText}>{t('applications.submit')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -443,7 +502,7 @@ export function ApplicationFormPage() {
               />
               <View style={styles.calendarSheet}>
                 <View style={styles.pickerHeader}>
-                  <Text style={styles.pickerTitle}>Ընտրել առաքման ամսաթիվ</Text>
+                  <Text style={styles.pickerTitle}>{t('applications.deliveryDates')}</Text>
                   <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                     <Text style={styles.doneButton}>{t('common.done')}</Text>
                   </TouchableOpacity>
@@ -496,7 +555,7 @@ export function ApplicationFormPage() {
               />
               <View style={styles.pickerSheet}>
                 <View style={styles.pickerHeader}>
-                  <Text style={styles.pickerTitle}>Ընտրել միավոր</Text>
+                  <Text style={styles.pickerTitle}>{t('applications.unit')}</Text>
                   <TouchableOpacity onPress={() => setShowUnitPicker(false)}>
                     <Text style={styles.doneButton}>{t('common.done')}</Text>
                   </TouchableOpacity>

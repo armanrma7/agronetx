@@ -6,10 +6,12 @@ import { LoginPage, RegisterPage, ForgotPasswordPage, VerificationPage } from '.
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { LanguagesPage } from '../pages/settings'
 import { NewAnnouncementFormPage, AnnouncementDetailPage, ApplicationFormPage } from '../pages/main'
+import { AnnouncementApplicationsPage } from '../pages/profile/AnnouncementApplicationsPage'
 import { HomeTabs } from './HomeTabs'
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Pressable, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Pressable, Platform } from 'react-native'
 import { colors } from '../theme/colors'
 import Icon from '../components/Icon'
+import { LoaderScreen } from '../components/LoaderScreen'
 
 // ✅ Disable iOS glass effect at native level (iOS only)
 if (Platform.OS === 'ios') {
@@ -114,16 +116,6 @@ export function AppNavigator() {
               headerBackTitleVisible: false,
               headerBackVisible: false,
               headerBackButtonMenuEnabled: false,
-              headerTitle: () => (
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={{ fontSize: 18, color: colors.textPrimary }}>
-                    Նոր
-                  </Text>
-                  <Text style={{ fontSize: 18, color: colors.textPrimary }}>
-                    Հայտարարություն
-                  </Text>
-                </View>
-              ),
               // ✅ Wrapped in View to prevent iOS glass container
               headerLeft: () => (
                 <View style={{ marginLeft: 16, backgroundColor: 'transparent' }}>
@@ -179,31 +171,29 @@ export function AppNavigator() {
             animation: 'slide_from_right',
           }}
         />
+        <MainStack.Screen 
+          name="AnnouncementApplications" 
+          component={AnnouncementApplicationsPage}
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        />
         </MainStack.Navigator>
       )
     }
     return <AuthNavigator />
   }, [user, initialized])
 
-  // Show loading screen while initializing (checking saved session)
-  // This prevents showing login screen when user is already logged in
+  // Show loader screen while initializing (checking saved session)
   if (!initialized || (loading && initialLoad)) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Բեռնվում է...</Text>
-      </View>
-    )
+    return <LoaderScreen />
   }
 
   // Don't render NavigationContainer until we have a navigator
   if (!navigator) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Բեռնվում է...</Text>
-      </View>
-    )
+    return <LoaderScreen />
   }
 
   return (
@@ -212,18 +202,3 @@ export function AppNavigator() {
     </NavigationContainer>
   )
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: colors.textTertiary,
-  },
-})
-

@@ -12,6 +12,8 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.21.0",
     "@react-native-community/datetimepicker": "^8.5.1",
+    "@react-native-firebase/app": "^23.8.6",
+    "@react-native-firebase/messaging": "^23.8.6",
     "@react-native/new-app-screen": "0.83.0",
     "@react-navigation/bottom-tabs": "^7.8.12",
     "@react-navigation/native": "^7.1.25",
@@ -23,6 +25,7 @@
     "react-i18next": "^13.5.0",
     "react-native": "0.83.0",
     "react-native-calendars": "^1.1314.0",
+    "react-native-device-info": "^15.0.1",
     "react-native-gesture-handler": "^2.14.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-safe-area-context": "^5.6.2",

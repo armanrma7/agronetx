@@ -1,5 +1,8 @@
 {
   "appName": "AgronetX",
+  "splash": {
+    "tagline": "Здесь начинается сельскохозяйственный бизнес"
+  },
   "common": {
     "loading": "Загрузка...",
     "save": "Сохранить",
@@ -16,7 +19,6 @@
     "add": "Добавить",
     "clear": "Очистить",
     "done": "Готово",
-    "search": "Поиск",
     "noResults": "Результаты не найдены",
     "email": "Email",
     "whatsapp": "WhatsApp",
@@ -24,7 +26,14 @@
     "telegram": "Telegram",
     "farmer": "Фермер",
     "organization": "Организация",
-    "buyer": "Покупатель"
+    "buyer": "Покупатель",
+    "ok": "ОК",
+    "confirm": "Подтвердить",
+    "success": "Успех",
+    "error": "Ошибка",
+    "empty": "Пусто",
+    "currency": "драм",
+    "perDay": "день"
   },
   "register": {
     "title": "Регистрация",
@@ -66,7 +75,8 @@
     "status": {
       "active": "Активно",
       "completed": "Завершено",
-      "cancelled": "Отменено"
+      "cancelled": "Отменено",
+      "published": "Опубликовано"
     },
     "deadline": "Срок",
     "minQuantity": "Мин. количество",
@@ -75,10 +85,21 @@
     "applicants": "Заявители",
     "apply": "Подать заявку",
     "view": "Просмотр",
-    "empty": "Список пуст"
+    "empty": "Список пуст",
+    "cancelTitle": "Отменить объявление",
+    "cancelConfirm": "Вы уверены, что хотите отменить это объявление?",
+    "cancelled": "Объявление отменено",
+    "cancelError": "Не удалось отменить объявление",
+    "myApplications": "Моя заявка",
+    "myApplicationsPlural": "Мои заявки: {{count}}",
+    "applicantsCount": "Заявители: {{count}}",
+    "closeApplication": "Закрыть заявку",
+    "published": "Опубликовано",
+    "applied": "Подано",
+    "notFound": "Объявление не найдено"
   },
   "listings": {
-    "offer": "Предложение",
+    "offer": "Товар",
     "service": "Услуги",
     "rent": "Аренда",
     "status": {
@@ -117,7 +138,7 @@
     "newAnnouncement": "Новое",
     "announcement": "объявление",
     "product": "Товар",
-    "service": "Услуга",
+    "service": "Услуги",
     "rent": "Аренда",
     "applicationType": "Тип заявки",
     "group": "Группа",
@@ -177,6 +198,96 @@
     "locationRequired": "Требуется хотя бы одна пара регион/деревня",
     "publishSuccess": "Ваше объявление успешно опубликовано!",
     "publishError": "Не удалось опубликовать объявление. Пожалуйста, попробуйте еще раз."
+  },
+  "settings": {
+    "languages": "Языки"
+  },
+  "applications": {
+    "title": "Заявка",
+    "goodsApplication": "Заявка на товар",
+    "serviceApplication": "Заявка на услугу",
+    "rentApplication": "Заявка на аренду",
+    "deliveryDates": "Даты доставки",
+    "selectDates": "Выбрать",
+    "selectedDates": "Выбрано {{count}} дат",
+    "quantity": "Количество",
+    "unit": "Единица",
+    "rentUnit": "Единица аренды*",
+    "serviceUnit": "Единица услуги*",
+    "notes": "Примечание",
+    "notesPlaceholder": "Заполнить",
+    "submit": "Отправить",
+    "submitSuccess": "Ваша заявка успешно отправлена",
+    "submitError": "Не удалось отправить заявку",
+    "fillIn": "Заполнить",
+    "dateNotAvailable": "Дата недоступна",
+    "dateTaken": "Эта дата уже занята одобренной заявкой",
+    "selectAtLeastOneDate": "Пожалуйста, выберите хотя бы одну дату доставки",
+    "enterQuantity": "Пожалуйста, введите количество",
+    "quantityMustBePositive": "Количество должно быть положительным числом",
+    "quantityExceedsLimit": "Количество не может превышать дневной лимит ({{limit}} {{unit}})",
+    "selectUnit": "Пожалуйста, выберите единицу",
+    "loadError": "Не удалось загрузить объявление",
+    "closeTitle": "Закрыть заявку",
+    "closeConfirm": "Вы уверены, что хотите закрыть эту заявку?",
+    "closed": "Заявка закрыта",
+    "closeError": "Не удалось закрыть заявку",
+    "postSubmissionInfo": "После одобрения заявки вы сможете видеть контактные данные друг друга",
+    "applicantsCountLabel": "Заявители",
+    "transactionDate": "Дата сделки",
+    "location": "Местонахождение",
+    "view": "Просмотр",
+    "approve": "Одобрить",
+    "reject": "Отклонить",
+    "statusInProgress": "В процессе",
+    "statusApproved": "Одобрено",
+    "statusRejected": "Отклонено",
+    "approveConfirm": "Одобрить эту заявку?",
+    "rejectConfirm": "Отклонить эту заявку?"
+  },
+  "units": {
+    "daily": "Ежедневно",
+    "monthly": "Ежемесячно",
+    "yearly": "Ежегодно",
+    "hourly": "Почасово"
+  },
+  "months": {
+    "jan": "Янв",
+    "feb": "Фев",
+    "mar": "Мар",
+    "apr": "Апр",
+    "may": "Май",
+    "jun": "Июн",
+    "jul": "Июл",
+    "aug": "Авг",
+    "sep": "Сен",
+    "oct": "Окт",
+    "nov": "Ноя",
+    "dec": "Дек"
+  },
+  "announcementDetail": {
+    "active": "Активно",
+    "closed": "Закрыто",
+    "sell": "Продажа",
+    "buy": "Покупка",
+    "rent": "Аренда",
+    "serviceOffer": "Предложение услуги",
+    "contact": "Контакт",
+    "availability": "Доступность",
+    "price": "Цена",
+    "limit": "Лимит",
+    "availableFrom": "Доступно с",
+    "region": "Регион:",
+    "village": "Деревня:",
+    "categoryFruit": "Фрукты",
+    "categoryWork": "Работа",
+    "categoryEquipment": "Сельскохозяйственная техника",
+    "defaultItemName": "Абрикос",
+    "call": "Позвонить"
+  },
+  "favorites": {
+    "empty": "У вас нет избранных объявлений",
+    "toggleError": "Не удалось добавить/удалить избранное"
   }
 }
 

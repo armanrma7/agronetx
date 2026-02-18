@@ -9,6 +9,8 @@ import {
   Linking,
   Dimensions,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next'
@@ -35,11 +37,13 @@ export function AnnouncementDetailPage() {
 
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
   const [loading, setLoading] = useState(true)
+  const [cancelling, setCancelling] = useState(false)
   const [contactModalVisible, setContactModalVisible] = useState(false)
   const [regionNames, setRegionNames] = useState<string[]>([])
   const [villageNames, setVillageNames] = useState<string[]>([])
   const [visibleRegionsCount, setVisibleRegionsCount] = useState(2)
   const [visibleVillagesCount, setVisibleVillagesCount] = useState(2)
+  const [hasApprovedApplicationFromApi, setHasApprovedApplicationFromApi] = useState(false)
    
   useEffect(() => {
     fetchAnnouncement()
@@ -48,6 +52,29 @@ export function AnnouncementDetailPage() {
       announcementsAPI.trackAnnouncementViewAPI(announcementId)
     }
   }, [announcementId])
+
+  // When announcement is loaded and we're not the owner: ensure Contact shows if current user has an approved application
+  // (detail API might not include applications for viewers, so we fetch via /applications/announcement/{id})
+  useEffect(() => {
+    if (!announcement?.id || !user?.id || announcement.owner_id === user.id) {
+      setHasApprovedApplicationFromApi(false)
+      return
+    }
+    let cancelled = false
+    announcementsAPI.getApplicationsByAnnouncementAPI(announcement.id)
+      .then((list) => {
+        if (cancelled) return
+        const myId = String(user.id)
+        const hasMineApproved = list.some(
+          (app) => String(app.user_id) === myId && /^(approved|accepted)$/i.test(app.status || '')
+        )
+        setHasApprovedApplicationFromApi(hasMineApproved)
+      })
+      .catch(() => {
+        if (!cancelled) setHasApprovedApplicationFromApi(false)
+      })
+    return () => { cancelled = true }
+  }, [announcement?.id, user?.id, announcement?.owner_id])
 
   // Extract region and village names from announcement when loaded
   useEffect(() => {
@@ -74,8 +101,8 @@ export function AnnouncementDetailPage() {
           const regions = announcementData.region_names || announcementData.location_region_names || []
           if (regions.length > 0) {
             regionNamesList = regions
-          } else if (announcement.location_region && typeof announcement.location_region === 'string' && !announcement.location_region.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            regionNamesList = [announcement.location_region]
+          } else if (announcement.regions?.[0] && typeof announcement.regions[0] === 'string' && !announcement.regions[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            regionNamesList = [announcement.regions[0]]
           }
         }
         
@@ -103,8 +130,8 @@ export function AnnouncementDetailPage() {
           const villages = announcementData.village_names || announcementData.location_village_names || []
           if (villages.length > 0) {
             villageNamesList = villages
-          } else if (announcement.location_city && typeof announcement.location_city === 'string' && !announcement.location_city.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            villageNamesList = [announcement.location_city]
+          } else if (announcement.villages?.[0] && typeof announcement.villages[0] === 'string' && !announcement.villages[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            villageNamesList = [announcement.villages[0]]
           }
         }
         
@@ -136,16 +163,17 @@ export function AnnouncementDetailPage() {
   const formatDateRange = (startDate: string, endDate?: string) => {
     const start = new Date(startDate)
     const end = endDate ? new Date(endDate) : start
-    const months = ['Հուն', 'Փետ', 'Մար', 'Ապր', 'Մայ', 'Հուն', 'Հուլ', 'Օգս', 'Սեպ', 'Հոկ', 'Նոյ', 'Դեկ']
+    const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+    const months = monthKeys.map(key => t(`months.${key}`))
     return `${months[start.getMonth()]}. ${start.getDate()} - ${months[end.getMonth()]}. ${end.getDate()}, ${end.getFullYear()}`
   }
 
   const getStatusLabel = (status: string) => {
     // Show "Ակտիվ" if published, otherwise "Փակված"
     if (status === 'published' || status === 'active') {
-      return 'Ակտիվ'
+      return t('announcementDetail.active')
     }
-    return 'Փակված'
+    return t('announcementDetail.closed')
   }
 
   const getStatusColor = (status: string) => {
@@ -167,25 +195,26 @@ export function AnnouncementDetailPage() {
     
     // Check API type first (sell/buy/rent)
     if (subtype === 'sell' || subtype === 'offer') {
-      return 'Վաճառք'
+      return t('announcementDetail.sell')
     }
     if (subtype === 'buy' || subtype === 'requirement') {
-      return 'Գնում'
+      return t('announcementDetail.buy')
     }
     if (subtype === 'rent') {
-      return 'Վարձակալություն'
+      return t('announcementDetail.rent')
     }
     
-    // Fallback to category
-    switch (category) {
+    // Fallback to category (type is sell/buy, category is goods/service/rent)
+    const cat = announcement.category || category
+    switch (cat) {
       case 'goods':
-        return 'Վաճառք'
+        return t('announcementDetail.sell')
       case 'service':
-        return 'Ծառայության առաջարկ'
+        return t('announcementDetail.serviceOffer')
       case 'rent':
-        return 'Վարձակալություն'
+        return t('announcementDetail.rent')
       default:
-        return 'Վաճառք'
+        return t('announcementDetail.sell')
     }
   }
 
@@ -207,14 +236,14 @@ export function AnnouncementDetailPage() {
       return announcementData.category_name
     }
     
-    // Fallback to type-based labels
-    switch (announcement.type) {
+    // Fallback to category-based labels
+    switch (announcement.category) {
       case 'goods':
-        return 'Միրգ'
+        return t('announcementDetail.categoryFruit')
       case 'service':
-        return 'Աշխատանք'
+        return t('announcementDetail.categoryWork')
       case 'rent':
-        return 'Գյուղատնտեսական տեխնիկա'
+        return t('announcementDetail.categoryEquipment')
       default:
         return ''
     }
@@ -249,8 +278,9 @@ export function AnnouncementDetailPage() {
       return announcementData.name_en
     }
     
-    // Fallback to title
-    return announcement.title || announcementData.item_name || 'Ծիրան'
+    // Fallback to item names or legacy title
+    const item = announcement.item
+    return (item?.name_am || item?.name_en || item?.name_ru) || (announcementData.title || announcementData.item_name) || t('announcementDetail.defaultItemName')
   }
 
   const getInitials = (name?: string, surname?: string) => {
@@ -274,22 +304,68 @@ export function AnnouncementDetailPage() {
     if (parent) {
       parent.navigate('ApplicationForm', {
         announcementId: announcement.id,
-        announcementType: announcement.type,
-        announcementTitle: announcement.title,
+        announcementType: announcement.category as 'goods' | 'service' | 'rent',
+        announcementTitle: getItemLabel(announcement),
       })
     } else {
       ;(navigation as any).navigate('ApplicationForm', {
         announcementId: announcement.id,
-        announcementType: announcement.type,
-        announcementTitle: announcement.title,
+        announcementType: announcement.category as 'goods' | 'service' | 'rent',
+        announcementTitle: getItemLabel(announcement),
       })
     }
   }
 
-  const handleCancel = () => {
+  const handleEdit = () => {
     if (!announcement) return
-    console.log('Cancel announcement:', announcement.id)
-    // TODO: Implement cancel functionality
+    
+    const parent = navigation.getParent()
+    if (parent) {
+      parent.navigate('NewAnnouncementForm', {
+        type: announcement.category as 'goods' | 'service' | 'rent',
+        announcementId: announcement.id,
+        announcement: announcement,
+      })
+    } else {
+      ;(navigation as any).navigate('NewAnnouncementForm', {
+        type: announcement.category as 'goods' | 'service' | 'rent',
+        announcementId: announcement.id,
+        announcement: announcement,
+      })
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!announcement) return
+    
+    setCancelling(true)
+    try {
+      // Call the cancel API
+      await announcementsAPI.cancelAnnouncementAPI(announcement.id)
+      
+      // Refresh the announcement data
+      await fetchAnnouncement()
+      
+      // Show success message or navigate back
+      Alert.alert(
+        t('common.success') || 'Հաջողություն',
+        t('announcements.cancelled') || 'Հայտարարությունը չեղարկված է',
+        [
+          {
+            text: t('common.ok') || 'Լավ',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      )
+    } catch (error: any) {
+      console.error('Error cancelling announcement:', error)
+      Alert.alert(
+        t('common.error') || 'Սխալ',
+        error.response?.data?.message || t('announcements.cancelError') || 'Հայտարարությունը չեղարկելը ձախողվեց'
+      )
+    } finally {
+      setCancelling(false)
+    }
   }
 
   const handleSearchPress = () => {
@@ -312,7 +388,7 @@ export function AnnouncementDetailPage() {
           />
           
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Բեռնվում է...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -331,21 +407,51 @@ export function AnnouncementDetailPage() {
           />
           
           <View style={styles.loadingContainer}>
-            <Text style={styles.errorText}>Հայտարարությունը չի գտնվել</Text>
+            <Text style={styles.errorText}>{t('announcements.notFound')}</Text>
           </View>
         </View>
       </SafeAreaView>
     )
   }
-
-  const announcementData = announcement as any
-  const startDate = announcementData.date_from || announcement.expires_at || announcement.created_at
-  const endDate = announcementData.date_to || announcement.expires_at || announcement.created_at
-  const images = announcementData.images || []
-  const dailyLimit = announcementData.daily_limit
+  
+  const startDate = announcement.date_from || announcement.created_at
+  const endDate = announcement.date_to || announcement.created_at
+  const images = announcement.images || []
+  console.info('announcement', images)
+  const dailyLimit = announcement.daily_limit ? Number(announcement.daily_limit) : 0
   const isPublishedStatus = isPublished(announcement.status)
-  const isMyAnnouncement = user?.id && announcement.user_id === user.id
-  console.log('isMyAnnouncement', announcement)
+  const isMyAnnouncement = user?.id && announcement.owner_id === user.id
+  const hasUserApplied = (): boolean => {
+    if (!user?.id || !announcement) return false
+    const a = announcement as any
+    if (a.my_applications_count !== undefined && a.my_applications_count > 0) return true
+    const apps = a.applications
+    if (Array.isArray(apps) && apps.some((app: any) => (app.user_id || app.userId) === user.id)) return true
+    return false
+  }
+  const hasApplied = hasUserApplied()
+
+  /**
+   * Contact: show only when there is an approved application linking the current user (me) and this announcement.
+   * Check (1) applicants on the announcement and (2) fetched applications list.
+   */
+  const isApprovedStatus = (status: string | undefined): boolean =>
+    /^(approved|accepted)$/i.test((status || '').trim())
+
+  const hasApprovedApplication = (): boolean => {
+    if (!user?.id || !announcement) return false
+    const a = announcement as any
+    const apps = a.applications
+    if (!Array.isArray(apps) || apps.length === 0) return false
+    const myId = String(user.id)
+    return apps.some((app: any) => {
+      const applicantId = app.applicant_id ?? app.user_id ?? app.userId
+      if (!applicantId || !isApprovedStatus(app.status)) return false
+      return String(applicantId) === myId
+    })
+  }
+
+  const canContact = hasApprovedApplication() || hasApprovedApplicationFromApi
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.buttonPrimary }}>
@@ -373,9 +479,7 @@ export function AnnouncementDetailPage() {
               <View style={styles.metricItem}>
                 <Icon name="people" size={16} color={colors.textSecondary} />
                 <Text style={styles.metricText}>
-                  {(announcement as any).applications_count !== undefined 
-                    ? (announcement as any).applications_count 
-                    : (announcement.participants_count || 0)}
+                  {announcement.applications_count ?? 0}
                 </Text>
               </View>
             </View>
@@ -415,27 +519,27 @@ export function AnnouncementDetailPage() {
           {/* Availability and Price Row */}
           <View style={styles.priceAvailabilityRow}>
             <View style={styles.priceAvailabilityItem}>
-              <Text style={styles.priceAvailabilityLabel}>Առկայություն</Text>
+              <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
               <Text style={styles.priceAvailabilityValue}>
-                {announcement.quantity?.toLocaleString()} {announcement.quantity_unit}
+                {Number(announcement.available_quantity || 0).toLocaleString()} {announcement.unit}
               </Text>
             </View>
             <View style={styles.priceAvailabilityItem}>
-              <Text style={styles.priceAvailabilityLabel}>Գին</Text>
+              <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.price')}</Text>
               <Text style={styles.priceAvailabilityValue}>
-                {announcement.price.toLocaleString()} դր./{announcement.price_unit}
+                {Number(announcement.price || 0).toLocaleString()} {t('common.currency')}/{(announcement as any).price_unit ?? announcement.unit}
               </Text>
             </View>
           </View>
 
           {/* Availability Limit - Only for goods */}
-          {announcement.type === 'goods' && dailyLimit && (
+          {announcement.category === 'goods' && dailyLimit > 0 && (
             <View style={styles.limitRow}>
               <View style={styles.limitLabelContainer}>
-                <Text style={styles.limitLabel}>Սահմանաչափ</Text>
+                <Text style={styles.limitLabel}>{t('announcementDetail.limit')}</Text>
                 <Icon name="info" size={16} color={colors.primary} />
               </View>
-              <Text style={styles.limitValue}>{dailyLimit.toLocaleString()} {announcement.quantity_unit}/օր.</Text>
+              <Text style={styles.limitValue}>{dailyLimit.toLocaleString()} {announcement.unit}/{t('common.perDay')}</Text>
             </View>
           )}
 
@@ -443,7 +547,7 @@ export function AnnouncementDetailPage() {
           {(startDate || endDate) && (
             <View style={styles.dateRow}>
               <Icon name="calendar" size={20} color={colors.textSecondary} />
-              <Text style={styles.dateLabel}>Հասանելի է՝</Text>
+              <Text style={styles.dateLabel}>{t('announcementDetail.availableFrom')}</Text>
               <Text style={styles.dateValue}>{formatDateRange(startDate, endDate)}</Text>
             </View>
           )}
@@ -455,7 +559,7 @@ export function AnnouncementDetailPage() {
               {regionNames.length > 0 && (
                 <View style={styles.locationRow}>
                   <Icon name="location" size={20} color={colors.textSecondary} />
-                  <Text style={styles.locationLabel}>Մարզ՝</Text>
+                  <Text style={styles.locationLabel}>{t('announcementDetail.region')}</Text>
                   <View style={styles.locationValueContainer}>
                     <Text style={styles.locationValue}>
                       {regionNames.slice(0, visibleRegionsCount).join(', ')}
@@ -493,7 +597,7 @@ export function AnnouncementDetailPage() {
               {villageNames.length > 0 && (
                 <View style={styles.locationRow}>
                   <Icon name="location" size={20} color={colors.textSecondary} />
-                  <Text style={styles.locationLabel}>Գյուղ՝</Text>
+                  <Text style={styles.locationLabel}>{t('announcementDetail.village')}</Text>
                   <View style={styles.locationValueContainer}>
                     <Text style={styles.locationValue}>
                       {villageNames.slice(0, visibleVillagesCount).join(', ')}
@@ -531,24 +635,43 @@ export function AnnouncementDetailPage() {
 
         </ScrollView>
 
-        {/* Action Buttons - Only show if published */}
-        {isPublishedStatus && (
+        {/* Action Buttons */}
+        {isMyAnnouncement ? (
+          // Owner's buttons: Edit and Cancel (if not published), Cancel only (if published and not cancelled)
           <View style={styles.actionButtons}>
-            {isMyAnnouncement ? (
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                <Text style={styles.cancelButtonText}>Չեղարկել</Text>
+            {!isPublishedStatus && (
+              <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                <Text style={styles.editButtonText}>{t('common.edit')}</Text>
               </TouchableOpacity>
-            ) : (
-              <>
-                <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-                  <Text style={styles.contactButtonText}>Կապ</Text>
+            )}
+            {announcement.status !== 'canceled' && (
+              cancelling ? (
+                <View style={styles.cancelButton}>
+                  <ActivityIndicator size="small" color={colors.error} />
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-                  <Text style={styles.applyButtonText}>Դիմել</Text>
-                </TouchableOpacity>
-              </>
+              )
             )}
           </View>
+        ) : (
+          // Non-owner buttons: Contact (if approved application) and Apply (if not applied)
+          isPublishedStatus && (
+            <View style={styles.actionButtons}>
+              {canContact && (
+                <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+                  <Text style={styles.contactButtonText}>{t('announcementDetail.contact')}</Text>
+                </TouchableOpacity>
+              )}
+              {!hasApplied && (
+                <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+                  <Text style={styles.applyButtonText}>{t('announcements.apply')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )
         )}
 
       
@@ -567,7 +690,7 @@ export function AnnouncementDetailPage() {
           />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Կոնտակտային Տվյալներ</Text>
+              <Text style={styles.modalTitle}>{t('profile.contactDetails')}</Text>
               <TouchableOpacity onPress={() => setContactModalVisible(false)}>
                 <Icon name="close" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
@@ -576,38 +699,38 @@ export function AnnouncementDetailPage() {
             <View style={styles.contactProfile}>
               <View style={styles.profileAvatar}>
                 <Text style={styles.profileAvatarText}>
-                  {getInitials(announcement.user?.name, announcement.user?.surname)}
+                  {announcement.owner?.full_name ? getInitials(announcement.owner.full_name.trim().split(/\s+/)[0], announcement.owner.full_name.trim().split(/\s+/)[1]) : '-'}
                 </Text>
               </View>
               <Text style={styles.contactName}>
-                {announcement.user?.name} {announcement.user?.surname}
+                {announcement.owner?.full_name ?? '-'}
               </Text>
-              <Text style={styles.contactProfession}>Ֆերմեր</Text>
+              <Text style={styles.contactProfession}>{t('common.farmer')}</Text>
             </View>
 
             <View style={styles.contactInfo}>
               <View style={styles.contactRow}>
-                <Text style={styles.contactLabel}>Հեռախոս</Text>
-                <Text style={styles.contactValue}>+374 94 98 76 54</Text>
+                <Text style={styles.contactLabel}>{t('profile.primaryNumber')}</Text>
+                <Text style={styles.contactValue}>{announcement.owner?.phone || '-'}</Text>
               </View>
 
               <View style={styles.contactRow}>
-                <Text style={styles.contactLabel}>Մարզ</Text>
-                <Text style={styles.contactValue}>{announcement.location_region}</Text>
+                <Text style={styles.contactLabel}>{t('addAnnouncement.region')}</Text>
+                <Text style={styles.contactValue}>{announcement.owner?.region ? (announcement.owner.region.name_am || announcement.owner.region.name_en || announcement.owner.region.name_ru) : (announcement as any).owner_region_name || '-'}</Text>
               </View>
 
               <View style={styles.contactRow}>
-                <Text style={styles.contactLabel}>Գյուղ</Text>
-                <Text style={styles.contactValue}>{announcement.location_city || '-'}</Text>
+                <Text style={styles.contactLabel}>{t('addAnnouncement.village')}</Text>
+                <Text style={styles.contactValue}>{announcement.owner?.village ? (announcement.owner.village.name_am || announcement.owner.village.name_en || announcement.owner.village.name_ru) : (announcement as any).owner_village_name || '-'}</Text>
               </View>
             </View>
 
             <TouchableOpacity
               style={styles.callButton}
-              onPress={() => handleCall('+37494987654')}
+              onPress={() => handleCall(announcement.owner?.phone || '')}
             >
               <Icon name="phone" size={20} color={colors.white} />
-              <Text style={styles.callButtonText}>Զանգահարել</Text>
+              <Text style={styles.callButtonText}>{t('announcementDetail.call')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -883,6 +1006,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.error, // Red text
+  },
+  editButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 24,
+    backgroundColor: colors.buttonPrimary,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.white,
   },
   modalOverlay: {
     flex: 1,

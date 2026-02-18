@@ -53,35 +53,35 @@ export function ListingCard({ listing, onApply, onView }: ListingCardProps) {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>{listing.title}</Text>
+        <Text style={styles.title}>{listing.item?.name_am || listing.item?.name_en || listing.item?.name_ru || (listing as any).title || ''}</Text>
         <Text style={styles.price}>
-          {listing.price.toLocaleString()} {listing.price_unit}
+          {Number(listing.price || 0).toLocaleString()} {(listing as any).price_unit ?? listing.unit}
         </Text>
       </View>
 
       {/* Details */}
-      {listing.quantity && (
+      {listing.available_quantity ? (
         <Text style={styles.detail}>
-          {t('listings.minQuantity')}: {listing.quantity.toLocaleString()} {listing.quantity_unit}
+          {t('listings.minQuantity')}: {Number(listing.available_quantity).toLocaleString()} {listing.unit}
         </Text>
-      )}
+      ) : null}
 
-      {listing.description && (
+      {listing.description ? (
         <Text style={styles.detail}>{listing.description}</Text>
-      )}
+      ) : null}
 
       <Text style={styles.detail}>
-        {t('listings.location')}: {listing.location_region}, {listing.location_city || ''}
+        {t('listings.location')}: {listing.regions?.length ? listing.regions.join(', ') : ''}{listing.regions?.length && listing.villages?.length ? ', ' : ''}{listing.villages?.length ? listing.villages.join(', ') : ''}
       </Text>
 
       {/* Footer */}
       <View style={styles.footer}>
-        {listing.participants_count && (
+        {listing.applications_count != null && listing.applications_count > 0 ? (
           <View style={styles.participantsRow}>
             <Icon name="people" size={16} color={colors.textTertiary} />
-            <Text style={styles.participantsText}>{t('listings.applicants')}: {listing.participants_count}</Text>
+            <Text style={styles.participantsText}>{t('listings.applicants')}: {listing.applications_count}</Text>
           </View>
-        )}
+        ) : null}
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.buttonPrimary}

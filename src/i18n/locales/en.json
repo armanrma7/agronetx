@@ -1,5 +1,8 @@
 {
   "appName": "AgronetX",
+  "splash": {
+    "tagline": "Here begins the agricultural business"
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",
@@ -16,7 +19,6 @@
     "add": "Add",
     "clear": "Clear",
     "done": "Done",
-    "search": "Search",
     "noResults": "No results found",
     "email": "Email",
     "whatsapp": "WhatsApp",
@@ -24,7 +26,14 @@
     "telegram": "Telegram",
     "farmer": "Farmer",
     "organization": "Organization",
-    "buyer": "Buyer"
+    "buyer": "Buyer",
+    "ok": "OK",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "empty": "Empty",
+    "currency": "AMD",
+    "perDay": "day"
   },
   "register": {
     "title": "Registration",
@@ -103,24 +112,6 @@
     "notifications": "Notifications",
     "myAnnouncements": "My"
   },
-  "announcements": {
-    "offer": "Offers",
-    "service": "Services",
-    "rent": "Rent",
-    "status": {
-      "active": "Active",
-      "completed": "Completed",
-      "cancelled": "Cancelled"
-    },
-    "deadline": "Deadline",
-    "minQuantity": "Min quantity",
-    "availableQuantity": "Available quantity",
-    "location": "Region/Village",
-    "applicants": "Applicants",
-    "apply": "Apply",
-    "view": "View",
-    "empty": "List is empty"
-  },
   "listings": {
     "offer": "Offers",
     "service": "Services",
@@ -128,7 +119,8 @@
     "status": {
       "active": "Active",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "published": "Published"
     },
     "deadline": "Deadline",
     "minQuantity": "Min quantity",
@@ -137,7 +129,18 @@
     "applicants": "Applicants",
     "apply": "Apply",
     "view": "View",
-    "empty": "List is empty"
+    "empty": "List is empty",
+    "cancelTitle": "Cancel Announcement",
+    "cancelConfirm": "Are you sure you want to cancel this announcement?",
+    "cancelled": "Announcement cancelled",
+    "cancelError": "Failed to cancel announcement",
+    "myApplications": "My application",
+    "myApplicationsPlural": "My applications: {{count}}",
+    "applicantsCount": "Applicants: {{count}}",
+    "closeApplication": "Close Application",
+    "published": "Published",
+    "applied": "Applied",
+    "notFound": "Announcement not found"
   },
   "addAnnouncement": {
     "title": "New Announcement",
@@ -273,5 +276,113 @@
   "search": {
     "placeholder": "Search...",
     "recentSearches": "Recent searches"
+  },
+  "favorites": {
+    "empty": "You have no favorite announcements",
+    "toggleError": "Failed to add/remove favorite"
+  },
+  "settings": {
+    "languages": "Languages"
+  },
+  "applications": {
+    "title": "Application",
+    "goodsApplication": "Goods Application",
+    "serviceApplication": "Service Application",
+    "rentApplication": "Rent Application",
+    "deliveryDates": "Delivery Dates",
+    "selectDates": "Select",
+    "selectedDates": "{{count}} dates selected",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "rentUnit": "Rent Unit*",
+    "serviceUnit": "Service Unit*",
+    "notes": "Notes",
+    "notesPlaceholder": "Fill in",
+    "submit": "Submit",
+    "submitSuccess": "Your application has been submitted successfully",
+    "submitError": "Failed to submit application",
+    "fillIn": "Fill in",
+    "dateNotAvailable": "Date not available",
+    "dateTaken": "This date is already taken by an approved application",
+    "selectAtLeastOneDate": "Please select at least one delivery date",
+    "enterQuantity": "Please enter quantity",
+    "quantityMustBePositive": "Quantity must be a positive number",
+    "quantityExceedsLimit": "Quantity cannot exceed daily limit ({{limit}} {{unit}})",
+    "selectUnit": "Please select unit",
+    "loadError": "Failed to load announcement",
+    "closeTitle": "Close Application",
+    "closeConfirm": "Are you sure you want to close this application?",
+    "closed": "Application closed",
+    "closeError": "Failed to close application",
+    "postSubmissionInfo": "After application approval, you can see each other's contact details"
+  },
+  "announcements": {
+    "offer": "Goods",
+    "service": "Services",
+    "rent": "Rent",
+    "status": {
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "published": "Published"
+    },
+    "deadline": "Deadline",
+    "minQuantity": "Min quantity",
+    "availableQuantity": "Available quantity",
+    "location": "Region/Village",
+    "applicants": "Applicants",
+    "apply": "Apply",
+    "view": "View",
+    "empty": "List is empty",
+    "cancelTitle": "Cancel Announcement",
+    "cancelConfirm": "Are you sure you want to cancel this announcement?",
+    "cancelled": "Announcement cancelled",
+    "cancelError": "Failed to cancel announcement",
+    "myApplications": "My application",
+    "myApplicationsPlural": "My applications: {{count}}",
+    "applicantsCount": "Applicants: {{count}}",
+    "closeApplication": "Close Application",
+    "published": "Published",
+    "applied": "Applied"
+  },
+  "units": {
+    "daily": "Daily",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "hourly": "Hourly"
+  },
+  "months": {
+    "jan": "Jan",
+    "feb": "Feb",
+    "mar": "Mar",
+    "apr": "Apr",
+    "may": "May",
+    "jun": "Jun",
+    "jul": "Jul",
+    "aug": "Aug",
+    "sep": "Sep",
+    "oct": "Oct",
+    "nov": "Nov",
+    "dec": "Dec"
+  },
+  "announcementDetail": {
+    "active": "Active",
+    "closed": "Closed",
+    "sell": "Sell",
+    "buy": "Buy",
+    "rent": "Rent",
+    "serviceOffer": "Service Offer",
+    "contact": "Contact",
+    "availability": "Availability",
+    "price": "Price",
+    "limit": "Limit",
+    "availableFrom": "Available from",
+    "region": "Region:",
+    "village": "Village:",
+    "categoryFruit": "Fruit",
+    "categoryWork": "Work",
+    "categoryEquipment": "Agricultural Equipment",
+    "defaultItemName": "Apricot",
+    "call": "Call"
   }
 }

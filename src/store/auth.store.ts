@@ -119,8 +119,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             .then((fetchedProfile) => {
               set({ profile: fetchedProfile })
             })
-            .catch((error) => {
-              console.error('Error fetching profile after login:', error)
+            .catch((error: any) => {
+              // Only log non-404 errors (404 means profile endpoint doesn't exist yet)
+              if (error.response?.status !== 404) {
+                console.error('Error fetching profile after login:', error)
+              }
               // Don't throw - login is still successful
             })
         }
@@ -381,8 +384,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               .then((profile) => {
                 set({ profile })
               })
-              .catch((error) => {
-                console.error('Error fetching profile during session restore:', error)
+              .catch((error: any) => {
+                // Only log non-404 errors (404 means profile endpoint doesn't exist yet)
+                if (error.response?.status !== 404) {
+                  console.error('Error fetching profile during session restore:', error)
+                }
               })
           }
         } else {

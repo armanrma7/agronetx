@@ -26,9 +26,20 @@ const LANGUAGES: Language[] = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
 ]
 
+// Get language name based on current language
+const getLanguageName = (code: string, currentLang: string): string => {
+  const names: Record<string, Record<string, string>> = {
+    hy: { hy: 'Հայերեն', ru: 'Ռուսերեն', en: 'Անգլերեն' },
+    ru: { hy: 'Армянский', ru: 'Русский', en: 'Английский' },
+    en: { hy: 'Armenian', ru: 'Russian', en: 'English' },
+  }
+  return names[currentLang]?.[code] || LANGUAGES.find(l => l.code === code)?.name || code
+}
+
 export function LanguagesPage() {
   const navigation = useNavigation()
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
+  const currentLang = (i18n.language || 'hy').split('-')[0]
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'hy')
 
   const handleSearchPress = () => {
@@ -63,7 +74,7 @@ export function LanguagesPage() {
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           {/* Title */}
-          <Text style={styles.pageTitle}>Լեզուներ</Text>
+          <Text style={styles.pageTitle}>{t('settings.languages')}</Text>
 
           {/* Language Options */}
           <View style={styles.languageList}>
@@ -75,7 +86,7 @@ export function LanguagesPage() {
               >
                 <View style={styles.languageLeft}>
                   <Text style={styles.flag}>{language.flag}</Text>
-                  <Text style={styles.languageName}>{language.name}</Text>
+                  <Text style={styles.languageName}>{getLanguageName(language.code, currentLang)}</Text>
                 </View>
                 <View style={styles.languageRight}>
                   {selectedLanguage === language.code && (
