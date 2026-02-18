@@ -20,6 +20,9 @@ DerivedData
 *.hmap
 *.ipa
 *.xcuserstate
+*.plist
+*.p8
+*.certSigningRequest
 ios/.xcode.env.local
 ios/Pods/
 ios/build/
@@ -123,8 +126,6 @@ web-build/
 *.key
 *.cert
 *.crt
-*.p8
-*.certSigningRequest
 
 # Logs
 #
