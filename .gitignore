@@ -123,6 +123,8 @@ web-build/
 *.key
 *.cert
 *.crt
+*.p8
+*.certSigningRequest
 
 # Logs
 #
