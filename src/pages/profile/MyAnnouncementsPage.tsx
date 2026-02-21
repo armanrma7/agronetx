@@ -26,7 +26,6 @@ export function MyAnnouncementsPage() {
   const limit = 8
   const abortControllerRef = useRef<AbortController | null>(null)
   useEffect(() => {
-    // Abort previous request if it exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
@@ -35,7 +34,6 @@ export function MyAnnouncementsPage() {
     const abortController = new AbortController()
     abortControllerRef.current = abortController
     
-    // Clear announcements immediately when tab changes
     setLoading(true)
     setLoadingMore(false)
     setAnnouncements([])
@@ -132,37 +130,32 @@ export function MyAnnouncementsPage() {
     try {
       // Show confirmation dialog
       Alert.alert(
-        t('announcements.cancelTitle') || 'Չեղարկել հայտարարությունը',
-        t('announcements.cancelConfirm') || 'Դուք համոզված եք, որ ցանկանում եք չեղարկել այս հայտարարությունը?',
+        t('announcements.cancelTitle'),
+        t('announcements.cancelConfirm'),
         [
           {
-            text: t('common.cancel') || 'Չեղարկել',
+            text: t('common.cancel'),
             style: 'cancel',
           },
           {
-            text: t('common.confirm') || 'Հաստատել',
+            text: t('common.confirm'),
             style: 'destructive',
             onPress: async () => {
               setCancellingId(announcement.id)
               try {
-                // Call the cancel API
                 await announcementsAPI.cancelAnnouncementAPI(announcement.id)
-                
-                // Refresh the announcements list
                 setPage(1)
                 setHasMore(true)
                 await fetchAnnouncements(1, true)
-                
-                // Show success message
                 Alert.alert(
-                  t('common.success') || 'Հաջողություն',
-                  t('announcements.cancelled') || 'Հայտարարությունը չեղարկված է'
+                  t('common.success'),
+                  t('announcements.cancelled')
                 )
               } catch (error: any) {
                 console.error('Error cancelling announcement:', error)
                 Alert.alert(
-                  t('common.error') || 'Սխալ',
-                  error.response?.data?.message || t('announcements.cancelError') || 'Հայտարարությունը չեղարկելը ձախողվեց'
+                  t('common.error'),
+                  error.response?.data?.message || t('announcements.cancelError')
                 )
               } finally {
                 setCancellingId(null)
@@ -180,37 +173,32 @@ export function MyAnnouncementsPage() {
     try {
       // Show confirmation dialog
       Alert.alert(
-        t('applications.closeTitle') || 'Փակել դիմումը',
-        t('applications.closeConfirm') || 'Դուք համոզված եք, որ ցանկանում եք փակել այս դիմումը?',
+        t('applications.closeTitle'),
+        t('applications.closeConfirm'),
         [
           {
-            text: t('common.cancel') || 'Չեղարկել',
+            text: t('common.cancel'),
             style: 'cancel',
           },
           {
-            text: t('common.confirm') || 'Հաստատել',
+            text: t('common.confirm'),
             style: 'destructive',
             onPress: async () => {
               setClosingApplicationId(applicationId)
               try {
-                // Call the close API
                 await announcementsAPI.closeApplicationAPI(applicationId)
-                
-                // Refresh the announcements list
                 setPage(1)
                 setHasMore(true)
                 await fetchAnnouncements(1, true)
-                
-                // Show success message
                 Alert.alert(
-                  t('common.success') || 'Հաջողություն',
-                  t('applications.closed') || 'Դիմումը փակված է'
+                  t('common.success'),
+                  t('applications.closed')
                 )
               } catch (error: any) {
                 console.error('Error closing application:', error)
                 Alert.alert(
-                  t('common.error') || 'Սխալ',
-                  error.response?.data?.message || t('applications.closeError') || 'Դիմումը փակելը ձախողվեց'
+                  t('common.error'),
+                  error.response?.data?.message || t('applications.closeError')
                 )
               } finally {
                 setClosingApplicationId(null)
@@ -236,9 +224,9 @@ export function MyAnnouncementsPage() {
   const handleApplicationsPress = (announcement: Announcement) => {
     const parent = navigation.getParent()
     if (parent) {
-      (parent as any).navigate('AnnouncementApplications', { announcementId: announcement.id })
+      (parent as any).navigate('AnnouncementApplications', { announcementId: announcement.id, announcement })
     } else {
-      ;(navigation as any).navigate('AnnouncementApplications', { announcementId: announcement.id })
+      ;(navigation as any).navigate('AnnouncementApplications', { announcementId: announcement.id, announcement })
     }
   }
 
@@ -270,7 +258,6 @@ export function MyAnnouncementsPage() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'published' && styles.tabActive]}
           onPress={() => {
-            // Abort previous request
             if (abortControllerRef.current) {
               abortControllerRef.current.abort()
             }
@@ -288,7 +275,6 @@ export function MyAnnouncementsPage() {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'applied' && styles.tabActive]}
           onPress={() => {
-            // Abort previous request
             if (abortControllerRef.current) {
               abortControllerRef.current.abort()
             }
@@ -303,8 +289,6 @@ export function MyAnnouncementsPage() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Announcements */}
       <FlatList
         data={announcements}
         renderItem={renderAnnouncementCard}
@@ -316,7 +300,6 @@ export function MyAnnouncementsPage() {
         }
         refreshing={loading}
         onRefresh={() => {
-          // Abort previous request
           if (abortControllerRef.current) {
             abortControllerRef.current.abort()
           }

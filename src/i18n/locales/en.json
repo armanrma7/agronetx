@@ -32,6 +32,7 @@
     "success": "Success",
     "error": "Error",
     "empty": "Empty",
+    "notSpecified": "–",
     "currency": "AMD",
     "perDay": "day"
   },
@@ -304,6 +305,7 @@
     "fillIn": "Fill in",
     "dateNotAvailable": "Date not available",
     "dateTaken": "This date is already taken by an approved application",
+    "dateAfterEnd": "This date is after the announcement end date",
     "selectAtLeastOneDate": "Please select at least one delivery date",
     "enterQuantity": "Please enter quantity",
     "quantityMustBePositive": "Quantity must be a positive number",
@@ -314,6 +316,7 @@
     "closeConfirm": "Are you sure you want to close this application?",
     "closed": "Application closed",
     "closeError": "Failed to close application",
+    "statusClosed": "Closed",
     "postSubmissionInfo": "After application approval, you can see each other's contact details"
   },
   "announcements": {

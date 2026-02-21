@@ -15,29 +15,36 @@ interface AnnouncementCardProps {
   onFavoriteChange?: () => void
   /** When list API doesn't include applications, parent can pass IDs the user has already applied to. */
   appliedAnnouncementIds?: Set<string>
+  /** Announcement IDs where the current user has a *pending* application (hide Apply only for these). */
+  pendingApplicationAnnouncementIds?: Set<string>
 }
 
-/** True if the current user has an application for this announcement (no Apply button). */
-function hasUserApplied(
+/** True if the current user has a *pending* application for this announcement (hide Apply button). */
+function hasPendingApplicationForCard(
   announcement: Announcement,
   userId: string | undefined,
-  appliedAnnouncementIds?: Set<string>
+  pendingApplicationAnnouncementIds?: Set<string>
 ): boolean {
-  if (appliedAnnouncementIds?.has(announcement.id)) return true
   if (!userId) return false
+  if (pendingApplicationAnnouncementIds?.has(announcement.id)) return true
   const a = announcement as any
-  if (a.my_applications_count !== undefined && a.my_applications_count > 0) return true
   const apps = a.applications
-  if (Array.isArray(apps) && apps.some((app: any) => (app.user_id || app.userId) === userId)) return true
-  return false
+  if (!Array.isArray(apps) || apps.length === 0) return false
+  const myId = String(userId)
+  const isPending = (s: string | undefined) => /^pending$/i.test((s || '').trim())
+  return apps.some((app: any) => {
+    const applicantId = app.applicant_id ?? app.user_id ?? app.userId
+    return applicantId && String(applicantId) === myId && isPending(app.status)
+  })
 }
 
-export function AnnouncementCard({ announcement, onApply, onView, isFavorite: initialIsFavorite, onFavoriteChange, appliedAnnouncementIds }: AnnouncementCardProps) {
+export function AnnouncementCard({ announcement, onApply, onView, isFavorite: initialIsFavorite, onFavoriteChange, appliedAnnouncementIds, pendingApplicationAnnouncementIds }: AnnouncementCardProps) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite || false)
   const [togglingFavorite, setTogglingFavorite] = useState(false)
-  const hasApplied = hasUserApplied(announcement, user?.id, appliedAnnouncementIds)
+  const hasPendingApplication = hasPendingApplicationForCard(announcement, user?.id, pendingApplicationAnnouncementIds)
+  const canApply = !hasPendingApplication
 
   // Update favorite status when prop changes
   useEffect(() => {
@@ -205,7 +212,9 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>{getItemName()}</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{getItemName()}</Text>
+        </View>
         <Text style={styles.price}>
           {Number(announcement.price || 0).toLocaleString()} դր {translateUnit((announcement as any).price_unit ?? announcement.unit)}
         </Text>
@@ -248,7 +257,7 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
           <Text style={styles.participantsText}>{t('announcements.applicants')}: {announcement.applications_count ?? 0}</Text>
         </View>
         <View style={styles.actionButtons}>
-          {!hasApplied && (
+          {canApply && (
             <TouchableOpacity
               style={styles.buttonPrimary}
               onPress={() => onApply?.(announcement)}
@@ -319,8 +328,13 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  titleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   title: {
     fontSize: 20,

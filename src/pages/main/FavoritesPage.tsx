@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native'
+import { View, Text, StyleSheet, FlatList } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useFocusEffect } from '@react-navigation/native'
 import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
 import { AnnouncementCard } from '../../components/AnnouncementCard'
@@ -74,28 +73,20 @@ export function FavoritesPage() {
     }
   }, [loadingMore, hasMore, loading, page, fetchFavorites])
 
-  // Fetch favorites when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      // Abort previous request if it exists
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-      
-      // Create new abort controller for this request
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
-      
-      setPage(1)
-      setHasMore(true)
-      fetchFavorites(1, true, abortController.signal)
-      
-      // Cleanup: abort request when screen loses focus
-      return () => {
-        abortController.abort()
-      }
-    }, [fetchFavorites])
-  )
+  // Fetch favorites once on mount (no refetch on every return)
+  useEffect(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+    setPage(1)
+    setHasMore(true)
+    fetchFavorites(1, true, abortController.signal)
+    return () => {
+      abortController.abort()
+    }
+  }, [fetchFavorites])
 
   const handleView = (announcement: Announcement) => {
     ;(navigation as any).navigate('AnnouncementDetail', {

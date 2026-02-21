@@ -53,7 +53,9 @@ export function ListingCard({ listing, onApply, onView }: ListingCardProps) {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>{listing.item?.name_am || listing.item?.name_en || listing.item?.name_ru || (listing as any).title || ''}</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{listing.item?.name_am || listing.item?.name_en || listing.item?.name_ru || (listing as any).title || ''}</Text>
+        </View>
         <Text style={styles.price}>
           {Number(listing.price || 0).toLocaleString()} {(listing as any).price_unit ?? listing.unit}
         </Text>
@@ -150,8 +152,13 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  titleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   title: {
     fontSize: 20,

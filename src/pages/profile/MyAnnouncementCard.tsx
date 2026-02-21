@@ -54,7 +54,6 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
         return colors.textTertiary
     }
   }
- console.info('announcement.status')
   const getTypeLabel = (announcement: Announcement) => {
     const subtype = (announcement as any).subtype || (announcement as any).sub_type
     const category = announcement.category || announcement.type
@@ -87,8 +86,6 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
   const translateUnit = (unit: string | undefined): string => {
     if (!unit) return ''
     const unitLower = unit.toLowerCase()
-    
-    // Common unit translations
     const unitMap: { [key: string]: string } = {
       'kg': 'կգ',
       'կգ': 'կգ',
@@ -138,7 +135,9 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>{getItemName()}</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{getItemName()}</Text>
+        </View>
         <Text style={styles.price}>
           {Number(announcement.price || 0).toLocaleString()} դր {translateUnit((announcement as any).price_unit ?? announcement.unit)}
         </Text>
@@ -337,8 +336,13 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  titleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   title: {
     fontSize: 20,

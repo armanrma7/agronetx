@@ -31,7 +31,8 @@
     "confirm": "Հաստատել",
     "success": "Հաջողություն",
     "error": "Սխալ",
-    "empty": "Դատարկ է"
+    "empty": "Դատարկ է",
+    "notSpecified": "–"
   },
   "register": {
     "title": "Գրանցում",
@@ -306,6 +307,7 @@
     "fillIn": "Լրացնել",
     "dateNotAvailable": "Ամսաթիվը հասանելի չէ",
     "dateTaken": "Այս ամսաթիվը արդեն զբաղված է հաստատված դիմումով",
+    "dateAfterEnd": "Այս ամսաթիվը հայտարարության ավարտից հետո է",
     "selectAtLeastOneDate": "Խնդրում ենք ընտրել առնվազն մեկ առաքման ամսաթիվ",
     "enterQuantity": "Խնդրում ենք մուտքագրել քանակ",
     "quantityMustBePositive": "Քանակը պետք է լինի դրական թիվ",
@@ -326,6 +328,7 @@
     "statusInProgress": "Ընթացքի մեջ",
     "statusApproved": "Հաստատված",
     "statusRejected": "Մերժված",
+    "statusClosed": "Փակված",
     "approveConfirm": "Հաստատել այս դիմումը?",
     "rejectConfirm": "Մերժել այս դիմումը?"
   },

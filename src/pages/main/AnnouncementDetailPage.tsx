@@ -417,9 +417,10 @@ export function AnnouncementDetailPage() {
   const startDate = announcement.date_from || announcement.created_at
   const endDate = announcement.date_to || announcement.created_at
   const images = announcement.images || []
-  console.info('announcement', images)
   const dailyLimit = announcement.daily_limit ? Number(announcement.daily_limit) : 0
   const isPublishedStatus = isPublished(announcement.status)
+  // Edit is allowed when announcement is pending or not yet published
+  const canEditAnnouncement = announcement.status === 'pending' || !isPublishedStatus
   const isMyAnnouncement = user?.id && announcement.owner_id === user.id
   const hasUserApplied = (): boolean => {
     if (!user?.id || !announcement) return false
@@ -429,7 +430,23 @@ export function AnnouncementDetailPage() {
     if (Array.isArray(apps) && apps.some((app: any) => (app.user_id || app.userId) === user.id)) return true
     return false
   }
+
+  // User can apply only if they do NOT have a pending application (rejected/closed can apply again)
+  const hasPendingApplication = (): boolean => {
+    if (!user?.id || !announcement) return false
+    const a = announcement as any
+    const apps = a.applications
+    if (!Array.isArray(apps) || apps.length === 0) return false
+    const myId = String(user.id)
+    const pendingStatus = (s: string | undefined) => /^pending$/i.test((s || '').trim())
+    return apps.some((app: any) => {
+      const applicantId = app.applicant_id ?? app.user_id ?? app.userId
+      return applicantId && String(applicantId) === myId && pendingStatus(app.status)
+    })
+  }
+
   const hasApplied = hasUserApplied()
+  const canApply = !hasPendingApplication()
 
   /**
    * Contact: show only when there is an approved application linking the current user (me) and this announcement.
@@ -639,7 +656,7 @@ export function AnnouncementDetailPage() {
         {isMyAnnouncement ? (
           // Owner's buttons: Edit and Cancel (if not published), Cancel only (if published and not cancelled)
           <View style={styles.actionButtons}>
-            {!isPublishedStatus && (
+            {canEditAnnouncement && (
               <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                 <Text style={styles.editButtonText}>{t('common.edit')}</Text>
               </TouchableOpacity>
@@ -665,7 +682,7 @@ export function AnnouncementDetailPage() {
                   <Text style={styles.contactButtonText}>{t('announcementDetail.contact')}</Text>
                 </TouchableOpacity>
               )}
-              {!hasApplied && (
+              {canApply && (
                 <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
                   <Text style={styles.applyButtonText}>{t('announcements.apply')}</Text>
                 </TouchableOpacity>

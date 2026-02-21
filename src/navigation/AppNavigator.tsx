@@ -4,9 +4,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
 import { LoginPage, RegisterPage, ForgotPasswordPage, VerificationPage } from '../pages/auth'
 import { ProfilePage } from '../pages/profile/ProfilePage'
+import { AnnouncementApplicationsPage } from '../pages/profile/application/AnnouncementApplicationsPage'
 import { LanguagesPage } from '../pages/settings'
 import { NewAnnouncementFormPage, AnnouncementDetailPage, ApplicationFormPage } from '../pages/main'
-import { AnnouncementApplicationsPage } from '../pages/profile/AnnouncementApplicationsPage'
 import { HomeTabs } from './HomeTabs'
 import { View, Text, TouchableOpacity, Pressable, Platform } from 'react-native'
 import { colors } from '../theme/colors'
@@ -156,7 +156,6 @@ export function AppNavigator() {
           name="AnnouncementDetail" 
           component={AnnouncementDetailPage}
           options={{
-            // ✅ Use fully custom header (no React Navigation header)
             headerShown: false,
             gestureEnabled: true,
             animation: 'slide_from_right',

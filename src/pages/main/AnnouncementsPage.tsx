@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { colors } from '../../theme/colors'
 import { Announcement, AnnouncementType } from '../../types'
 import Icon from '../../components/Icon'
@@ -35,6 +35,7 @@ export function AnnouncementsPage() {
   const [filters, setFilters] = useState<FilterValues | undefined>(undefined)
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
   const [appliedAnnouncementIds, setAppliedAnnouncementIds] = useState<Set<string>>(new Set())
+  const [pendingApplicationAnnouncementIds, setPendingApplicationAnnouncementIds] = useState<Set<string>>(new Set())
   const limit = 8
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -56,11 +57,12 @@ export function AnnouncementsPage() {
     }
   }, [filterContext?.filters, route.params])
 
-  // Fetch favorite IDs and applied announcement IDs (only if user is authenticated)
+  // Fetch favorite IDs, applied announcement IDs, and pending application announcement IDs (only if user is authenticated)
   const fetchFavoriteIds = async () => {
     if (!user) {
       setFavoriteIds(new Set())
       setAppliedAnnouncementIds(new Set())
+      setPendingApplicationAnnouncementIds(new Set())
       return
     }
     try {
@@ -73,8 +75,23 @@ export function AnnouncementsPage() {
     try {
       const applied = await announcementsAPI.getAppliedAnnouncementsAPI({ page: 1, limit: 200 })
       setAppliedAnnouncementIds(new Set(applied.announcements.map(a => a.id)))
+      // Build set of announcement IDs where current user has a *pending* application
+      const myId = String(user.id)
+      const pendingIds = new Set<string>()
+      applied.announcements.forEach((a: Announcement) => {
+        const apps = (a as any).applications
+        if (Array.isArray(apps)) {
+          const hasMyPending = apps.some((app: any) => {
+            const applicantId = app.applicant_id ?? app.user_id ?? app.userId
+            return applicantId && String(applicantId) === myId && /^pending$/i.test((app.status || '').trim())
+          })
+          if (hasMyPending) pendingIds.add(a.id)
+        }
+      })
+      setPendingApplicationAnnouncementIds(pendingIds)
     } catch (error: any) {
       setAppliedAnnouncementIds(new Set())
+      setPendingApplicationAnnouncementIds(new Set())
     }
   }
 
@@ -102,12 +119,16 @@ export function AnnouncementsPage() {
     }
   }, [activeTab, filters])
 
-  // Refresh favorites when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
+  // Load favorite/applied IDs once when user is available (no refetch on every return)
+  useEffect(() => {
+    if (user) {
       fetchFavoriteIds()
-    }, [])
-  )
+    } else {
+      setFavoriteIds(new Set())
+      setAppliedAnnouncementIds(new Set())
+      setPendingApplicationAnnouncementIds(new Set())
+    }
+  }, [user])
 
   const fetchAnnouncements = async (pageNum: number = 1, reset: boolean = false, signal?: AbortSignal) => {
     if (reset) {
@@ -246,6 +267,7 @@ export function AnnouncementsPage() {
       isFavorite={favoriteIds.has(item.id)}
       onFavoriteChange={handleFavoriteChange}
       appliedAnnouncementIds={appliedAnnouncementIds}
+      pendingApplicationAnnouncementIds={pendingApplicationAnnouncementIds}
     />
   )
 

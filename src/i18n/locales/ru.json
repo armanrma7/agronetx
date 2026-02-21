@@ -32,6 +32,7 @@
     "success": "Успех",
     "error": "Ошибка",
     "empty": "Пусто",
+    "notSpecified": "–",
     "currency": "драм",
     "perDay": "день"
   },
@@ -222,6 +223,7 @@
     "fillIn": "Заполнить",
     "dateNotAvailable": "Дата недоступна",
     "dateTaken": "Эта дата уже занята одобренной заявкой",
+    "dateAfterEnd": "Эта дата после даты окончания объявления",
     "selectAtLeastOneDate": "Пожалуйста, выберите хотя бы одну дату доставки",
     "enterQuantity": "Пожалуйста, введите количество",
     "quantityMustBePositive": "Количество должно быть положительным числом",
@@ -242,6 +244,7 @@
     "statusInProgress": "В процессе",
     "statusApproved": "Одобрено",
     "statusRejected": "Отклонено",
+    "statusClosed": "Закрыто",
     "approveConfirm": "Одобрить эту заявку?",
     "rejectConfirm": "Отклонить эту заявку?"
   },

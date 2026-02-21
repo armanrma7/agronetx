@@ -37,6 +37,7 @@ export function ApplicationFormPage() {
 
   // State
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
+  const [applicationsWithDeliveryDates, setApplicationsWithDeliveryDates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   
@@ -68,6 +69,20 @@ export function ApplicationFormPage() {
       setLoading(false)
     }
   }
+
+  // Fetch applications for this announcement (for calendar: disable days already in applied applications)
+  useEffect(() => {
+    if (!announcementId || announcementType !== 'goods') return
+    let cancelled = false
+    announcementsAPI.getApplicationsByAnnouncementAPI(announcementId)
+      .then((list) => {
+        if (!cancelled) setApplicationsWithDeliveryDates(list)
+      })
+      .catch(() => {
+        if (!cancelled) setApplicationsWithDeliveryDates([])
+      })
+    return () => { cancelled = true }
+  }, [announcementId, announcementType])
 
   // Get page title based on type
   const getPageTitle = () => {
@@ -136,34 +151,40 @@ export function ApplicationFormPage() {
     return new Date(year, month - 1, day)
   }
 
-  // Get approved applications' delivery dates to disable them
+  // Get delivery dates from all applied applications (to disable those days); days after announcement end date are handled via maxDate
   const getDisabledDates = (): Set<string> => {
     const disabledDates = new Set<string>()
     
-    if (announcement) {
-      const announcementData = announcement as any
-      const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
-      
-      // Get all delivery dates from approved applications
-      applications.forEach((app: any) => {
-        // Only consider approved applications
-        if (app.status === 'approved' || app.status === 'accepted') {
-          const deliveryDatesArray = Array.isArray(app.delivery_dates) 
-            ? app.delivery_dates 
-            : (app.delivery_dates ? [app.delivery_dates] : [])
-          
-          deliveryDatesArray.forEach((dateStr: string) => {
-            if (dateStr) {
-              // Convert to YYYY-MM-DD format if needed
-              const dateKey = dateStr.split('T')[0] // Remove time if present
-              disabledDates.add(dateKey)
-            }
-          })
+    const addDeliveryDatesFromApp = (app: any) => {
+      const deliveryDatesArray = Array.isArray(app.delivery_dates)
+        ? app.delivery_dates
+        : (app.delivery_dates ? [app.delivery_dates] : [])
+      deliveryDatesArray.forEach((dateStr: string) => {
+        if (dateStr) {
+          const dateKey = dateStr.split('T')[0]
+          disabledDates.add(dateKey)
         }
       })
     }
     
+    // From announcement.applications (if present)
+    if (announcement) {
+      const announcementData = announcement as any
+      const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
+      applications.forEach(addDeliveryDatesFromApp)
+    }
+    
+    // From fetched applications list (so we have all applied applications' delivery dates)
+    applicationsWithDeliveryDates.forEach(addDeliveryDatesFromApp)
+    
     return disabledDates
+  }
+
+  // Returns announcement end date in YYYY-MM-DD or undefined (for Calendar maxDate and validation)
+  const getAnnouncementEndDateKey = (): string | undefined => {
+    if (!announcement) return undefined
+    const endDateStr = announcement.date_to || (announcement as any).date_to
+    return endDateStr ? endDateStr.split('T')[0] : undefined
   }
 
   // Get marked dates for Calendar component
@@ -181,7 +202,7 @@ export function ApplicationFormPage() {
       }
     })
     
-    // Mark disabled dates (from approved applications)
+    // Mark disabled dates (days already in applied applications)
     disabledDates.forEach(dateKey => {
       // Don't override selected dates
       if (!marked[dateKey]) {
@@ -200,12 +221,22 @@ export function ApplicationFormPage() {
   const handleCalendarDayPress = (day: DateData) => {
     const dateKey = day.dateString
     const disabledDates = getDisabledDates()
+    const endDateKey = getAnnouncementEndDateKey()
     
-    // Don't allow selection of disabled dates (from approved applications)
+    // Don't allow selection of disabled dates (days already in applied applications)
     if (disabledDates.has(dateKey)) {
       Alert.alert(
         t('applications.dateNotAvailable'),
         t('applications.dateTaken')
+      )
+      return
+    }
+    
+    // Don't allow selection of dates after announcement end date
+    if (endDateKey && dateKey > endDateKey) {
+      Alert.alert(
+        t('applications.dateNotAvailable'),
+        t('applications.dateAfterEnd')
       )
       return
     }
@@ -249,7 +280,7 @@ export function ApplicationFormPage() {
       const announcementData = announcement as any
       const dailyLimit = announcementData?.daily_limit
       if (dailyLimit && qty > dailyLimit) {
-        Alert.alert(t('common.error'), t('applications.quantityExceedsLimit', { limit: dailyLimit, unit: announcement?.quantity_unit || '' }))
+        Alert.alert(t('common.error'), t('applications.quantityExceedsLimit', { limit: dailyLimit, unit: announcementData?.quantity_unit ?? announcement?.unit ?? '' }))
         return false
       }
     } else if (announcementType === 'rent' || announcementType === 'service') {
@@ -330,7 +361,7 @@ export function ApplicationFormPage() {
     const dailyLimit = announcementData?.daily_limit
     if (!dailyLimit) return null
     
-    const unit = announcement?.quantity_unit || 'տն'
+    const unit = announcementData?.quantity_unit ?? announcement?.unit ?? 'տն'
     return `${dailyLimit.toLocaleString('hy-AM', { maximumFractionDigits: 1 })} ${unit}/օրական`
   }
 
@@ -352,7 +383,6 @@ export function ApplicationFormPage() {
     )
   }
 
-  const announcementData = announcement as any
   const dailyLimitInfo = getDailyLimitInfo()
 
   return (
@@ -511,6 +541,7 @@ export function ApplicationFormPage() {
                   onDayPress={handleCalendarDayPress}
                   markedDates={getMarkedDates()}
                   minDate={new Date().toISOString().split('T')[0]}
+                  maxDate={getAnnouncementEndDateKey()}
                   enableSwipeMonths={true}
                   theme={{
                     backgroundColor: colors.white,
