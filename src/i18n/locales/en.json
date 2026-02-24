@@ -34,7 +34,9 @@
     "empty": "Empty",
     "notSpecified": "–",
     "currency": "AMD",
-    "perDay": "day"
+    "perDay": "day",
+    "unknownUser": "Unknown",
+    "location": "Location"
   },
   "register": {
     "title": "Registration",
@@ -230,7 +232,14 @@
     "filterDescription": "Adjust the filters to find the necessary notifications:",
     "notificationType": "Notification type",
     "notificationStatus": "Status",
-    "notificationPeriod": "Notification period"
+    "notificationPeriod": "Notification period",
+    "all": "All",
+    "unread": "Unread",
+    "earlier": "Earlier",
+    "detail": "Notification",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
   },
   "profile": {
     "title": "My Listings",
@@ -301,6 +310,7 @@
     "notesPlaceholder": "Fill in",
     "submit": "Submit",
     "submitSuccess": "Your application has been submitted successfully",
+    "updateSuccess": "Your application has been updated successfully",
     "submitError": "Failed to submit application",
     "fillIn": "Fill in",
     "dateNotAvailable": "Date not available",
@@ -317,7 +327,24 @@
     "closed": "Application closed",
     "closeError": "Failed to close application",
     "statusClosed": "Closed",
-    "postSubmissionInfo": "After application approval, you can see each other's contact details"
+    "postSubmissionInfo": "After application approval, you can see each other's contact details",
+    "transactionDate": "Transaction date",
+    "location": "Location",
+    "approve": "Approve",
+    "reject": "Reject",
+    "view": "View",
+    "status": "Status",
+    "details": "Application details",
+    "requestedQuantity": "Required quantity",
+    "applicationDate": "Application date",
+    "empty": "No applications yet",
+    "statusInProgress": "Pending",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "approveSuccess": "Application approved",
+    "approveError": "Failed to approve application",
+    "rejectSuccess": "Application rejected",
+    "rejectError": "Failed to reject application"
   },
   "announcements": {
     "offer": "Goods",

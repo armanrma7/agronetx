@@ -3,7 +3,7 @@
  * Lists applications for an announcement (from My Announcements). Do not remove this file.
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -21,7 +21,8 @@ import { colors } from '../../../theme/colors'
 import { Announcement } from '../../../types'
 import { AppHeader } from '../../../components/AppHeader'
 import { useAuth } from '../../../context/AuthContext'
-import * as announcementsAPI from '../../../lib/api/announcements.api'
+import { useApplicationsStore } from '../../../store/applications/useApplicationsStore'
+import { useAnnouncementsStore } from '../../../store/announcements/useAnnouncementsStore'
 import type { ApplicationListItem } from '../../../lib/api/announcements.api'
 import {
   ApplicationListHeader,
@@ -42,97 +43,68 @@ export function AnnouncementApplicationsPage() {
   const params = (route.params as RouteParams) || {}
   const { announcementId, announcement: paramAnnouncement } = params
 
-  const [announcement, setAnnouncement] = useState<Announcement | null>(
-    paramAnnouncement ?? null,
-  )
-  const [applications, setApplications] = useState<ApplicationListItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+  const {
+    byAnnouncementId,
+    loadingByAnnouncementId,
+    actionLoadingId,
+    fetchApplicationsByAnnouncement,
+    approveApplication,
+    rejectApplication,
+    closeApplication,
+  } = useApplicationsStore()
 
-  const fetchData = useCallback(
-    async (isRefresh = false) => {
-      if (!announcementId) return
-      isRefresh ? setRefreshing(true) : setLoading(true)
-      try {
-        const currentParams = (route.params as RouteParams) || {}
-        if (currentParams.announcement) {
-          setAnnouncement(currentParams.announcement)
-          const list =
-            await announcementsAPI.getApplicationsByAnnouncementAPI(
-              announcementId,
-            )
-          setApplications(list)
-        } else {
-          const [announcementData, list] = await Promise.all([
-            announcementsAPI.getAnnouncementByIdAPI(announcementId),
-            announcementsAPI.getApplicationsByAnnouncementAPI(announcementId),
-          ])
-          setAnnouncement(announcementData)
-          setApplications(list)
-        }
-      } catch {
-        Alert.alert(t('common.error'), t('applications.loadError'))
-      } finally {
-        setLoading(false)
-        setRefreshing(false)
-      }
-    },
-    [announcementId, route.params, t],
-  )
+  const { cache, setInCache } = useAnnouncementsStore()
+
+  // Seed the announcement cache from route param if available
+  useEffect(() => {
+    if (paramAnnouncement && !cache[announcementId]) {
+      setInCache(paramAnnouncement)
+    }
+  }, [announcementId])
+
+  const announcement: Announcement | null = cache[announcementId] ?? paramAnnouncement ?? null
+  const applications: ApplicationListItem[] = byAnnouncementId[announcementId] ?? []
+  const loading = loadingByAnnouncementId[announcementId] ?? false
+  const refreshing = false // pull-to-refresh uses the same flag in this context
+
+  const fetchData = useCallback((refresh = false) => {
+    fetchApplicationsByAnnouncement(announcementId, refresh)
+  }, [announcementId, fetchApplicationsByAnnouncement])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchData(false)
+  }, [announcementId])
 
   const runAction = useCallback(
-    async (
-      id: string,
-      apiCall: () => Promise<any>,
-      successMessage?: string,
-    ) => {
-      setActionLoadingId(id)
+    async (action: () => Promise<void>, successKey: string, errorKey: string) => {
       try {
-        await apiCall()
-        await fetchData(true)
-        if (successMessage) Alert.alert(t('common.success'), successMessage)
-      } catch (err: any) {
-        Alert.alert(
-          t('common.error'),
-          err?.response?.data?.message || t('common.error'),
-        )
-      } finally {
-        setActionLoadingId(null)
+        await action()
+        Alert.alert(t('common.success'), t(successKey))
+      } catch (error: any) {
+        Alert.alert(t('common.error'), error?.response?.data?.message || t(errorKey))
       }
     },
-    [fetchData, t],
+    [t],
   )
 
   const handleApprove = useCallback(
     (id: string) =>
-      Alert.alert(t('applications.approve'), t('applications.approveConfirm'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('applications.approve'),
-          onPress: () =>
-            runAction(id, () => announcementsAPI.approveApplicationAPI(id)),
-        },
-      ]),
-    [t, runAction],
+      runAction(
+        () => approveApplication(id, announcementId),
+        'applications.approveSuccess',
+        'applications.approveError',
+      ),
+    [announcementId, approveApplication, runAction],
   )
 
   const handleReject = useCallback(
     (id: string) =>
-      Alert.alert(t('applications.reject'), t('applications.rejectConfirm'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('applications.reject'),
-          style: 'destructive',
-          onPress: () =>
-            runAction(id, () => announcementsAPI.rejectApplicationAPI(id)),
-        },
-      ]),
-    [t, runAction],
+      runAction(
+        () => rejectApplication(id, announcementId),
+        'applications.rejectSuccess',
+        'applications.rejectError',
+      ),
+    [announcementId, rejectApplication, runAction],
   )
 
   const handleCloseApplication = useCallback(
@@ -143,30 +115,18 @@ export function AnnouncementApplicationsPage() {
         [
           { text: t('common.cancel'), style: 'cancel' },
           {
-            text: t('announcements.closeApplication'),
+            text: t('common.confirm'),
             style: 'destructive',
             onPress: () =>
               runAction(
-                id,
-                () => announcementsAPI.closeApplicationAPI(id),
-                t('applications.closed'),
+                () => closeApplication(id, announcementId),
+                'applications.closed',
+                'applications.closeError',
               ),
           },
         ],
       ),
-    [t, runAction],
-  )
-
-  const handleView = useCallback(
-    (id: string) => {
-      const parent = navigation.getParent()
-      if (parent) {
-        ;(parent as any).navigate('AnnouncementDetail', { announcementId: id })
-      } else {
-        ;(navigation as any).navigate('AnnouncementDetail', { announcementId: id })
-      }
-    },
-    [navigation],
+    [t, runAction, closeApplication, announcementId],
   )
 
   const a = announcement as any
@@ -181,11 +141,45 @@ export function AnnouncementApplicationsPage() {
     a?.title ||
     a?.item_name ||
     t('announcements.apply')
+
+  const handleEdit = useCallback(
+    (app: ApplicationListItem) => {
+      const announcementType = announcement?.category ?? (announcement as any)?.type ?? 'goods'
+      const parent = navigation.getParent()
+      const nav = parent ?? navigation
+      ;(nav as any).navigate('ApplicationForm', {
+        announcementId,
+        announcementType,
+        announcementTitle: title,
+        announcement,
+        applicationId: app.id,
+        prefill: {
+          deliveryDates: app.delivery_dates,
+          count: app.count,
+          unit: app.unit,
+          notes: app.notes,
+        },
+      })
+    },
+    [navigation, announcement, announcementId, title],
+  )
+
   const quantity = announcement?.available_quantity ?? a?.quantity
   const price = announcement?.price
-  const priceUnit =
-    (announcement as any)?.price_unit ?? announcement?.unit ?? ''
+  const priceUnit = (announcement as any)?.price_unit ?? announcement?.unit ?? ''
   const quantityUnit = announcement?.unit ?? a?.quantity_unit ?? ''
+
+  const handleView = useCallback(
+    (app: ApplicationListItem) => {
+      const nav = (navigation.getParent() ?? navigation) as any
+      nav.navigate('ApplicationDetail', {
+        announcementId,
+        appId: app.id,
+        quantityUnit,
+      })
+    },
+    [navigation, announcementId, quantityUnit],
+  )
 
   const listHeaderComponent = useCallback(
     () => (
@@ -198,7 +192,7 @@ export function AnnouncementApplicationsPage() {
           priceUnit={priceUnit}
           applicantsCount={applications.length}
         />
-        {loading && !refreshing && (
+        {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.buttonPrimary} />
             <Text style={styles.loadingText}>{t('common.loading')}</Text>
@@ -206,17 +200,7 @@ export function AnnouncementApplicationsPage() {
         )}
       </>
     ),
-    [
-      title,
-      quantity,
-      quantityUnit,
-      price,
-      priceUnit,
-      applications.length,
-      loading,
-      refreshing,
-      t,
-    ],
+    [title, quantity, quantityUnit, price, priceUnit, applications.length, loading, t],
   )
 
   const renderItem = useCallback(
@@ -231,6 +215,7 @@ export function AnnouncementApplicationsPage() {
         onReject={handleReject}
         onCloseApplication={handleCloseApplication}
         onView={handleView}
+        onEdit={handleEdit}
       />
     ),
     [
@@ -242,6 +227,7 @@ export function AnnouncementApplicationsPage() {
       handleReject,
       handleCloseApplication,
       handleView,
+      handleEdit,
     ],
   )
 
@@ -249,12 +235,12 @@ export function AnnouncementApplicationsPage() {
 
   const listEmptyComponent = useCallback(
     () =>
-      !loading && !refreshing ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>{t('common.empty')}</Text>
+      !loading ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>{t('applications.empty')}</Text>
         </View>
       ) : null,
-    [loading, refreshing, t],
+    [loading, t],
   )
 
   return (
@@ -290,26 +276,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    padding: 16,
     paddingBottom: 32,
+    flexGrow: 1,
   },
   loadingContainer: {
-    padding: 40,
+    paddingVertical: 40,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
   },
   loadingText: {
-    marginTop: 12,
     fontSize: 14,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
   },
-  empty: {
-    padding: 40,
+  emptyContainer: {
+    paddingVertical: 60,
     alignItems: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
   },
 })

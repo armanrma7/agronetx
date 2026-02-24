@@ -48,6 +48,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
       case 'completed':
         return colors.textTertiary
       case 'canceled':
+      case 'cancelled':
       case 'closed':
         return colors.error
       default:
@@ -255,7 +256,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
             // For "published" tab - show cancel announcement button
             <>
               {/* Only show cancel button if announcement is not already cancelled */}
-              {announcement.status !== 'canceled' && announcement.status !== 'closed' && (
+              {announcement.status !== 'canceled' && announcement.status !== 'cancelled' && announcement.status !== 'closed' && (
                 cancelling ? (
                   <View style={styles.buttonCancel}>
                     <ActivityIndicator size="small" color={colors.error} />

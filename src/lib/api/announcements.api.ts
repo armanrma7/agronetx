@@ -665,10 +665,30 @@ export async function submitApplicationAPI(data: ApplicationFormData): Promise<a
   return response.data
 }
 
+export interface ApplicationUpdateData {
+  delivery_dates?: string[]
+  count?: number
+  unit?: 'daily' | 'monthly' | 'yearly' | 'hourly'
+  notes?: string
+}
+
+export async function updateApplicationAPI(id: string, data: ApplicationUpdateData): Promise<any> {
+  const response = await apiClient.patch(`/applications/${id}`, data)
+  return response.data
+}
+
 /**
  * Get applications for an announcement (by announcement owner or for display)
  * GET /applications/announcement/{announcementId}
  */
+export interface ApplicationApplicant {
+  id?: string
+  full_name?: string
+  phone?: string
+  user_type?: string
+  profile_picture?: string | null
+}
+
 export interface ApplicationListItem {
   id: string
   announcement_id?: string
@@ -681,6 +701,8 @@ export interface ApplicationListItem {
   status: string
   created_at?: string
   updated_at?: string
+  applicant?: ApplicationApplicant
+  /** @deprecated use applicant instead */
   user?: { name?: string; surname?: string }
   region?: string
   village?: string
@@ -697,19 +719,42 @@ export async function getApplicationsByAnnouncementAPI(announcementId: string): 
 }
 
 function mapApplicationItem(app: any): ApplicationListItem {
+  // Normalize applicant from either `applicant` or legacy `user` field
+  const rawApplicant = app.applicant ?? app.user
+  const applicant: ApplicationApplicant | undefined = rawApplicant
+    ? {
+        id: rawApplicant.id,
+        full_name:
+          rawApplicant.full_name ??
+          ([rawApplicant.name, rawApplicant.surname || rawApplicant.lastName]
+            .filter(Boolean)
+            .join(' ') || undefined),
+        phone: rawApplicant.phone,
+        user_type: rawApplicant.user_type ?? rawApplicant.userType,
+        profile_picture: rawApplicant.profile_picture ?? rawApplicant.profilePicture ?? null,
+      }
+    : undefined
+
   return {
     id: app.id || '',
     announcement_id: app.announcement_id || app.announcementId,
     user_id: app.applicant_id ?? app.user_id ?? app.userId,
     count: app.count ?? app.quantity,
     quantity: app.quantity ?? app.count,
-    delivery_dates: Array.isArray(app.delivery_dates) ? app.delivery_dates : (app.delivery_dates ? [app.delivery_dates] : []),
+    delivery_dates: Array.isArray(app.delivery_dates)
+      ? app.delivery_dates
+      : app.delivery_dates
+        ? [app.delivery_dates]
+        : [],
     unit: app.unit,
     notes: app.notes,
     status: app.status || 'pending',
     created_at: app.created_at || app.createdAt,
     updated_at: app.updated_at || app.updatedAt,
-    user: app.user ? { name: app.user.name, surname: app.user.surname || app.user.lastName } : undefined,
+    applicant,
+    user: app.user
+      ? { name: app.user.name, surname: app.user.surname || app.user.lastName }
+      : undefined,
     region: app.region,
     village: app.village,
     region_name: app.region_name,

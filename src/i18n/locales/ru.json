@@ -34,7 +34,9 @@
     "empty": "Пусто",
     "notSpecified": "–",
     "currency": "драм",
-    "perDay": "день"
+    "perDay": "день",
+    "unknownUser": "Неизвестно",
+    "location": "Местонахождение"
   },
   "register": {
     "title": "Регистрация",
@@ -132,7 +134,17 @@
   },
   "notifications": {
     "title": "Уведомления",
-    "empty": "У вас нет новых уведомлений"
+    "empty": "У вас нет новых уведомлений",
+    "all": "Все",
+    "unread": "Непрочитанные",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "earlier": "Ранее",
+    "detail": "Уведомление",
+    "announcementId": "Объявление",
+    "minutesAgo": "{{count}} мин",
+    "hoursAgo": "{{count}} ч",
+    "daysAgo": "{{count}} д"
   },
   "addAnnouncement": {
     "title": "Новое Объявление",
@@ -219,6 +231,7 @@
     "notesPlaceholder": "Заполнить",
     "submit": "Отправить",
     "submitSuccess": "Ваша заявка успешно отправлена",
+    "updateSuccess": "Ваша заявка успешно обновлена",
     "submitError": "Не удалось отправить заявку",
     "fillIn": "Заполнить",
     "dateNotAvailable": "Дата недоступна",
@@ -246,7 +259,16 @@
     "statusRejected": "Отклонено",
     "statusClosed": "Закрыто",
     "approveConfirm": "Одобрить эту заявку?",
-    "rejectConfirm": "Отклонить эту заявку?"
+    "rejectConfirm": "Отклонить эту заявку?",
+    "status": "Статус",
+    "details": "Данные заявки",
+    "requestedQuantity": "Требуемое количество",
+    "applicationDate": "Дата заявки",
+    "empty": "Заявок пока нет",
+    "approveSuccess": "Заявка одобрена",
+    "approveError": "Не удалось одобрить заявку",
+    "rejectSuccess": "Заявка отклонена",
+    "rejectError": "Не удалось отклонить заявку"
   },
   "units": {
     "daily": "Ежедневно",

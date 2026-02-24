@@ -18,7 +18,8 @@ import Icon from '../../components/Icon'
 import { Button } from '../../components/Button'
 import * as profileAPI from '../../lib/api/profile.api'
 
-import { useAuthStore } from '../../store/auth.store'
+import { useAuthStore } from '../../store/auth/useAuthStore'
+import { useProfileStore } from '../../store/profile/useProfileStore'
 
 export function ProfilePage() {
   const { user } = useAuth()
@@ -36,10 +37,9 @@ export function ProfilePage() {
   const [region, setRegion] = useState('')
   const [village, setVillage] = useState('')
 
-  // Regions and Villages state
-  const [regions, setRegions] = useState<profileAPI.Region[]>([])
+  // Regions from store (cached), villages remain local (depend on selected region)
+  const { regions, loadingRegions, fetchRegions, fetchVillagesByRegion } = useProfileStore()
   const [villages, setVillages] = useState<profileAPI.Village[]>([])
-  const [loadingRegions, setLoadingRegions] = useState(false)
   const [loadingVillages, setLoadingVillages] = useState(false)
   const [updating, setUpdating] = useState(false)
 
@@ -88,7 +88,7 @@ export function ProfilePage() {
     }
   }, [user])
 
-  // Fetch regions on mount
+  // Fetch regions once on mount (store caches after first load)
   useEffect(() => {
     fetchRegions()
   }, [])
@@ -104,24 +104,10 @@ export function ProfilePage() {
     }
   }, [region, regionChangedManually])
 
-  const fetchRegions = async () => {
-    try {
-      setLoadingRegions(true)
-      const data = await profileAPI.getRegionsAPI()
-      console.log('Regions loaded:', data)
-      setRegions(data)
-    } catch (error) {
-      console.error('Error fetching regions:', error)
-    } finally {
-      setLoadingRegions(false)
-    }
-  }
-
   const fetchVillages = async (regionId: string): Promise<void> => {
     try {
       setLoadingVillages(true)
-      const data = await profileAPI.getVillagesByRegionAPI(regionId)
-      console.log('Villages loaded for region:', regionId, data)
+      const data = await fetchVillagesByRegion(regionId)
       setVillages(data)
     } catch (error) {
       console.error('Error fetching villages:', error)

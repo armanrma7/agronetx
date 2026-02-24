@@ -20,11 +20,23 @@ import { AppHeader } from '../../components/AppHeader'
 import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
 import { Announcement } from '../../types'
+import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
+import { useAnnouncementsStore } from '../../store/announcements/useAnnouncementsStore'
+
+interface PrefillData {
+  deliveryDates?: string[]
+  count?: number
+  unit?: string
+  notes?: string
+}
 
 interface RouteParams {
   announcementId: string
   announcementType: 'goods' | 'service' | 'rent'
   announcementTitle: string
+  announcement?: Announcement
+  applicationId?: string
+  prefill?: PrefillData
 }
 
 type UnitType = 'daily' | 'monthly' | 'yearly' | 'hourly'
@@ -33,10 +45,14 @@ export function ApplicationFormPage() {
   const { t } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
-  const { announcementId, announcementType } = (route.params as RouteParams) || {}
+  const { announcementId, announcementType, announcement: paramAnnouncement, applicationId, prefill } = (route.params as RouteParams) || {}
+  const isEditMode = !!applicationId
+
+  const { submitApplication, updateApplication } = useApplicationsStore()
+  const { fetchById: fetchAnnouncementById, setInCache } = useAnnouncementsStore()
 
   // State
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null)
+  const [announcement, setAnnouncement] = useState<Announcement | null>(paramAnnouncement ?? null)
   const [applicationsWithDeliveryDates, setApplicationsWithDeliveryDates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -51,15 +67,36 @@ export function ApplicationFormPage() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
 
-  // Fetch announcement details
+  // Pre-fill form when editing an existing application
   useEffect(() => {
+    if (!prefill) return
+    if (prefill.deliveryDates && prefill.deliveryDates.length > 0) {
+      setDeliveryDates(prefill.deliveryDates.map(d => new Date(d)))
+    }
+    if (prefill.count != null) {
+      setQuantity(String(prefill.count))
+    }
+    if (prefill.unit) {
+      setSelectedUnit(prefill.unit as UnitType)
+    }
+    if (prefill.notes) {
+      setNotes(prefill.notes)
+    }
+  }, [])
+
+  // Fetch announcement details only when not already provided via params
+  useEffect(() => {
+    if (paramAnnouncement) {
+      setLoading(false)
+      return
+    }
     fetchAnnouncement()
   }, [announcementId])
 
   const fetchAnnouncement = async () => {
     try {
       setLoading(true)
-      const data = await announcementsAPI.getAnnouncementByIdAPI(announcementId)
+      const data = await fetchAnnouncementById(announcementId)
       setAnnouncement(data)
     } catch (error) {
       console.error('Error fetching announcement:', error)
@@ -84,8 +121,9 @@ export function ApplicationFormPage() {
     return () => { cancelled = true }
   }, [announcementId, announcementType])
 
-  // Get page title based on type
+  // Get page title based on type and mode
   const getPageTitle = () => {
+    if (isEditMode) return t('common.edit')
     switch (announcementType) {
       case 'goods':
         return t('applications.goodsApplication')
@@ -152,10 +190,13 @@ export function ApplicationFormPage() {
   }
 
   // Get delivery dates from all applied applications (to disable those days); days after announcement end date are handled via maxDate
+  // In edit mode, the current application's own dates are excluded so they remain selectable
   const getDisabledDates = (): Set<string> => {
     const disabledDates = new Set<string>()
     
     const addDeliveryDatesFromApp = (app: any) => {
+      // In edit mode skip the application being edited so its dates stay selectable
+      if (isEditMode && app.id != null && String(app.id) === String(applicationId)) return
       const deliveryDatesArray = Array.isArray(app.delivery_dates)
         ? app.delivery_dates
         : (app.delivery_dates ? [app.delivery_dates] : [])
@@ -321,9 +362,19 @@ export function ApplicationFormPage() {
         }
       }
 
-      await announcementsAPI.submitApplicationAPI(applicationData)
-      
-      Alert.alert(t('common.success'), t('applications.submitSuccess'), [
+      if (isEditMode && applicationId) {
+        const updateData: announcementsAPI.ApplicationUpdateData = {
+          notes: applicationData.notes,
+          delivery_dates: applicationData.delivery_dates,
+          count: applicationData.count,
+          unit: applicationData.unit,
+        }
+        await updateApplication(applicationId, updateData, announcementId)
+      } else {
+        await submitApplication(applicationData)
+      }
+
+      Alert.alert(t('common.success'), isEditMode ? t('applications.updateSuccess') : t('applications.submitSuccess'), [
         {
           text: t('common.ok'),
           onPress: () => navigation.goBack(),
@@ -511,7 +562,7 @@ export function ApplicationFormPage() {
             {submitting ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={styles.submitButtonText}>{t('applications.submit')}</Text>
+              <Text style={styles.submitButtonText}>{isEditMode ? t('common.save') : t('applications.submit')}</Text>
             )}
           </TouchableOpacity>
         </View>

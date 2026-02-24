@@ -12,7 +12,7 @@ interface AnnouncementCardProps {
   onApply?: (announcement: Announcement) => void
   onView?: (announcement: Announcement) => void
   isFavorite?: boolean
-  onFavoriteChange?: () => void
+  onFavoriteChange?: (announcementId: string, isNowFavorite: boolean) => void
   /** When list API doesn't include applications, parent can pass IDs the user has already applied to. */
   appliedAnnouncementIds?: Set<string>
   /** Announcement IDs where the current user has a *pending* application (hide Apply only for these). */
@@ -61,12 +61,12 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
       if (isFavorite) {
         await announcementsAPI.removeFavoriteAPI(announcement.id)
         setIsFavorite(false)
+        onFavoriteChange?.(announcement.id, false)
       } else {
         await announcementsAPI.addFavoriteAPI(announcement.id)
         setIsFavorite(true)
+        onFavoriteChange?.(announcement.id, true)
       }
-      // Notify parent component if callback provided
-      onFavoriteChange?.()
     } catch (error: any) {
       console.error('Error toggling favorite:', error)
       Alert.alert(

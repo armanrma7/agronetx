@@ -14,6 +14,7 @@ import { colors } from '../theme/colors'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { useAuth } from '../context/AuthContext'
 import { AnnouncementType } from '../types'
+import { useNotificationsStore } from '../store/notifications/useNotificationsStore'
 
 const Tab = createBottomTabNavigator()
 
@@ -53,6 +54,11 @@ function HeaderRight({ onSearchPress, onFilterPress, onProfilePress }: {
 export function HomeTabs() {
   const { t } = useTranslation()
   const navigation = useNavigation()
+  const { unreadCount, fetchUnreadCount } = useNotificationsStore()
+
+  useEffect(() => {
+    fetchUnreadCount()
+  }, [])
   const [filterModalVisible, setFilterModalVisible] = useState(false)
   const [notificationFilterModalVisible, setNotificationFilterModalVisible] = useState(false)
   const [searchModalVisible, setSearchModalVisible] = useState(false)
@@ -227,6 +233,8 @@ export function HomeTabs() {
         component={NotificationsPage}
         options={{
           title: t('appName'),
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 9 ? '9+' : unreadCount) : undefined,
+          tabBarBadgeStyle: { fontSize: 10, minWidth: 16, height: 16, lineHeight: 16 },
         }}
       />
       <Tab.Screen

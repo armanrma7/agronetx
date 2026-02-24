@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { LoginPage, RegisterPage, ForgotPasswordPage, VerificationPage } from '../pages/auth'
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { AnnouncementApplicationsPage } from '../pages/profile/application/AnnouncementApplicationsPage'
+import { ApplicationDetailPage } from '../pages/profile/application/ApplicationDetailPage'
 import { LanguagesPage } from '../pages/settings'
 import { NewAnnouncementFormPage, AnnouncementDetailPage, ApplicationFormPage } from '../pages/main'
 import { HomeTabs } from './HomeTabs'
@@ -173,6 +174,15 @@ export function AppNavigator() {
         <MainStack.Screen 
           name="AnnouncementApplications" 
           component={AnnouncementApplicationsPage}
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+            animation: 'slide_from_right',
+          }}
+        />
+        <MainStack.Screen
+          name="ApplicationDetail"
+          component={ApplicationDetailPage}
           options={{
             headerShown: false,
             gestureEnabled: true,

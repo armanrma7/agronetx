@@ -32,7 +32,9 @@
     "success": "Հաջողություն",
     "error": "Սխալ",
     "empty": "Դատարկ է",
-    "notSpecified": "–"
+    "notSpecified": "–",
+    "unknownUser": "Անհայտ",
+    "location": "Գտնվելու վայր"
   },
   "register": {
     "title": "Գրանցում",
@@ -232,7 +234,14 @@
     "filterDescription": "Կարգավորեք ֆիլտրերը՝ անհրաժեշտ ծանուցումները գտնելու համար:",
     "notificationType": "Ծանուցման տեսակ",
     "notificationStatus": "Կարգավիճակ",
-    "notificationPeriod": "Ծանուցման ժամանակահատված"
+    "notificationPeriod": "Ծանուցման ժամանակահատված",
+    "all": "Բոլորը",
+    "unread": "Չկարդացած",
+    "earlier": "Ավելի վաղ",
+    "detail": "Ծանուցում",
+    "minutesAgo": "{{count}} ր առաջ",
+    "hoursAgo": "{{count}} ժ առաջ",
+    "daysAgo": "{{count}} օր առաջ"
   },
   "profile": {
     "title": "Իմ Հայտերը",
@@ -303,6 +312,7 @@
     "notesPlaceholder": "Լրացնել",
     "submit": "Ուղարկել",
     "submitSuccess": "Ձեր դիմումը հաջողությամբ ուղարկվել է",
+    "updateSuccess": "Ձեր դիմումը հաջողությամբ թարմացվել է",
     "submitError": "Դիմումը ուղարկելը ձախողվեց",
     "fillIn": "Լրացնել",
     "dateNotAvailable": "Ամսաթիվը հասանելի չէ",
@@ -330,7 +340,16 @@
     "statusRejected": "Մերժված",
     "statusClosed": "Փակված",
     "approveConfirm": "Հաստատել այս դիմումը?",
-    "rejectConfirm": "Մերժել այս դիմումը?"
+    "rejectConfirm": "Մերժել այս դիմումը?",
+    "status": "Կարգավիճակ",
+    "details": "Դիմումի տվյալներ",
+    "requestedQuantity": "Պահանջված քանակ",
+    "applicationDate": "Դիմումի ամսաթիվ",
+    "empty": "Դիմումներ չկան",
+    "approveSuccess": "Դիմումը հաստատվել է",
+    "approveError": "Հաստատումը ձախողվեց",
+    "rejectSuccess": "Դիմումը մերժվել է",
+    "rejectError": "Մերժումը ձախողվեց"
   },
   "units": {
     "daily": "Օրական",

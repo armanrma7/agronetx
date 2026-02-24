@@ -4,7 +4,7 @@
  */
 
 export const API_CONFIG = {
-  baseURL: 'http://600a64423d4b.ngrok.app/',
+  baseURL: 'https://41c4cc3cf04d.ngrok.app/',
   timeout: 0, // 30 seconds
 }
 

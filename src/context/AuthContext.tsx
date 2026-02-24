@@ -5,11 +5,9 @@
  */
 
 import React, { createContext, useContext, useEffect, ReactNode } from 'react'
-import { useAuthStore } from '../store/auth.store'
+import { useAuthStore } from '../store/auth/useAuthStore'
 import { Profile } from '../types'
-
-// Import User type from Zustand store
-import type { User } from '../store/auth.store'
+import type { User } from '../store/auth/useAuthStore'
 
 interface AuthContextType {
   user: User | null

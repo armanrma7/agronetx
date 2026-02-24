@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { Announcement } from '../../types'
 import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
 import { AppHeader } from '../../components/AppHeader'
+import { useAnnouncementsStore } from '../../store/announcements/useAnnouncementsStore'
 
 const { width } = Dimensions.get('window')
 
@@ -35,8 +36,9 @@ export function AnnouncementDetailPage() {
   const { user } = useAuth()
   const { announcementId } = (route.params as RouteParams) || { announcementId: '' }
 
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { cache, fetchById, cancelAnnouncement: cancelAnnouncementInStore, setInCache } = useAnnouncementsStore()
+  const [announcement, setAnnouncement] = useState<Announcement | null>(cache[announcementId] ?? null)
+  const [loading, setLoading] = useState(!cache[announcementId])
   const [cancelling, setCancelling] = useState(false)
   const [contactModalVisible, setContactModalVisible] = useState(false)
   const [regionNames, setRegionNames] = useState<string[]>([])
@@ -146,18 +148,17 @@ export function AnnouncementDetailPage() {
   }, [announcement])
 
 
-  const fetchAnnouncement = async () => {
+  const fetchAnnouncement = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await announcementsAPI.getAnnouncementByIdAPI(announcementId)
-      console.info('data', data)
+      const data = await fetchById(announcementId)
       setAnnouncement(data)
     } catch (err) {
       setAnnouncement(null)
     } finally {
       setLoading(false)
     }
-  }
+  }, [announcementId, fetchById])
 
 
   const formatDateRange = (startDate: string, endDate?: string) => {
@@ -340,11 +341,9 @@ export function AnnouncementDetailPage() {
     
     setCancelling(true)
     try {
-      // Call the cancel API
-      await announcementsAPI.cancelAnnouncementAPI(announcement.id)
-      
-      // Refresh the announcement data
-      await fetchAnnouncement()
+      // Cancel via store — updates cache + list optimistically
+      await cancelAnnouncementInStore(announcement.id)
+      setAnnouncement(prev => prev ? { ...prev, status: 'cancelled' } : prev)
       
       // Show success message or navigate back
       Alert.alert(

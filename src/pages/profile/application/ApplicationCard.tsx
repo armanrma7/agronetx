@@ -20,7 +20,8 @@ export interface ApplicationCardProps {
   onApprove: (id: string) => void
   onReject: (id: string) => void
   onCloseApplication: (id: string) => void
-  onView: (announcementId: string) => void
+  onView: (app: ApplicationListItem) => void
+  onEdit?: (app: ApplicationListItem) => void
 }
 
 export const ApplicationCard = React.memo(function ApplicationCard({
@@ -33,6 +34,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
   onReject,
   onCloseApplication,
   onView,
+  onEdit,
 }: ApplicationCardProps) {
   const { t } = useTranslation()
 
@@ -49,6 +51,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
   const isClosed = isClosedStatus(app.status)
   const isMyApplication =
     currentUserId != null && String(app.user_id) === String(currentUserId)
+  const isPending = !isApproved && !isRejected && !isClosed
 
   const hasThreeButtons =
     !isMyApplication && !isApproved && !isRejected
@@ -60,10 +63,20 @@ export const ApplicationCard = React.memo(function ApplicationCard({
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={styles.statusText}>{statusLabel}</Text>
         </View>
+        {isMyApplication && isPending && onEdit && (
+          <TouchableOpacity
+            style={styles.editButtonTop}
+            onPress={() => onEdit(app)}
+          >
+            <Text style={styles.editButtonTopText}>
+              {t('common.edit')}
+            </Text>
+          </TouchableOpacity>
+        )}
         {hasThreeButtons && (
           <TouchableOpacity
             style={styles.viewButtonTop}
-            onPress={() => onView(announcementId)}
+            onPress={() => onView(app)}
           >
             <Text style={styles.viewButtonTopText}>
               {t('applications.view')}
@@ -98,21 +111,23 @@ export const ApplicationCard = React.memo(function ApplicationCard({
       <View style={styles.actions}>
         <View style={styles.actionsLeft}>
           {isMyApplication ? (
-            !isClosed && (
-              <TouchableOpacity
-                style={styles.cancelButton}
-                disabled={isActionLoading}
-                onPress={() => onCloseApplication(app.id)}
-              >
-                {isActionLoading ? (
-                  <ActivityIndicator size="small" color={colors.error} />
-                ) : (
-                  <Text style={styles.cancelButtonText}>
-                    {t('common.cancel')}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )
+            <>
+              {!isClosed || isRejected && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  disabled={isActionLoading}
+                  onPress={() => onCloseApplication(app.id)}
+                >
+                  {isActionLoading ? (
+                    <ActivityIndicator size="small" color={colors.error} />
+                  ) : (
+                    <Text style={styles.cancelButtonText}>
+                      {t('common.cancel')}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </>
           ) : (
             <>
               {!isApproved && !isRejected && (
@@ -166,7 +181,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
         {!hasThreeButtons && (
           <TouchableOpacity
             style={styles.viewButtonBottom}
-            onPress={() => onView(announcementId)}
+            onPress={() => onView(app)}
           >
             <Text style={styles.viewButtonBottomText}>
               {t('applications.view')}
@@ -326,6 +341,21 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     color: colors.error,
+    fontWeight: '600',
+  },
+  editButtonTop: {
+    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.buttonPrimary,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editButtonTopText: {
+    fontSize: 14,
+    color: colors.buttonPrimary,
     fontWeight: '600',
   },
 })
