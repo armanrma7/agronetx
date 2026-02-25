@@ -6,7 +6,7 @@ import { LoginPage, RegisterPage, ForgotPasswordPage, VerificationPage } from '.
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { AnnouncementApplicationsPage } from '../pages/profile/application/AnnouncementApplicationsPage'
 import { ApplicationDetailPage } from '../pages/profile/application/ApplicationDetailPage'
-import { LanguagesPage } from '../pages/settings'
+import { LanguagesPage, SettingsPage, HelpPage } from '../pages/settings'
 import { NewAnnouncementFormPage, AnnouncementDetailPage, ApplicationFormPage } from '../pages/main'
 import { HomeTabs } from './HomeTabs'
 import { View, Text, TouchableOpacity, Pressable, Platform } from 'react-native'
@@ -107,6 +107,24 @@ export function AppNavigator() {
               headerBlurEffect: undefined,
               headerLargeTitle: false,
               headerShadowVisible: false,
+            }}
+          />
+          <MainStack.Screen
+            name="Settings"
+            component={SettingsPage}
+            options={{
+              headerShown: false,
+              gestureEnabled: true,
+              animation: 'slide_from_right',
+            }}
+          />
+          <MainStack.Screen
+            name="Help"
+            component={HelpPage}
+            options={{
+              headerShown: false,
+              gestureEnabled: true,
+              animation: 'slide_from_right',
             }}
           />
           <MainStack.Screen 

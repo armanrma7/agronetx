@@ -1,44 +1,45 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+  Alert,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../../context/AuthContext'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { colors } from '../../theme/colors'
-import { DEV_CONFIG } from '../../config/dev.config'
 import * as authAPI from '../../lib/api/auth.api'
 
 export function ForgotPasswordPage() {
   const navigation = useNavigation()
   const { t } = useTranslation()
-  const { sendOTP, loading, error } = useAuth()
-  const [phoneOrEmail, setPhoneOrEmail] = useState('')
-  const [errors, setErrors] = useState<{ phoneOrEmail?: string }>({})
+
+  const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ phone?: string }>({})
 
   const validate = (): boolean => {
-    const newErrors: { phoneOrEmail?: string } = {}
+    const newErrors: { phone?: string } = {}
 
-    if (!phoneOrEmail.trim()) {
-      newErrors.phoneOrEmail = t('forgotPassword.errors.phoneOrEmail')
-    } else {
-      const isEmail = phoneOrEmail?.includes('@')
-      if (isEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(phoneOrEmail)) {
-        newErrors.phoneOrEmail = t('forgotPassword.errors.invalidEmail')
-      } else if (!isEmail && !/^\+?[0-9]{10,}$/.test(phoneOrEmail.replace(/\s/g, ''))) {
-        newErrors.phoneOrEmail = t('forgotPassword.errors.invalidPhone')
-      }
+    if (!phone.trim()) {
+      newErrors.phone = t('forgotPassword.errors.phoneOrEmail')
+    } else if (!/^\+?[0-9]{10,}$/.test(phone.replace(/\s/g, ''))) {
+      newErrors.phone = t('forgotPassword.errors.invalidPhone')
     }
 
     setErrors(newErrors)
-    
-    // Show alert if there are validation errors
+
     if (Object.keys(newErrors).length > 0) {
-      const errorMessages = Object.values(newErrors).join('\n')
-      Alert.alert('Սխալ', errorMessages, [{ text: 'Լավ' }])
+      Alert.alert(t('common.error'), Object.values(newErrors).join('\n'), [{ text: t('common.ok') }])
       return false
     }
-    
+
     return true
   }
 
@@ -46,35 +47,24 @@ export function ForgotPasswordPage() {
     if (!validate()) return
 
     try {
-      // MOCK MODE
-      if (DEV_CONFIG.MOCK_MODE) {
-        await new Promise<void>(resolve => setTimeout(resolve, DEV_CONFIG.MOCK_DELAY))
-        console.log('MOCK: Password reset OTP sent to', phoneOrEmail)
-        Alert.alert(
-          'Հաջողություն',
-          'Վերահաստատման կոդը ուղարկվել է',
-          [{ text: 'Լավ', onPress: () => (navigation as any).navigate('Verification', { phone: phoneOrEmail }) }]
-        )
-        return
-      }
+      setLoading(true)
+      await authAPI.forgotPasswordAPI({ phone: phone.trim() })
 
-      // REAL MODE - Use custom API
-      await authAPI.forgotPasswordAPI({ phoneOrEmail })
-      
-      // Show success alert and navigate
       Alert.alert(
-        'Հաջողություն',
-        'Վերահաստատման կոդը ուղարկվել է',
-        [{ text: 'Լավ', onPress: () => (navigation as any).navigate('Verification', { phone: phoneOrEmail }) }]
+        t('common.success'),
+        t('forgotPassword.codeSent'),
+        [{
+          text: t('common.ok'),
+          onPress: () => (navigation as any).navigate('Verification', { phone: phone.trim() }),
+        }]
       )
     } catch (err: any) {
       console.error('Forgot password error:', err)
-      const errorMessage = err?.message || error || 'Վերականգնման ժամանակ սխալ է տեղի ունեցել'
-      Alert.alert(
-        'Սխալ',
-        errorMessage,
-        [{ text: 'Լավ' }]
-      )
+      const errorMessage =
+        err?.response?.data?.message || err?.message || t('forgotPassword.errors.recoveryFailed')
+      Alert.alert(t('common.error'), errorMessage, [{ text: t('common.ok') }])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -95,18 +85,13 @@ export function ForgotPasswordPage() {
         <Text style={styles.instructions}>{t('forgotPassword.description')}</Text>
 
         <Input
-          label="Email or Phone"
-          value={phoneOrEmail}
+          label={t('forgotPassword.phoneLabel')}
+          value={phone}
           required
-          onChangeText={setPhoneOrEmail}
-          placeholder={t('forgotPassword.phoneOrEmail')}
-          error={errors.phoneOrEmail}
-          note={
-            phoneOrEmail && !phoneOrEmail.includes('@')
-              ? t('forgotPassword.phoneNote')
-              : undefined
-          }
-          // keyboardType={phoneOrEmail?.includes('@') ? 'email-address' : 'phone-pad'}
+          onChangeText={setPhone}
+          placeholder={t('forgotPassword.phonePlaceholder')}
+          keyboardType="phone-pad"
+          error={errors.phone}
           autoCapitalize="none"
         />
 
@@ -114,15 +99,12 @@ export function ForgotPasswordPage() {
           <Button
             onPress={handleSubmit}
             title={t('forgotPassword.submit')}
-            disabled={loading || !phoneOrEmail.trim()}
+            disabled={loading || !phone.trim()}
             loading={loading}
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.backLink}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backLink} onPress={() => navigation.goBack()}>
           <Text style={styles.backLinkText}>{t('forgotPassword.backToLogin')}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -164,6 +146,10 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     lineHeight: 24,
   },
+  buttonWrapper: {
+    marginTop: 24,
+    width: '100%',
+  },
   backLink: {
     marginTop: 24,
     alignSelf: 'center',
@@ -172,9 +158,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
   },
-  buttonWrapper: {
-    marginTop: 24,
-    width: '100%',
-  },
 })
-

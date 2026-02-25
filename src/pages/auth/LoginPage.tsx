@@ -11,8 +11,8 @@ export function LoginPage() {
   const navigation = useNavigation()
   const { t } = useTranslation()
   const { login, loading, error } = useAuth()
-  const [phoneOrEmail, setPhoneOrEmail] = useState('+37455188898')
-  const [password, setPassword] = useState('SecurePass123!')
+  const [phoneOrEmail, setPhoneOrEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ phoneOrEmail?: string; password?: string }>({})
 
   const validate = (): boolean => {
@@ -23,16 +23,15 @@ export function LoginPage() {
     }
     if (!password) {
       newErrors.password = t('login.errors.password')
-    } else if (password.length < 6) {
-      newErrors.password = 'Գաղտնաբառը պետք է լինի առնվազն 6 նիշ'
+    } else if (password.length < 8) {
+      newErrors.password = t('login.errors.passwordTooShort')
     }
 
     setErrors(newErrors)
-    
-    // Show alert if there are validation errors
+
     if (Object.keys(newErrors).length > 0) {
       const errorMessages = Object.values(newErrors).join('\n')
-      Alert.alert('Սխալ', errorMessages, [{ text: 'Լավ' }])
+      Alert.alert(t('common.error'), errorMessages, [{ text: t('common.ok') }])
       return false
     }
     
@@ -47,20 +46,15 @@ export function LoginPage() {
       // Login successful - navigation handled by AppNavigator
     } catch (err: any) {
       console.error('Login error:', err)
-      let errorMessage = err?.message || error || 'Մուտքի ժամանակ սխալ է տեղի ունեցել'
-      
-      // Check for network errors
+      let errorMessage = err?.message || error || t('login.errors.loginFailed')
+
       if (errorMessage.includes('Network request failed') || errorMessage.includes('fetch')) {
-        errorMessage = 'Ցանցային սխալ։ Խնդրում ենք ստուգել ինտերնետ կապը կամ փորձել ավելի ուշ։'
+        errorMessage = t('login.errors.networkError')
       } else if (errorMessage.includes('Invalid login credentials')) {
-        errorMessage = 'Սխալ մուտքանուն կամ գաղտնաբառ'
+        errorMessage = t('login.errors.invalidCredentials')
       }
-      
-      Alert.alert(
-        'Մուտքի սխալ',
-        errorMessage,
-        [{ text: 'Լավ' }]
-      )
+
+      Alert.alert(t('common.error'), errorMessage, [{ text: t('common.ok') }])
     }
   }
 

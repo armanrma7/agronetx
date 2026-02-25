@@ -1,0 +1,91 @@
+{
+    "title": "FREQUENTLY ASKED QUESTIONS",
+    "items": [
+      {
+        "title": "Announcements",
+        "children": [
+          {
+            "title": "What types of announcements can I create",
+            "content": "You can create three types of announcements:\n• Goods — to buy or sell agricultural products or equipment.\n• Services — to offer or request agricultural work or services.\n• Rent — to rent in or rent out land, machinery, or equipment."
+          },
+          {
+            "title": "What happens after I submit an announcement",
+            "content": "After submission, the system saves your announcement and places it in My Announcements.\nDepending on the provided information:\n• Some announcements are published immediately.\n• Others wait for administrator verification before becoming visible to other users."
+          },
+          {
+            "title": "Why is my announcement waiting for verification",
+            "content": "Announcements that include additional details such as description or photos may require administrator review to maintain marketplace quality and trust."
+          },
+          {
+            "title": "Can I edit my announcement",
+            "content": "Yes.\nIf the announcement is not yet verified, all fields can be edited.\nIf it is already published, only the availability period can be extended."
+          },
+          {
+            "title": "Can I close or cancel my announcement",
+            "content": "Yes.\nClose stops new applications but keeps the announcement history visible and approved applications.\nCancel removes the announcement and cancels all related applications."
+          },
+          {
+            "title": "What happens when an announcement expires",
+            "content": "When the availability period ends, the system automatically closes the announcement.\n• New applications are no longer allowed.\n• Pending applications are canceled automatically.\n• The announcement remains visible in your history."
+          },
+          {
+            "title": "Who can see my announcement",
+            "content": "All users can see your published announcements. Users located in the selected regions and villages will also receive notifications about your announcement within the application."
+          },
+          {
+            "title": "Why can’t I click Submit",
+            "content": "The Submit button becomes active only after all required fields are completed correctly. If required information is missing or invalid, the button remains disabled."
+          },
+          {
+            "title": "Can administrators deactivate announcements",
+            "content": "Administrators may deactivate announcements that violate platform rules or contain incorrect information."
+          },
+          {
+            "title": "What is the difference between Close and Cancel",
+            "content": "Both Close and Cancel stop the announcement and keep it visible in your My Announcements history.\n• Close stops new applications. Pending applications are canceled, while approved applications remain approved and the announcement remains visible in history.\n• Cancel stops the announcement and cancels all submitted applications.\nFrequent canceling of announcements may affect your rating in the future."
+          },
+          {
+            "title": "How does automatic closing work",
+            "content": "If the availability period expires and is not extended, the system automatically closes the announcement and informs affected users."
+          }
+        ]
+      },
+      {
+        "title": "Applications",
+        "children": [
+          {
+            "title": "How do I apply to an announcement",
+            "content": "Open an active announcement, click Apply, fill in the required information, and submit your application."
+          },
+          {
+            "title": "Is my application confirmed after submitting it",
+            "content": "No. Applying creates a request only. The deal becomes confirmed only after the announcer approves your application."
+          },
+          {
+            "title": "What does “Pending” application status mean",
+            "content": "Pending means your application was sent successfully and is waiting for the announcer’s decision."
+          },
+          {
+            "title": "Can I apply multiple times to the same announcement",
+            "content": "No. If you already have a Pending application, you must edit or cancel it instead of creating a new one. If your previous application was Approved or Canceled, you can apply again."
+          },
+          {
+            "title": "Can I edit my application",
+            "content": "Yes, but only while the application status is Pending and the announcement is still active."
+          },
+          {
+            "title": "Can I cancel my application",
+            "content": "Yes. You may cancel your application while it is Pending or Approved. Frequently canceling approved applications may affect your reliability rating."
+          }
+        ]
+      },
+      {
+        "title": "CONTACTS",
+        "content": "If you cannot find the answer to your question in the Frequently Asked Questions section, you can contact AgronetX support directly.\n\nSupport Contact Information\nPhone: +374 XX XXX XXX\nEmail: support@agronetx.am\nWorking Hours: Monday – Friday, 09:00 – 18:00\n\nOur support team will assist you with:\n• account and access issues,\n• announcement or application problems,\n• technical difficulties,\n• general questions about using AgronetX,\n• requests to add new goods, services, or rent names if not available in the list."
+      },
+      {
+        "title": "SEND EMAIL",
+        "content": "If you need additional assistance, you can contact AgronetX support by email.\nSupport Email: support@agronetx.am"
+      }
+    ]
+  }

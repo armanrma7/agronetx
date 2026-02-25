@@ -34,12 +34,12 @@ export function ProfileMenuModal({ visible, onClose }: ProfileMenuModalProps) {
 
   const handleHelpSupport = () => {
     onClose()
-    console.log('Help & Support pressed')
+    ;(navigation as any).navigate('Help')
   }
 
   const handleSettings = () => {
     onClose()
-    console.log('Settings pressed')
+    ;(navigation as any).navigate('Settings')
   }
 
   const handleTerms = () => {

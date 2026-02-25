@@ -118,3 +118,12 @@ export async function updateUserAPI(userId: string, data: UpdateUserRequest): Pr
   return response.data
 }
 
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+}
+
+export async function changePasswordAPI(data: ChangePasswordRequest): Promise<void> {
+  await apiClient.post('/auth/change-password', data)
+}
+

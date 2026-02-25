@@ -41,6 +41,8 @@
   "register": {
     "title": "Registration",
     "accountType": "Account Type",
+    "accountTypeFarmer": "Farmer",
+    "accountTypeOrganization": "Organization",
     "nameSurname": "First Name Last Name",
     "namePlaceholder": "Fill in",
     "phoneNumber": "Phone Number",
@@ -58,6 +60,9 @@
     "login": "Log in",
     "errors": {
       "accountType": "Please select account type",
+      "required": "Required",
+      "fullname": "First name and last name are required",
+      "phoneRequired": "Phone number is required",
       "name": "Please enter first name",
       "surname": "Please enter last name",
       "contactMethod": "Please select contact method",
@@ -67,7 +72,9 @@
       "password": "Please enter password",
       "passwordMin": "Password must be at least 6 characters",
       "passwordMatch": "Passwords do not match",
-      "agreeTerms": "You must agree to the terms"
+      "agreeTerms": "You must agree to the terms",
+      "registerFailed": "An error occurred during registration",
+      "registerError": "Registration error"
     }
   },
   "login": {
@@ -81,22 +88,26 @@
     "register": "Register",
     "errors": {
       "phoneOrEmail": "Please enter username, email or phone number",
-      "password": "Please enter password"
+      "password": "Please enter password",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "loginFailed": "An error occurred during login",
+      "networkError": "Network error. Please check your internet connection or try again later.",
+      "invalidCredentials": "Invalid username or password"
     }
   },
   "forgotPassword": {
     "title": "Forgot Password",
-    "description": "Enter your email or phone number and we'll send you a recovery link",
-    "phoneOrEmail": "Fill in phone number or email address",
+    "description": "Enter your phone number and we'll send you a recovery code",
+    "phoneLabel": "Phone Number",
+    "phonePlaceholder": "e.g. +374 12 345678",
     "phoneNote": "To receive the code, your phone number must have an active Viber or WhatsApp account",
     "submit": "Send Code",
     "backToLogin": "Back",
-    "emailSent": "Recovery link has been sent to your email",
-    "otpSent": "Verification code has been sent",
+    "codeSent": "Verification code has been sent to your phone number",
     "errors": {
-      "phoneOrEmail": "Please enter phone number or email address",
-      "invalidEmail": "Please enter a valid email address",
-      "invalidPhone": "Please enter a valid phone number"
+      "phoneOrEmail": "Please enter your phone number",
+      "invalidPhone": "Please enter a valid phone number",
+      "recoveryFailed": "An error occurred during recovery"
     }
   },
   "verification": {
@@ -107,7 +118,16 @@
     "didntReceive": "Didn't receive the code?",
     "resend": "Resend",
     "verify": "Confirm",
-    "tryOtherMethod": "Try another verification method"
+    "tryOtherMethod": "Try another verification method",
+    "successMessage": "Verification completed successfully.",
+    "codeResent": "Code has been resent",
+    "codeResentToPhone": "Verification code has been resent to your phone number",
+    "errors": {
+      "enterCode": "Please enter the 6-digit code",
+      "verifyFailed": "An error occurred during verification",
+      "verifyError": "Verification error",
+      "resendFailed": "An error occurred while resending the code"
+    }
   },
   "tabs": {
     "home": "Home",
@@ -269,7 +289,15 @@
     "myActiveListings": "My active listings",
     "history": "History",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "changePasswordSuccess": "Password changed successfully",
+    "changePasswordError": "Failed to change password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters"
   },
   "filters": {
     "title": "Filters",
@@ -292,7 +320,14 @@
     "toggleError": "Failed to add/remove favorite"
   },
   "settings": {
+    "title": "Settings",
     "languages": "Languages"
+  },
+  "help": {
+    "title": "Help & Support",
+    "sendEmail": "Send Email",
+    "call": "Call",
+    "email": "Email"
   },
   "applications": {
     "title": "Application",

@@ -20,15 +20,6 @@ import { useTranslation } from 'react-i18next'
 import { RegisterFormData, ContactMethod, AccountType } from '../../types'
 import { colors } from '../../theme/colors'
 
-/* ---------- OPTIONS ---------- */
-
-const accountTypeOptions = [
-  { value: 'farmer', label: 'Ֆերմեր' },
-  { value: 'company', label: 'Կազմակերպություն' },
-]
-
-// Removed contact method options - phone number only
-
 /* ---------- COMPONENT ---------- */
 
 export function RegisterPage() {
@@ -36,6 +27,11 @@ export function RegisterPage() {
   const route = useRoute()
   const { register, loading, error } = useAuth()
   const { t } = useTranslation()
+
+  const accountTypeOptions = [
+    { value: 'farmer', label: t('register.accountTypeFarmer') },
+    { value: 'company', label: t('register.accountTypeOrganization') },
+  ]
 
   const [formData, setFormData] = useState<RegisterFormData>({
     accountType: '',
@@ -67,32 +63,30 @@ export function RegisterPage() {
   const validate = () => {
     const e: Partial<Record<keyof RegisterFormData, string>> = {}
 
-    if (!formData.accountType) e.accountType = 'Պարտադիր է'
-    if (!formData.fullname.trim()) e.fullname = 'Անուն Ազգանուն դաշտը պարտադիր է'
+    if (!formData.accountType) e.accountType = t('register.errors.required')
+    if (!formData.fullname.trim()) e.fullname = t('register.errors.fullname')
 
-    // Validate phone number
     if (!formData.emailOrPhone.trim()) {
-      e.emailOrPhone = 'Հեռախոսահամարը պարտադիր է'
+      e.emailOrPhone = t('register.errors.phoneRequired')
     } else if (!/^\+?[0-9]{10,}$/.test(formData.emailOrPhone.replace(/\s/g, ''))) {
-      e.emailOrPhone = 'Սխալ հեռախոսահամար'
+      e.emailOrPhone = t('register.errors.invalidPhone')
     }
 
-    if (!formData.password) e.password = 'Գաղտնաբառը պարտադիր է'
-    if (formData.password && formData.password.length < 6) e.password = 'Առնվազն 6 սիմվոլ'
+    if (!formData.password) e.password = t('register.errors.password')
+    if (formData.password && formData.password.length < 6) e.password = t('register.errors.passwordMin')
     if (formData.password !== formData.confirmPassword)
-      e.confirmPassword = 'Գաղտնաբառերը չեն համընկնում'
+      e.confirmPassword = t('register.errors.passwordMatch')
 
-    if (!formData.agreeToTerms) e.agreeToTerms = 'Համաձայնվեք պայմաններին'
+    if (!formData.agreeToTerms) e.agreeToTerms = t('register.errors.agreeTerms')
 
     setErrors(e)
-    
-    // Show alert if there are validation errors
+
     if (Object.keys(e).length > 0) {
       const errorMessages = Object.values(e).join('\n')
-      Alert.alert('Սխալ', errorMessages, [{ text: 'Լավ' }])
+      Alert.alert(t('common.error'), errorMessages, [{ text: t('common.ok') }])
       return false
     }
-    
+
     return true
   }
 
@@ -108,15 +102,14 @@ export function RegisterPage() {
       await register(phone, formData.password, formData.fullname, formData.accountType as AccountType)
       ;(navigation as any).navigate('Verification', { phone: phone })
     } catch (err: any) {
-      const errorMessage = err?.message || error || 'Գրանցման ժամանակ սխալ է տեղի ունեցել'
+      const errorMessage = err?.message || error || t('register.errors.registerFailed')
       console.error('Registration error:', err)
-      
-      // Check if it's an OTP sending error (already handled above) or registration error
+
       if (!err?.message?.includes('sendOTP')) {
         Alert.alert(
-          'Գրանցման սխալ',
+          t('register.errors.registerError'),
           errorMessage,
-          [{ text: 'Լավ' }]
+          [{ text: t('common.ok') }]
         )
       }
     }
@@ -230,8 +223,8 @@ export function RegisterPage() {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <Button 
-          title="Գրանցվել" 
+        <Button
+          title={t('register.submit')}
           onPress={handleSubmit} 
           loading={loading}
           disabled={

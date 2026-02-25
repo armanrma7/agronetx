@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { Button } from '../../components/Button'
 import { colors } from '../../theme/colors'
-import { DEV_CONFIG } from '../../config/dev.config'
 
 export function VerificationPage() {
   const navigation = useNavigation()
@@ -80,9 +79,9 @@ export function VerificationPage() {
     const otpString = otp.join('')
     if (otpString.length !== 6) {
       Alert.alert(
-        'Սխալ',
-        'Խնդրում ենք մուտքագրել 6 նիշանոց կոդը',
-        [{ text: 'Լավ' }]
+        t('common.error'),
+        t('verification.errors.enterCode'),
+        [{ text: t('common.ok') }]
       )
       return
     }
@@ -91,32 +90,27 @@ export function VerificationPage() {
       console.log('Verifying OTP for phone:', phone, 'code:', otpString)
       await verifyOTP(phone, otpString)
       console.log('OTP verified successfully! User is now logged in.')
-      
-      // Show success alert
+
       Alert.alert(
-        'Հաջողություն',
-        'Հաստատումը հաջողությամբ կատարվել է։',
-        [{ 
-          text: 'Լավ',
+        t('common.success'),
+        t('verification.successMessage'),
+        [{
+          text: t('common.ok'),
           onPress: () => {
-            // Navigate to Home after successful verification
             ;(navigation as any).navigate('Home')
           }
         }]
       )
     } catch (err: any) {
       console.error('Verification error:', err)
-      const errorMessage = err?.message || 'Հաստատման ժամանակ սխալ է տեղի ունեցել'
-      console.error('Error message:', errorMessage)
-      
-      // Show error alert
+      const errorMessage = err?.message || t('verification.errors.verifyFailed')
+
       Alert.alert(
-        'Հաստատման սխալ',
+        t('verification.errors.verifyError'),
         errorMessage,
-        [{ text: 'Լավ' }]
+        [{ text: t('common.ok') }]
       )
-      
-      // Clear OTP inputs on error
+
       setOtp(['', '', '', '', '', ''])
       inputRefs.current[0]?.focus()
     }
@@ -127,36 +121,17 @@ export function VerificationPage() {
     
     try {
       setResendLoading(true)
-      
-      // MOCK MODE
-      if (DEV_CONFIG.MOCK_MODE) {
-        await new Promise<void>(resolve => setTimeout(resolve, DEV_CONFIG.MOCK_DELAY))
-        console.log('MOCK: OTP resent to', phone)
-        Alert.alert(
-          'Հաջողություն',
-          'Կոդը վերաուղարկվել է',
-          [{ text: 'Լավ' }]
-        )
-        setTimer(41)
-        setCanResend(false)
-        setOtp(['', '', '', '', '', ''])
-        inputRefs.current[0]?.focus()
-        setResendLoading(false)
-        return
-      }
 
-      // REAL MODE
       console.log('Resending OTP to:', phone)
       await sendOTP(phone)
       console.log('OTP resent successfully')
-      
-      // Show success alert
+
       Alert.alert(
-        'Հաջողություն',
-        'Հաստատման կոդը վերաուղարկվել է ձեր հեռախոսահամարին',
-        [{ text: 'Լավ' }]
+        t('common.success'),
+        t('verification.codeResentToPhone'),
+        [{ text: t('common.ok') }]
       )
-      
+
       setTimer(41)
       setCanResend(false)
       setOtp(['', '', '', '', '', ''])
@@ -164,16 +139,14 @@ export function VerificationPage() {
       setResendLoading(false)
     } catch (err: any) {
       console.error('Resend error:', err)
-      const errorMessage = err?.message || 'Կոդը վերաուղարկելիս սխալ է տեղի ունեցել'
-      console.error('Error message:', errorMessage)
-      
+      const errorMessage = err?.message || t('verification.errors.resendFailed')
+
       setResendLoading(false)
-      
-      // Show error alert
+
       Alert.alert(
-        'Սխալ',
+        t('common.error'),
         errorMessage,
-        [{ text: 'Լավ' }]
+        [{ text: t('common.ok') }]
       )
     }
   }
