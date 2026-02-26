@@ -80,19 +80,20 @@
   "login": {
     "title": "Login",
     "welcome": "Welcome back, please log in to continue.",
-    "phoneOrEmail": "Username, email or phone number",
+    "phone": "Phone number",
     "password": "Fill in password",
     "forgotPassword": "Forgot password?",
     "submit": "Login",
     "noAccount": "Don't have an account?",
     "register": "Register",
     "errors": {
-      "phoneOrEmail": "Please enter username, email or phone number",
+      "phoneRequired": "Please enter your phone number",
+      "invalidPhone": "Please enter a valid phone number",
       "password": "Please enter password",
       "passwordTooShort": "Password must be at least 8 characters",
       "loginFailed": "An error occurred during login",
       "networkError": "Network error. Please check your internet connection or try again later.",
-      "invalidCredentials": "Invalid username or password"
+      "invalidCredentials": "Invalid phone number or password"
     }
   },
   "forgotPassword": {
@@ -302,12 +303,26 @@
   "filters": {
     "title": "Filters",
     "description": "Adjust the filters to find the necessary applications.",
+    "category": "Category",
+    "goods": "Goods",
+    "service": "Service",
+    "rent": "Rent",
+    "type": "Type",
+    "sell": "Sell",
+    "buy": "Buy",
+    "group": "Group",
+    "subGroup": "Sub-group",
     "status": "Status",
     "region": "Region",
     "village": "Village",
     "timePeriod": "Received applications time period",
     "startDate": "Start",
     "endDate": "End",
+    "priceRange": "Price",
+    "priceFrom": "From",
+    "priceTo": "To",
+    "priceMustBePositive": "Price must be greater than 0.",
+    "priceToMustBeGreaterOrEqual": "Price \"To\" cannot be less than \"From\".",
     "clear": "Clear",
     "apply": "Apply"
   },
@@ -321,7 +336,10 @@
   },
   "settings": {
     "title": "Settings",
-    "languages": "Languages"
+    "languages": "Languages",
+    "logoutTitle": "Logout",
+    "logoutConfirm": "Are you sure you want to log out?",
+    "logoutError": "An error occurred while logging out. Please try again."
   },
   "help": {
     "title": "Help & Support",
@@ -359,6 +377,8 @@
     "loadError": "Failed to load announcement",
     "closeTitle": "Close Application",
     "closeConfirm": "Are you sure you want to close this application?",
+    "approveConfirm": "Are you sure you want to approve this application?",
+    "rejectConfirm": "Are you sure you want to reject this application?",
     "closed": "Application closed",
     "closeError": "Failed to close application",
     "statusClosed": "Closed",

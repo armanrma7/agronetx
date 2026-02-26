@@ -6,22 +6,24 @@
 import apiClient from './client'
 import type { Announcement, Owner, Group, Item, RegionVillage, ClosedByUser, AnnouncementApplication } from '../../types'
 
-// API Category interface
+// API Category interface (name_am = Armenian, used for current language display)
 export interface APICategory {
   id: string
   name: string
   name_en?: string
   name_hy?: string
+  name_am?: string
   name_ru?: string
   type: string
 }
 
-// API Item interface
+// API Item interface (name_am = Armenian, for current language display)
 export interface APIItem {
   id: string
   name: string
   name_en?: string
   name_hy?: string
+  name_am?: string
   name_ru?: string
   subcategory_id: string
   measurements?: Array<{
@@ -31,28 +33,63 @@ export interface APIItem {
   }>
 }
 
-// API Subcategory interface
+// API Subcategory interface (name_am = Armenian, used for current language display)
 export interface APISubcategory {
   id: string
   name: string
   name_en?: string
   name_hy?: string
+  name_am?: string
   name_ru?: string
   category_id: string
   items?: APIItem[]
 }
 
+/** Shared label by lang - use for group/category and sub-group/subcategory in FilterModal and NewAnnouncementFormPage */
+export type CatalogLang = 'hy' | 'ru' | 'en'
+
+export function getCategoryLabelByLang(c: APICategory, lang: CatalogLang): string {
+  return (lang === 'hy' && (c.name_hy ?? c.name_am ?? c.name)) ||
+    (lang === 'ru' && (c.name_ru ?? c.name)) ||
+    (c.name_en ?? c.name) ||
+    ''
+}
+
+export function getSubcategoryLabelByLang(s: APISubcategory, lang: CatalogLang): string {
+  return (lang === 'hy' && (s.name_hy ?? s.name_am ?? s.name)) ||
+    (lang === 'ru' && (s.name_ru ?? s.name)) ||
+    (s.name_en ?? s.name) ||
+    ''
+}
+
+export function getItemLabelByLang(item: APIItem, lang: CatalogLang): string {
+  return (lang === 'hy' && (item.name_hy ?? item.name_am ?? item.name)) ||
+    (lang === 'ru' && (item.name_ru ?? item.name)) ||
+    (item.name_en ?? item.name) ||
+    ''
+}
+
 export interface GetAnnouncementsParams {
-  category?: 'goods' | 'service' | 'rent'
+  /** Filter by category — repeat for multiple (e.g. category=goods&category=service) */
+  category?: ('goods' | 'service' | 'rent') | ('goods' | 'service' | 'rent')[]
+  type?: 'sell' | 'buy'
+  /** Filter by group — GoodsCategory UUID(s); repeat for multiple */
+  group_id?: string[]
+  /** Filter by subgroup — GoodsSubcategory UUID(s); repeat for multiple */
+  subgroup_id?: string[]
+  /** Filter by item — GoodsItem UUID(s); repeat for multiple */
+  item_id?: string[]
   status?: 'active' | 'completed' | 'cancelled' | 'published'
-  region?: string[] // Array of region UUIDs
-  village?: string[] // Array of village UUIDs
-  created_from?: string // Date in YYYY-MM-DD format
-  created_to?: string // Date in YYYY-MM-DD format
+  region?: string[]
+  village?: string[]
+  created_from?: string
+  created_to?: string
+  price_from?: string
+  price_to?: string
   limit?: number
   offset?: number
-  page?: number // Page number for pagination
-  signal?: AbortSignal // AbortSignal for request cancellation
+  page?: number
+  signal?: AbortSignal
 }
 
 /**
@@ -233,10 +270,26 @@ export async function getAnnouncementsAPI(params?: GetAnnouncementsParams): Prom
   
   if (params) {
     // Handle simple params
-    if (params.category) queryParams.category = params.category
+    if (params.type) queryParams.type = params.type
     if (params.status) queryParams.status = params.status
+    // Category: single or array (repeat for multiple)
+    if (params.category !== undefined) {
+      queryParams.category = Array.isArray(params.category) ? params.category : [params.category]
+    }
+    // group_id and subgroup_id: arrays, repeat for multiple
+    if (params.group_id && params.group_id.length > 0) {
+      queryParams.group_id = params.group_id
+    }
+    if (params.subgroup_id && params.subgroup_id.length > 0) {
+      queryParams.subgroup_id = params.subgroup_id
+    }
+    if (params.item_id && params.item_id.length > 0) {
+      queryParams.item_id = params.item_id
+    }
     if (params.created_from) queryParams.created_from = params.created_from
     if (params.created_to) queryParams.created_to = params.created_to
+    if (params.price_from) queryParams.price_from = params.price_from
+    if (params.price_to) queryParams.price_to = params.price_to
     if (params.limit !== undefined) queryParams.limit = params.limit
     if (params.offset !== undefined) queryParams.offset = params.offset
     if (params.page !== undefined) queryParams.page = params.page

@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { colors } from '../theme/colors'
 import Icon from './Icon'
@@ -19,6 +20,7 @@ interface ProfileMenuModalProps {
 }
 
 export function ProfileMenuModal({ visible, onClose }: ProfileMenuModalProps) {
+  const { t } = useTranslation()
   const navigation = useNavigation()
   const { logout } = useAuth()
 
@@ -52,19 +54,31 @@ export function ProfileMenuModal({ visible, onClose }: ProfileMenuModalProps) {
     console.log('Share App pressed')
   }
 
-  const handleLogout = async () => {
-    try {
-      onClose()
-      await logout()
-      console.log('User logged out successfully')
-    } catch (error: any) {
-      console.error('Logout error:', error)
-      Alert.alert(
-        'Սխալ',
-        'Ելքի ժամանակ սխալ է տեղի ունեցել։ Խնդրում ենք կրկին փորձել։',
-        [{ text: 'Լավ' }]
-      )
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      t('settings.logoutTitle'),
+      t('settings.logoutConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              onClose()
+              await logout()
+            } catch (error: any) {
+              console.error('Logout error:', error)
+              Alert.alert(
+                t('common.error'),
+                t('settings.logoutError'),
+                [{ text: t('common.ok') }],
+              )
+            }
+          },
+        },
+      ],
+    )
   }
 
   return (

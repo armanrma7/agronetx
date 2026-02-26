@@ -62,21 +62,44 @@ export function ApplicationDetailPage() {
   )
 
   const handleApprove = useCallback(() => {
-    runAction(
-      () => approveApplication(appId, announcementId),
-      'applications.approveSuccess',
-      'applications.approveError',
+    Alert.alert(
+      t('applications.approve'),
+      t('applications.approveConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          onPress: () =>
+            runAction(
+              () => approveApplication(appId, announcementId),
+              'applications.approveSuccess',
+              'applications.approveError',
+            ),
+        },
+      ],
     )
-  }, [appId, announcementId, approveApplication, runAction])
+  }, [appId, announcementId, approveApplication, runAction, t])
 
   const handleReject = useCallback(() => {
-    runAction(
-      () => rejectApplication(appId, announcementId),
-      'applications.rejectSuccess',
-      'applications.rejectError',
-      true,
+    Alert.alert(
+      t('applications.reject'),
+      t('applications.rejectConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          style: 'destructive',
+          onPress: () =>
+            runAction(
+              () => rejectApplication(appId, announcementId),
+              'applications.rejectSuccess',
+              'applications.rejectError',
+              true,
+            ),
+        },
+      ],
     )
-  }, [appId, announcementId, rejectApplication, runAction])
+  }, [appId, announcementId, rejectApplication, runAction, t])
 
   const handleClose = useCallback(() => {
     Alert.alert(

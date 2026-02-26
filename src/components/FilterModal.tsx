@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -7,13 +7,17 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  ActivityIndicator,
+  TextInput,
+  Alert,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { colors } from '../theme/colors'
 import { Select } from './Select'
 import Icon from './Icon'
-import { RegionVillageSelector } from './RegionVillageSelector'
+import * as announcementsAPI from '../lib/api/announcements.api'
+import * as profileAPI from '../lib/api/profile.api'
 
 interface FilterModalProps {
   visible: boolean
@@ -22,32 +26,37 @@ interface FilterModalProps {
   initialFilters?: FilterValues
 }
 
+export type FilterCategory = 'goods' | 'service' | 'rent'
+
 export interface FilterValues {
+  categories?: FilterCategory[]
+  type?: 'sell' | 'buy'
+  groups?: string[]   // group_id — GoodsCategory UUID(s)
+  subGroups?: string[] // subgroup_id — GoodsSubcategory UUID(s)
+  itemIds?: string[]  // item_id — selectable items (products) under subcategories
   status?: string
-  regions?: string[] // Array of region UUIDs
-  villages?: string[] // Array of village UUIDs
-  created_from?: string // Date in YYYY-MM-DD format
-  created_to?: string // Date in YYYY-MM-DD format
+  regions?: string[]
+  villages?: string[]
+  created_from?: string
+  created_to?: string
+  price_from?: string
+  price_to?: string
 }
 
 export function FilterModal({ visible, onClose, onApply, initialFilters }: FilterModalProps) {
   const { t, i18n } = useTranslation()
   const currentLang = (i18n.language || 'hy').split('-')[0] as 'hy' | 'ru' | 'en'
-  
-  const STATUS_OPTIONS = [
-    { value: 'published', label: t('announcements.status.active') || 'Հրապարակված' },
-    { value: 'active', label: t('announcements.status.active') || 'Ակտիվ' },
-    { value: 'completed', label: t('announcements.status.completed') || 'Ավարտված' },
-    { value: 'cancelled', label: t('announcements.status.cancelled') || 'Չեղարկված' },
-  ]
 
-  const [filters, setFilters] = useState<FilterValues>(initialFilters || {
-    status: undefined,
-    regions: [],
-    villages: [],
-    created_from: undefined,
-    created_to: undefined,
-  })
+  const [groupList, setGroupList] = useState<announcementsAPI.APICategory[]>([])
+  const [groupListLoading, setGroupListLoading] = useState(false)
+  const [subGroupList, setSubGroupList] = useState<announcementsAPI.APISubcategory[]>([])
+  const [subGroupListLoading, setSubGroupListLoading] = useState(false)
+  const [regionList, setRegionList] = useState<profileAPI.Region[]>([])
+  const [regionListLoading, setRegionListLoading] = useState(false)
+  const [villageList, setVillageList] = useState<profileAPI.Village[]>([])
+  const [villageListLoading, setVillageListLoading] = useState(false)
+
+  const [filters, setFilters] = useState<FilterValues>(initialFilters || {})
 
   const [selectedRegions, setSelectedRegions] = useState<string[]>(filters.regions || [])
   const [selectedVillages, setSelectedVillages] = useState<string[]>(filters.villages || [])
@@ -64,28 +73,140 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
   const [tempFromDate, setTempFromDate] = useState<Date>(new Date())
   const [tempToDate, setTempToDate] = useState<Date>(new Date())
 
-  // Reset filters when modal opens/closes or initialFilters change
+  // Use selected app language for group/sub/region/village labels (hy, ru, en)
+  const catalogLang: announcementsAPI.CatalogLang =
+    currentLang === 'ru' ? 'ru' : currentLang === 'en' ? 'en' : 'hy'
+
+  const getRegionLabel = (r: profileAPI.Region) =>
+    (currentLang === 'hy' && (r.name_hy ?? r.name)) ||
+    (currentLang === 'ru' && (r.name_ru ?? r.name)) ||
+    (r.name_en ?? r.name) ||
+    ''
+  const getVillageLabel = (v: profileAPI.Village) =>
+    (currentLang === 'hy' && (v.name_hy ?? v.name)) ||
+    (currentLang === 'ru' && (v.name_ru ?? v.name)) ||
+    (v.name_en ?? v.name) ||
+    ''
+
+  const categoryOptions = useMemo(() => [
+    { value: 'goods', label: t('filters.goods') },
+    { value: 'service', label: t('filters.service') },
+    { value: 'rent', label: t('filters.rent') },
+  ], [t])
+
+  const typeOptions = useMemo(() => [
+    { value: 'sell', label: t('filters.sell') },
+    { value: 'buy', label: t('filters.buy') },
+  ], [t])
+
+  const groupOptions = useMemo(() =>
+    groupList.map(c => ({
+      value: c.id,
+      label: announcementsAPI.getCategoryLabelByLang(c, catalogLang),
+    })),
+  [groupList, catalogLang])
+
+  // Subgroup list: flat list (subcategory ids only) for backward compat
+  const subGroupOptions = useMemo(() =>
+    subGroupList.map(s => ({
+      value: s.id,
+      label: announcementsAPI.getSubcategoryLabelByLang(s, catalogLang),
+    })),
+  [subGroupList, catalogLang])
+
+  // Name/Item options: subcategory as section header + items as selectable (like create announcement)
+  const nameOptions = useMemo(() => {
+    const opts: { value: string; label: string; isHeader?: boolean; headerLabel?: string }[] = []
+    subGroupList.forEach(sub => {
+      const subLabel = announcementsAPI.getSubcategoryLabelByLang(sub, catalogLang)
+      opts.push({ value: `header_${sub.id}`, label: subLabel, isHeader: true })
+      if (sub.items?.length) {
+        sub.items.forEach((item: announcementsAPI.APIItem) => {
+          opts.push({
+            value: item.id,
+            label: announcementsAPI.getItemLabelByLang(item, catalogLang),
+            isHeader: false,
+            headerLabel: subLabel,
+          })
+        })
+      }
+    })
+    return opts
+  }, [subGroupList, catalogLang])
+
+  const regionOptions = useMemo(() =>
+    regionList.map(r => ({ value: r.id, label: getRegionLabel(r) })),
+  [regionList, currentLang])
+
+  const villageOptions = useMemo(() =>
+    villageList.map(v => ({ value: v.id, label: getVillageLabel(v) })),
+  [villageList, currentLang])
+
+  // Fetch regions when modal is visible
+  useEffect(() => {
+    if (!visible) return
+    setRegionListLoading(true)
+    profileAPI.getRegionsAPI()
+      .then(setRegionList)
+      .catch(() => setRegionList([]))
+      .finally(() => setRegionListLoading(false))
+  }, [visible])
+
+  // Fetch villages when one region is selected
+  useEffect(() => {
+    const regionId = selectedRegions[0]
+    if (!regionId) {
+      setVillageList([])
+      return
+    }
+    setVillageListLoading(true)
+    profileAPI.getVillagesByRegionAPI(regionId)
+      .then(setVillageList)
+      .catch(() => setVillageList([]))
+      .finally(() => setVillageListLoading(false))
+  }, [selectedRegions[0]])
+
+  // Fetch groups from backend: when no category filter, fetch all types (goods+service+rent) so all groups show like create announcement
+  useEffect(() => {
+    if (!visible) return
+    const types: FilterCategory[] = filters.categories?.length ? filters.categories : ['goods', 'service', 'rent']
+    setGroupListLoading(true)
+    Promise.all(types.map(ty => announcementsAPI.getCategoriesByTypeAPI(ty)))
+      .then(results => {
+        const byId = new Map<string, announcementsAPI.APICategory>()
+        results.flat().forEach((c: announcementsAPI.APICategory) => byId.set(c.id, c))
+        setGroupList(Array.from(byId.values()))
+      })
+      .catch(() => setGroupList([]))
+      .finally(() => setGroupListLoading(false))
+  }, [visible, filters.categories])
+
+  // Fetch subcategories when groups selected: for each group, fetch and merge (unique by id)
+  useEffect(() => {
+    if (!filters.groups?.length) {
+      setSubGroupList([])
+      return
+    }
+    setSubGroupListLoading(true)
+    Promise.all(filters.groups.map(id => announcementsAPI.getSubcategoriesByCategoryIdAPI(id)))
+      .then(results => {
+        const byId = new Map<string, announcementsAPI.APISubcategory>()
+        results.flat().forEach(s => byId.set(s.id, s))
+        setSubGroupList(Array.from(byId.values()))
+      })
+      .catch(() => setSubGroupList([]))
+      .finally(() => setSubGroupListLoading(false))
+  }, [filters.groups])
+
+  // Reset filters when modal opens/closes or initialFilters change (single select: at most one region, one village)
   useEffect(() => {
     if (visible) {
-      if (initialFilters) {
-        setFilters(initialFilters)
-        setSelectedRegions(initialFilters.regions || [])
-        setSelectedVillages(initialFilters.villages || [])
-        setCreatedFromDate(initialFilters.created_from ? new Date(initialFilters.created_from) : undefined)
-        setCreatedToDate(initialFilters.created_to ? new Date(initialFilters.created_to) : undefined)
-      } else {
-        setFilters({
-          status: undefined,
-          regions: [],
-          villages: [],
-          created_from: undefined,
-          created_to: undefined,
-        })
-        setSelectedRegions([])
-        setSelectedVillages([])
-        setCreatedFromDate(undefined)
-        setCreatedToDate(undefined)
-      }
+      const base = initialFilters || {}
+      setFilters(base)
+      setSelectedRegions(base.regions?.slice(0, 1) ?? [])
+      setSelectedVillages(base.villages?.slice(0, 1) ?? [])
+      setCreatedFromDate(base.created_from ? new Date(base.created_from) : undefined)
+      setCreatedToDate(base.created_to ? new Date(base.created_to) : undefined)
     }
   }, [visible, initialFilters])
 
@@ -155,28 +276,51 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
   }
 
   const handleClear = () => {
-    setFilters({
-      status: undefined,
-      regions: undefined,
-      villages: undefined,
-      created_from: undefined,
-      created_to: undefined,
-    })
+    setFilters({})
     setSelectedRegions([])
     setSelectedVillages([])
     setCreatedFromDate(undefined)
     setCreatedToDate(undefined)
   }
 
+  const parsePrice = (s: string | undefined): number | null => {
+    if (s == null || s.trim() === '') return null
+    const n = parseFloat(s.trim().replace(',', '.'))
+    return Number.isNaN(n) ? null : n
+  }
+
   const handleApply = () => {
+    const fromNum = parsePrice(filters.price_from)
+    const toNum = parsePrice(filters.price_to)
+    if (filters.price_from != null && filters.price_from.trim() !== '') {
+      if (fromNum == null || fromNum <= 0) {
+        Alert.alert(t('common.error'), t('filters.priceMustBePositive'))
+        return
+      }
+    }
+    if (filters.price_to != null && filters.price_to.trim() !== '') {
+      if (toNum == null || toNum <= 0) {
+        Alert.alert(t('common.error'), t('filters.priceMustBePositive'))
+        return
+      }
+      if (fromNum != null && toNum < fromNum) {
+        Alert.alert(t('common.error'), t('filters.priceToMustBeGreaterOrEqual'))
+        return
+      }
+    }
     const appliedFilters: FilterValues = {}
+    if (filters.categories?.length) appliedFilters.categories = filters.categories
+    if (filters.type) appliedFilters.type = filters.type
+    if (filters.groups?.length) appliedFilters.groups = filters.groups
+    if (filters.subGroups?.length) appliedFilters.subGroups = filters.subGroups
+    if (filters.itemIds?.length) appliedFilters.itemIds = filters.itemIds
     if (filters.status) appliedFilters.status = filters.status
-    if (filters.regions && filters.regions.length > 0) appliedFilters.regions = filters.regions
-    if (filters.villages && filters.villages.length > 0) appliedFilters.villages = filters.villages
+    if (filters.regions?.length) appliedFilters.regions = filters.regions
+    if (filters.villages?.length) appliedFilters.villages = filters.villages
     if (filters.created_from) appliedFilters.created_from = filters.created_from
     if (filters.created_to) appliedFilters.created_to = filters.created_to
-    
-    console.log('✅ FilterModal: Applying filters:', appliedFilters)
+    if (filters.price_from) appliedFilters.price_from = filters.price_from
+    if (filters.price_to) appliedFilters.price_to = filters.price_to
     onApply(appliedFilters)
     onClose()
   }
@@ -212,27 +356,165 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
 
         {/* Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Status Filter */}
-          {/* <View style={styles.filterSection}>
+
+          {/* Category - Select only (filter page) */}
+          <View style={styles.filterSection}>
             <Select
-              label={t('filters.status')}
-              value={filters.status || ''}
-              onValueChange={(value) => setFilters({ ...filters, status: value || undefined })}
-              options={STATUS_OPTIONS}
+              label={t('filters.category')}
+              value={(filters.categories ?? [])[0] ?? ''}
+              onValueChange={(value) => setFilters(prev => ({
+                ...prev,
+                categories: value ? [value as FilterCategory] : undefined,
+                groups: undefined,
+                subGroups: undefined,
+              }))}
+              options={categoryOptions}
               placeholder={t('common.select')}
             />
-          </View> */}
+          </View>
 
-          {/* Region and Village Filter */}
+          {/* Type - Select only */}
           <View style={styles.filterSection}>
-            <Text style={styles.sectionLabel}>{t('filters.region')} / {t('filters.village')}</Text>
-            <RegionVillageSelector
-              selectedRegions={selectedRegions}
-              selectedVillages={selectedVillages}
-              onRegionsChange={setSelectedRegions}
-              onVillagesChange={setSelectedVillages}
-              currentLang={currentLang}
+            <Select
+              label={t('filters.type')}
+              value={filters.type ?? ''}
+              onValueChange={(value) => setFilters(prev => ({
+                ...prev,
+                type: value ? (value as FilterValues['type']) : undefined,
+              }))}
+              options={typeOptions}
+              placeholder={t('common.select')}
             />
+          </View>
+
+          {/* Price range */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionLabel}>{t('filters.priceRange')}</Text>
+            <View style={styles.priceRow}>
+              <View style={styles.priceInputWrap}>
+                <Text style={styles.dateLabel}>{t('filters.priceFrom')}</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={filters.price_from ?? ''}
+                  onChangeText={(value) => {
+                    const sanitized = value.replace(/[^0-9.]/g, '').replace(/^(\d*\.)(.*)/, (_, a, b) => a + b.replace(/\./g, ''))
+                    setFilters(prev => ({
+                      ...prev,
+                      price_from: sanitized || undefined,
+                    }))
+                  }}
+                  placeholder={t('filters.priceFrom')}
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.priceInputWrap}>
+                <Text style={styles.dateLabel}>{t('filters.priceTo')}</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={filters.price_to ?? ''}
+                  onChangeText={(value) => {
+                    const sanitized = value.replace(/[^0-9.]/g, '').replace(/^(\d*\.)(.*)/, (_, a, b) => a + b.replace(/\./g, ''))
+                    setFilters(prev => ({
+                      ...prev,
+                      price_to: sanitized || undefined,
+                    }))
+                  }}
+                  placeholder={t('filters.priceTo')}
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Group - Select only (with loading like create announcement) */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionLabel}>{t('addAnnouncement.group')}</Text>
+            {groupListLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.buttonPrimary} />
+                <Text style={styles.loadingText}>{t('common.loading')}</Text>
+              </View>
+            ) : (
+              <Select
+                value={(filters.groups ?? [])[0] ?? ''}
+                onValueChange={(value) => setFilters(prev => ({
+                  ...prev,
+                  groups: value ? [value] : undefined,
+                  subGroups: undefined,
+                  itemIds: undefined,
+                }))}
+                options={groupOptions}
+                placeholder={t('common.select')}
+                disabled={groupOptions.length === 0}
+              />
+            )}
+          </View>
+
+          {/* Subgroup / Name - Select with subcategory headers and selectable items (like create announcement) */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionLabel}>{t('addAnnouncement.name')}</Text>
+            {(filters.groups?.length && subGroupListLoading) ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.buttonPrimary} />
+                <Text style={styles.loadingText}>{t('common.loading')}</Text>
+              </View>
+            ) : (
+              <Select
+                value={(filters.itemIds ?? [])[0] ?? ''}
+                onValueChange={(value) => setFilters(prev => ({
+                  ...prev,
+                  itemIds: value ? [value] : undefined,
+                }))}
+                options={nameOptions}
+                placeholder={t('common.select')}
+                disabled={!filters.groups?.length || nameOptions.length === 0}
+                searchable
+                searchPlaceholder={t('common.search')}
+              />
+            )}
+          </View>
+
+          {/* Region - Select only */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionLabel}>{t('filters.region')}</Text>
+            {regionListLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.buttonPrimary} />
+                <Text style={styles.loadingText}>{t('common.loading')}</Text>
+              </View>
+            ) : (
+              <Select
+                value={selectedRegions[0] ?? ''}
+                onValueChange={(value) => {
+                  setSelectedRegions(value ? [value] : [])
+                  setSelectedVillages([])
+                }}
+                options={regionOptions}
+                placeholder={t('common.select')}
+                disabled={regionOptions.length === 0}
+              />
+            )}
+          </View>
+
+          {/* Village - Select only */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionLabel}>{t('filters.village')}</Text>
+            {villageListLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.buttonPrimary} />
+                <Text style={styles.loadingText}>{t('common.loading')}</Text>
+              </View>
+            ) : (
+              <Select
+                value={selectedVillages[0] ?? ''}
+                onValueChange={(value) => setSelectedVillages(value ? [value] : [])}
+                options={villageOptions}
+                placeholder={t('common.select')}
+                disabled={!selectedRegions.length || villageOptions.length === 0}
+              />
+            )}
           </View>
 
           {/* Created Date Range Section */}
@@ -419,11 +701,51 @@ const styles = StyleSheet.create({
   filterSection: {
     marginBottom: 24,
   },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border || colors.borderLight,
+    backgroundColor: colors.white,
+  },
+  chipActive: {
+    backgroundColor: colors.buttonPrimary,
+    borderColor: colors.buttonPrimary,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
+  chipTextActive: {
+    color: colors.white,
+  },
   sectionLabel: {
     fontSize: 14,
     color: colors.textTile || colors.textPrimary,
     marginBottom: 12,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   dateInputContainer: {
     marginBottom: 16,
@@ -452,6 +774,25 @@ const styles = StyleSheet.create({
   },
   dateInputPlaceholder: {
     color: colors.textTertiary,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  priceInputWrap: {
+    flex: 1,
+    marginBottom: 16,
+  },
+  priceInput: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: colors.border || colors.borderLight,
+    borderRadius: 50,
+    backgroundColor: colors.background || '#F9FAFB',
+    fontSize: 16,
+    color: colors.textPrimary,
+    minHeight: 55,
   },
   footer: {
     flexDirection: 'row',

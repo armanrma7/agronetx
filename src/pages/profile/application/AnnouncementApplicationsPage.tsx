@@ -89,22 +89,45 @@ export function AnnouncementApplicationsPage() {
 
   const handleApprove = useCallback(
     (id: string) =>
-      runAction(
-        () => approveApplication(id, announcementId),
-        'applications.approveSuccess',
-        'applications.approveError',
+      Alert.alert(
+        t('applications.approve'),
+        t('applications.approveConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.confirm'),
+            onPress: () =>
+              runAction(
+                () => approveApplication(id, announcementId),
+                'applications.approveSuccess',
+                'applications.approveError',
+              ),
+          },
+        ],
       ),
-    [announcementId, approveApplication, runAction],
+    [announcementId, approveApplication, runAction, t],
   )
 
   const handleReject = useCallback(
     (id: string) =>
-      runAction(
-        () => rejectApplication(id, announcementId),
-        'applications.rejectSuccess',
-        'applications.rejectError',
+      Alert.alert(
+        t('applications.reject'),
+        t('applications.rejectConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.confirm'),
+            style: 'destructive',
+            onPress: () =>
+              runAction(
+                () => rejectApplication(id, announcementId),
+                'applications.rejectSuccess',
+                'applications.rejectError',
+              ),
+          },
+        ],
       ),
-    [announcementId, rejectApplication, runAction],
+    [announcementId, rejectApplication, runAction, t],
   )
 
   const handleCloseApplication = useCallback(

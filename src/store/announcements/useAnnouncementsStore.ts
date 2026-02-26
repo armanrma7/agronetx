@@ -33,6 +33,7 @@ interface AnnouncementsState {
   fetchList: (reset?: boolean, clearList?: boolean) => Promise<void>
   loadMore: () => void
   setActiveTab: (tab: AnnouncementsTab) => void
+  setActiveTabSilent: (tab: AnnouncementsTab) => void
   setFilters: (filters: FilterValues | undefined) => void
   fetchById: (id: string) => Promise<Announcement>
   cancelAnnouncement: (id: string) => Promise<void>
@@ -46,7 +47,7 @@ export const useAnnouncementsStore = create<AnnouncementsState>((set, get) => ({
   page: 1,
   total: 0,
   hasMore: true,
-  activeTab: 'offer',
+  activeTab: 'offer' as AnnouncementsTab,
   filters: undefined,
   cache: {},
 
@@ -80,11 +81,18 @@ export const useAnnouncementsStore = create<AnnouncementsState>((set, get) => ({
       }
 
       if (filters) {
+        if (filters.categories?.length) params.category = filters.categories
+        if (filters.type) params.type = filters.type
+        if (filters.groups?.length) params.group_id = filters.groups
+        if (filters.subGroups?.length) params.subgroup_id = filters.subGroups
+        if (filters.itemIds?.length) params.item_id = filters.itemIds
         if (filters.status) params.status = filters.status as 'published' | 'active' | 'completed' | 'cancelled'
         if (filters.regions?.length) params.region = filters.regions
         if (filters.villages?.length) params.village = filters.villages
         if (filters.created_from) params.created_from = filters.created_from
         if (filters.created_to) params.created_to = filters.created_to
+        if (filters.price_from) params.price_from = filters.price_from
+        if (filters.price_to) params.price_to = filters.price_to
       }
 
       const response = await announcementsAPI.getAnnouncementsAPI(params)
@@ -121,13 +129,20 @@ export const useAnnouncementsStore = create<AnnouncementsState>((set, get) => ({
 
   setActiveTab: (tab: AnnouncementsTab) => {
     if (get().activeTab === tab) return
-    set({ activeTab: tab })
+    set({ activeTab: tab, filters: undefined })
     get().fetchList(true, true)
   },
 
+  setActiveTabSilent: (tab: AnnouncementsTab) => {
+    set({ activeTab: tab })
+  },
+
   setFilters: (filters: FilterValues | undefined) => {
+    const prev = get().filters
     set({ filters })
-    get().fetchList(true, true)
+    if (filters !== undefined || prev !== undefined) {
+      get().fetchList(true, true)
+    }
   },
 
   fetchById: async (id: string) => {

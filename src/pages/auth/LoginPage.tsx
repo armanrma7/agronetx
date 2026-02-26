@@ -11,15 +11,17 @@ export function LoginPage() {
   const navigation = useNavigation()
   const { t } = useTranslation()
   const { login, loading, error } = useAuth()
-  const [phoneOrEmail, setPhoneOrEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
-  const [errors, setErrors] = useState<{ phoneOrEmail?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{ phone?: string; password?: string }>({})
 
   const validate = (): boolean => {
-    const newErrors: { phoneOrEmail?: string; password?: string } = {}
+    const newErrors: { phone?: string; password?: string } = {}
 
-    if (!phoneOrEmail.trim()) {
-      newErrors.phoneOrEmail = t('login.errors.phoneOrEmail')
+    if (!phone.trim()) {
+      newErrors.phone = t('login.errors.phoneRequired')
+    } else if (!/^\+?[0-9]{10,}$/.test(phone.replace(/\s/g, ''))) {
+      newErrors.phone = t('login.errors.invalidPhone')
     }
     if (!password) {
       newErrors.password = t('login.errors.password')
@@ -34,7 +36,7 @@ export function LoginPage() {
       Alert.alert(t('common.error'), errorMessages, [{ text: t('common.ok') }])
       return false
     }
-    
+
     return true
   }
 
@@ -42,7 +44,7 @@ export function LoginPage() {
     if (!validate()) return
 
     try {
-      await login(phoneOrEmail, password)
+      await login(phone.trim(), password)
       // Login successful - navigation handled by AppNavigator
     } catch (err: any) {
       console.error('Login error:', err)
@@ -85,11 +87,12 @@ export function LoginPage() {
 
   {/* Inputs */}
   <Input
-    value={phoneOrEmail}
+    value={phone}
     label=""
-    onChangeText={setPhoneOrEmail}
-    placeholder={t('login.phoneOrEmail')}
-    error={errors.phoneOrEmail}
+    onChangeText={setPhone}
+    placeholder={t('login.phone')}
+    keyboardType="phone-pad"
+    error={errors.phone}
     autoCapitalize="none"
   />
 
@@ -117,7 +120,7 @@ export function LoginPage() {
     title={t('login.submit')}
     onPress={handleSubmit}
     loading={loading}
-    disabled={loading || !phoneOrEmail.trim() || !password.trim()}
+    disabled={loading || !phone.trim() || !password.trim()}
   />
 
   {/* Register */}

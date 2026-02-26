@@ -336,35 +336,39 @@ export function AnnouncementDetailPage() {
     }
   }
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     if (!announcement) return
-    
-    setCancelling(true)
-    try {
-      // Cancel via store — updates cache + list optimistically
-      await cancelAnnouncementInStore(announcement.id)
-      setAnnouncement(prev => prev ? { ...prev, status: 'cancelled' } : prev)
-      
-      // Show success message or navigate back
-      Alert.alert(
-        t('common.success') || 'Հաջողություն',
-        t('announcements.cancelled') || 'Հայտարարությունը չեղարկված է',
-        [
-          {
-            text: t('common.ok') || 'Լավ',
-            onPress: () => navigation.goBack(),
+    Alert.alert(
+      t('announcements.cancelTitle'),
+      t('announcements.cancelConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true)
+            try {
+              await cancelAnnouncementInStore(announcement.id)
+              setAnnouncement(prev => prev ? { ...prev, status: 'cancelled' } : prev)
+              Alert.alert(
+                t('common.success'),
+                t('announcements.cancelled'),
+                [{ text: t('common.ok'), onPress: () => navigation.goBack() }],
+              )
+            } catch (error: any) {
+              console.error('Error cancelling announcement:', error)
+              Alert.alert(
+                t('common.error'),
+                error.response?.data?.message || t('announcements.cancelError'),
+              )
+            } finally {
+              setCancelling(false)
+            }
           },
-        ]
-      )
-    } catch (error: any) {
-      console.error('Error cancelling announcement:', error)
-      Alert.alert(
-        t('common.error') || 'Սխալ',
-        error.response?.data?.message || t('announcements.cancelError') || 'Հայտարարությունը չեղարկելը ձախողվեց'
-      )
-    } finally {
-      setCancelling(false)
-    }
+        },
+      ],
+    )
   }
 
   const handleSearchPress = () => {

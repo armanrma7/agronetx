@@ -5,6 +5,8 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -34,8 +36,8 @@ export function AnnouncementsPage() {
     fetchList,
     loadMore,
     setActiveTab,
+    setActiveTabSilent,
     setFilters,
-    filters,
   } = useAnnouncementsStore()
 
   const { favoriteIds, fetchFavoriteIds } = useFavoritesStore()
@@ -46,24 +48,27 @@ export function AnnouncementsPage() {
     if (user) fetchAppliedIds(String(user.id))
   }, [fetchList, fetchAppliedIds, user])
 
-  // Sync filters from context or route params
-  useEffect(() => {
-    if (filterContext?.filters && Object.keys(filterContext.filters).length > 0) {
-      setFilters(filterContext.filters)
-    } else {
-      const routeParams = route.params as { filters?: any } | undefined
-      if (routeParams?.filters && Object.keys(routeParams.filters).length > 0) {
-        setFilters(routeParams.filters)
-      } else {
-        setFilters(undefined)
-      }
-    }
-  }, [filterContext?.filters, route.params])
-
-  // Initial list fetch
+  // Initial load when screen is first opened (store does not fetch when both filters and prev are undefined)
   useEffect(() => {
     fetchList(true)
-  }, [activeTab, filters])
+  }, [fetchList])
+
+  // Sync filters from context or route params; sync active tab to filter category when applied; setFilters triggers fetch
+  useEffect(() => {
+    const filtersToSet =
+      filterContext?.filters && Object.keys(filterContext.filters).length > 0
+        ? filterContext.filters
+        : (route.params as { filters?: any })?.filters && Object.keys((route.params as any).filters).length > 0
+          ? (route.params as any).filters
+          : undefined
+    // When filters include a category, set active tab to match (goods → offer, service → service, rent → rent)
+    if (filtersToSet?.categories?.length) {
+      const cat = filtersToSet.categories[0]
+      const tab = cat === 'goods' ? 'offer' : cat
+      setActiveTabSilent(tab)
+    }
+    setFilters(filtersToSet)
+  }, [filterContext?.filters, route.params, activeTab, setActiveTabSilent, setFilters])
 
   // Fetch user-specific data once when user is available
   useEffect(() => {
@@ -118,13 +123,17 @@ export function AnnouncementsPage() {
     />
   ), [favoriteIds, appliedIds, pendingIds, handleApply, handleView, handleFavoriteChange])
 
+  console.log('loading', loading)
   return (
     <View style={styles.container}>
       {/* Top Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'offer' && styles.tabActive]}
-          onPress={() => setActiveTab('offer')}
+          onPress={() => {
+            filterContext?.setFilters?.(null)
+            setActiveTab('offer')
+          }}
         >
           <Icon name="repeat" size={20} color={activeTab === 'offer' ? colors.primary : colors.textTertiary} />
           <Text style={[styles.tabText, activeTab === 'offer' && styles.tabTextActive]}>
@@ -134,7 +143,10 @@ export function AnnouncementsPage() {
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'service' && styles.tabActive]}
-          onPress={() => setActiveTab('service')}
+          onPress={() => {
+            filterContext?.setFilters?.(null)
+            setActiveTab('service')
+          }}
         >
           <Icon name="build" size={20} color={activeTab === 'service' ? colors.primary : colors.textTertiary} />
           <Text style={[styles.tabText, activeTab === 'service' && styles.tabTextActive]}>
@@ -144,7 +156,10 @@ export function AnnouncementsPage() {
 
         <TouchableOpacity
           style={[styles.tab, activeTab === 'rent' && styles.tabActive]}
-          onPress={() => setActiveTab('rent')}
+          onPress={() => {
+            filterContext?.setFilters?.(null)
+            setActiveTab('rent')
+          }}
         >
           <Icon name="key" size={20} color={activeTab === 'rent' ? colors.primary : colors.textTertiary} />
           <Text style={[styles.tabText, activeTab === 'rent' && styles.tabTextActive]}>
@@ -153,18 +168,36 @@ export function AnnouncementsPage() {
         </TouchableOpacity>
       </View>
 
-      {/* Announcements */}
       <FlatList
         data={list}
         renderItem={renderAnnouncementItem}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        refreshing={loading}
-        onRefresh={handleRefresh}
+        contentContainerStyle={list.length === 0 ? [styles.listContainer, { flexGrow: 1 }] : styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={false}
+            onRefresh={handleRefresh}
+            colors={['transparent']}
+            tintColor={'transparent'}
+          />
+        }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
+        ListHeaderComponent={
+          loading && list.length > 0 ? (
+            <View style={styles.listLoader}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              {/* <Text style={styles.listLoaderText}>{t('common.loading')}</Text> */}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
-          !loading && list.length === 0 ? (
+          loading ? (
+            <View style={styles.listLoader}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              {/* <Text style={styles.listLoaderText}>{t('common.loading')}</Text> */}
+            </View>
+          ) : list.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{t('announcements.empty')}</Text>
             </View>
@@ -215,6 +248,26 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: colors.textTertiary,
+  },
+  listLoader: {
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listLoaderText: {
+    fontSize: 14,
+    color: colors.textTertiary,
   },
   emptyContainer: {
     padding: 40,

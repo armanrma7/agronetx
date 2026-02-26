@@ -11,7 +11,7 @@ import { SearchModal } from '../components/SearchModal'
 import { ProfileMenuModal } from '../components/ProfileMenuModal'
 import { AddAnnouncementModal } from '../components/AddAnnouncementModal'
 import { colors } from '../theme/colors'
-import { View, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { useAuth } from '../context/AuthContext'
 import { AnnouncementType } from '../types'
 import { useNotificationsStore } from '../store/notifications/useNotificationsStore'
@@ -27,34 +27,44 @@ export const FilterContext = React.createContext<{
   setFilters: () => {},
 })
 
-function HeaderRight({ onSearchPress, onFilterPress, onProfilePress }: { 
+function HeaderRight({ onSearchPress, onFilterPress, onProfilePress, initials }: { 
   onSearchPress: () => void
   onFilterPress: () => void
   onProfilePress: () => void
+  initials: string
 }) {
   return (
     <View style={styles.headerActions}>
-      {/* Search icon commented out
-      <TouchableOpacity onPress={onSearchPress} style={{ marginRight: 16 }}>
-        <Icon name="search" size={24} color={colors.white} />
-      </TouchableOpacity>
-      */}
-      <TouchableOpacity onPress={onProfilePress} style={{ marginRight: 12 }}>
+      <TouchableOpacity onPress={onProfilePress}>
         <View style={styles.headerAvatar}>
-          <Icon name="person" size={20} color={colors.white} />
+          {initials ? (
+            <Text style={styles.headerAvatarText}>{initials}</Text>
+          ) : (
+            <Icon name="person" size={20} color={colors.white} />
+          )}
         </View>
       </TouchableOpacity>
-      <TouchableOpacity onPress={onFilterPress} style={{ marginRight: 16, marginLeft: 12 }}>
+      <TouchableOpacity onPress={onFilterPress} style={{ marginRight: 16 }}>
         <Icon name="filter" size={24} color={colors.white} />
       </TouchableOpacity>
     </View>
   )
 }
 
+function getUserInitials(fullName?: string): string {
+  if (!fullName?.trim()) return ''
+  const parts = fullName.trim().split(/\s+/)
+  const first = parts[0]?.[0] ?? ''
+  const last = parts.length >1  ? (parts[parts.length - 1]?.[0] ?? '') : ''
+  return (first + last).toUpperCase()
+}
+
 export function HomeTabs() {
   const { t } = useTranslation()
   const navigation = useNavigation()
+  const { user } = useAuth()
   const { unreadCount, fetchUnreadCount } = useNotificationsStore()
+  const initials = getUserInitials(user?.full_name)
 
   useEffect(() => {
     fetchUnreadCount()
@@ -193,10 +203,11 @@ export function HomeTabs() {
               fontStyle: 'italic',
             },
             headerRight: () => (
-              <HeaderRight 
-                onSearchPress={handleSearchPress} 
-                onFilterPress={() => handleFilterPress(currentRoute)} 
-                onProfilePress={handleProfilePress} 
+              <HeaderRight
+                onSearchPress={handleSearchPress}
+                onFilterPress={() => handleFilterPress(currentRoute)}
+                onProfilePress={handleProfilePress}
+                initials={initials}
               />
             ),
         })}
@@ -317,15 +328,20 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 18,
   },
   headerAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+  },
+  headerAvatarText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.white,
   },
   addButtonTab: {
     flex: 1,

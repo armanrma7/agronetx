@@ -14,7 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native'
 import { colors } from '../../theme/colors'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AnnouncementType, Announcement } from '../../types'
-import type { ItemsJson, SupportedLang } from '../../types/items'
+import type { SupportedLang } from '../../types/items'
 import { AppHeader } from '../../components/AppHeader'
 import { Select } from '../../components/Select'
 import { RegionVillageSelector } from '../../components/RegionVillageSelector'
@@ -728,27 +728,18 @@ export function NewAnnouncementFormPage() {
 
   const subtypeOptions = getSubtypeOptions()
 
-  // Get display name for category/subcategory/item (supports name_am, name_hy, name_ru, name_en, name)
-  const getOptionLabel = (o: { name_hy?: string; name_am?: string; name_ru?: string; name_en?: string; name?: string }): string => {
-    const hy = o.name_hy ?? o.name_am
-    const ru = o.name_ru
-    const en = o.name_en
-    const name = o.name
-    if (currentLang === 'hy' && hy) return hy
-    if (currentLang === 'ru' && ru) return ru
-    if (currentLang === 'en' && en) return en
-    return en || ru || hy || name || ''
-  }
+  // Same label-by-lang as FilterModal (shared with announcements API)
+  const catalogLang: announcementsAPI.CatalogLang = currentLang === 'ru' || currentLang === 'en' ? currentLang : 'hy'
 
-  // Convert API categories to select options
+  // Convert API categories to select options (same as filter)
   const categoryOptions = apiCategories.map(category => ({
     value: category.id,
-    label: getOptionLabel(category)
+    label: announcementsAPI.getCategoryLabelByLang(category, catalogLang),
   }))
 
-  // Convert API subcategories with items to grouped select options
+  // Convert API subcategories with items to grouped select options (same label helpers as filter)
   const subcategoryOptions = apiSubcategories.flatMap(subcategory => {
-    const subcategoryLabel = getOptionLabel(subcategory)
+    const subcategoryLabel = announcementsAPI.getSubcategoryLabelByLang(subcategory, catalogLang)
 
     // Only process subcategories that have items
     if (!subcategory.items || subcategory.items.length === 0) {
@@ -765,8 +756,7 @@ export function NewAnnouncementFormPage() {
       // Item options (selectable) - only items are selectable (e.g., "Strawberry", "Blueberry")
       ...subcategory.items.map((item: announcementsAPI.APIItem) => ({
         value: item.id,
-        label: getOptionLabel(item),
-        // No headerLabel - show only item name in button
+        label: announcementsAPI.getItemLabelByLang(item, catalogLang),
         isHeader: false,
       }))
     ]
