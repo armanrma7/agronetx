@@ -177,7 +177,7 @@ export async function logoutAPI(): Promise<void> {
  * Forgot password - Send OTP
  */
 export interface ForgotPasswordRequest {
-  phoneOrEmail: string
+  phone: string
 }
 
 export interface ForgotPasswordResponse {

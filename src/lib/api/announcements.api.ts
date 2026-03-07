@@ -79,7 +79,7 @@ export interface GetAnnouncementsParams {
   subgroup_id?: string[]
   /** Filter by item — GoodsItem UUID(s); repeat for multiple */
   item_id?: string[]
-  status?: 'active' | 'completed' | 'cancelled' | 'published'
+  status?: 'published' | 'completed' | 'cancelled'
   region?: string[]
   village?: string[]
   created_from?: string
@@ -685,6 +685,14 @@ export async function cancelAnnouncementAPI(id: string): Promise<Announcement> {
 }
 
 /**
+ * Close an announcement (Case 2c: announcer closes when approved application exists)
+ */
+export async function closeAnnouncementAPI(id: string): Promise<Announcement> {
+  const response = await apiClient.post<Announcement>(`/announcements/${id}/close`)
+  return mapAnnouncementResponse(response.data)
+}
+
+/**
  * Get categories by announcement type
  */
 export async function getCategoriesByTypeAPI(type: string): Promise<APICategory[]> {
@@ -816,7 +824,16 @@ function mapApplicationItem(app: any): ApplicationListItem {
 }
 
 /**
- * Close an application
+ * Cancel an application (applicant cancels their own PENDING or APPROVED application)
+ */
+export async function cancelApplicationAPI(id: string): Promise<any> {
+  const response = await apiClient.post(`/applications/${id}/cancel`)
+  return response.data
+}
+
+/**
+ * Close an application (legacy — kept for backward compatibility)
+ * @deprecated Use cancelApplicationAPI instead
  */
 export async function closeApplicationAPI(id: string): Promise<any> {
   const response = await apiClient.post(`/applications/${id}/close`)

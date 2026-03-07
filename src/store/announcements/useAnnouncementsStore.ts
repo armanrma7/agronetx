@@ -35,8 +35,9 @@ interface AnnouncementsState {
   setActiveTab: (tab: AnnouncementsTab) => void
   setActiveTabSilent: (tab: AnnouncementsTab) => void
   setFilters: (filters: FilterValues | undefined) => void
-  fetchById: (id: string) => Promise<Announcement>
+  fetchById: (id: string, forceRefresh?: boolean) => Promise<Announcement>
   cancelAnnouncement: (id: string) => Promise<void>
+  closeAnnouncement: (id: string) => Promise<void>
   setInCache: (announcement: Announcement) => void
 }
 
@@ -86,7 +87,7 @@ export const useAnnouncementsStore = create<AnnouncementsState>((set, get) => ({
         if (filters.groups?.length) params.group_id = filters.groups
         if (filters.subGroups?.length) params.subgroup_id = filters.subGroups
         if (filters.itemIds?.length) params.item_id = filters.itemIds
-        if (filters.status) params.status = filters.status as 'published' | 'active' | 'completed' | 'cancelled'
+        if (filters.status) params.status = filters.status as 'published' | 'completed' | 'cancelled'
         if (filters.regions?.length) params.region = filters.regions
         if (filters.villages?.length) params.village = filters.villages
         if (filters.created_from) params.created_from = filters.created_from
@@ -145,9 +146,9 @@ export const useAnnouncementsStore = create<AnnouncementsState>((set, get) => ({
     }
   },
 
-  fetchById: async (id: string) => {
+  fetchById: async (id: string, forceRefresh = false) => {
     const cached = get().cache[id]
-    if (cached) return cached
+    if (cached && !forceRefresh) return cached
     const data = await announcementsAPI.getAnnouncementByIdAPI(id)
     set(state => ({ cache: { ...state.cache, [id]: data } }))
     return data
@@ -157,9 +158,19 @@ export const useAnnouncementsStore = create<AnnouncementsState>((set, get) => ({
     await announcementsAPI.cancelAnnouncementAPI(id)
     set(state => ({
       cache: state.cache[id]
-        ? { ...state.cache, [id]: { ...state.cache[id], status: 'cancelled' } }
+        ? { ...state.cache, [id]: { ...state.cache[id], status: 'CANCELED' } }
         : state.cache,
-      list: state.list.map(a => a.id === id ? { ...a, status: 'cancelled' } : a),
+      list: state.list.map(a => a.id === id ? { ...a, status: 'CANCELED' } : a),
+    }))
+  },
+
+  closeAnnouncement: async (id: string) => {
+    await announcementsAPI.closeAnnouncementAPI(id)
+    set(state => ({
+      cache: state.cache[id]
+        ? { ...state.cache, [id]: { ...state.cache[id], status: 'CLOSED' } }
+        : state.cache,
+      list: state.list.map(a => a.id === id ? { ...a, status: 'CLOSED' } : a),
     }))
   },
 

@@ -23,6 +23,7 @@ export function ListingCard({ listing, onApply, onView }: ListingCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
+      case 'published':
         return colors.success
       case 'completed':
         return colors.textTertiary

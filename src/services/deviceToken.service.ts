@@ -5,7 +5,7 @@
 
 import DeviceInfo from 'react-native-device-info'
 import messaging from '@react-native-firebase/messaging'
-import { Platform } from 'react-native'
+import { Alert, Platform } from 'react-native'
 import { registerDeviceTokenAPI, DeviceTokenRequest } from '../lib/api/device.api'
 
 /**
@@ -99,6 +99,23 @@ export async function registerDeviceToken(): Promise<void> {
     // Don't throw - device registration failure shouldn't block app startup
     console.error('Error registering device token:', error)
   }
+}
+
+/**
+ * Handle FCM messages when app is in foreground.
+ * - iOS: notifications are shown by the system when firebase.json has messaging_ios_foreground_presentation_options.
+ * - Android: FCM does not display notifications in foreground by default, so we show an Alert.
+ */
+export function setupForegroundMessageHandler(): () => void {
+  const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+    const title = remoteMessage.notification?.title ?? remoteMessage.data?.title ?? 'Notification'
+    const body = remoteMessage.notification?.body ?? remoteMessage.data?.body ?? ''
+    if (Platform.OS === 'android') {
+      Alert.alert(title, body || undefined)
+    }
+    // On iOS, firebase.json foreground_presentation_options handles display
+  })
+  return unsubscribe
 }
 
 /**

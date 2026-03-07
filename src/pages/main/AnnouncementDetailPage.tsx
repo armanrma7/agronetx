@@ -20,8 +20,19 @@ import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
 import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
+import type { ApplicationListItem } from '../../lib/api/announcements.api'
 import { AppHeader } from '../../components/AppHeader'
 import { useAnnouncementsStore } from '../../store/announcements/useAnnouncementsStore'
+import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
+import {
+  isAnnouncementOwner,
+  canCancelAnnouncement,
+  canCloseAnnouncement,
+  canApplyOrApplyAgain,
+  isReapply,
+  canApplicantViewContacts,
+  applicationIs,
+} from '../../utils/announcementActions'
 
 const { width } = Dimensions.get('window')
 
@@ -36,47 +47,41 @@ export function AnnouncementDetailPage() {
   const { user } = useAuth()
   const { announcementId } = (route.params as RouteParams) || { announcementId: '' }
 
-  const { cache, fetchById, cancelAnnouncement: cancelAnnouncementInStore, setInCache } = useAnnouncementsStore()
+  const {
+    cache,
+    cancelAnnouncement: cancelAnnouncementInStore,
+    closeAnnouncement: closeAnnouncementInStore,
+    setInCache,
+  } = useAnnouncementsStore()
+
+  const {
+    byAnnouncementId,
+    fetchApplicationsByAnnouncement,
+  } = useApplicationsStore()
+
   const [announcement, setAnnouncement] = useState<Announcement | null>(cache[announcementId] ?? null)
   const [loading, setLoading] = useState(!cache[announcementId])
   const [cancelling, setCancelling] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [contactModalVisible, setContactModalVisible] = useState(false)
   const [regionNames, setRegionNames] = useState<string[]>([])
   const [villageNames, setVillageNames] = useState<string[]>([])
   const [visibleRegionsCount, setVisibleRegionsCount] = useState(2)
   const [visibleVillagesCount, setVisibleVillagesCount] = useState(2)
-  const [hasApprovedApplicationFromApi, setHasApprovedApplicationFromApi] = useState(false)
-   
+
   useEffect(() => {
     fetchAnnouncement()
-    // Track announcement view
     if (announcementId) {
       announcementsAPI.trackAnnouncementViewAPI(announcementId)
     }
   }, [announcementId])
 
-  // When announcement is loaded and we're not the owner: ensure Contact shows if current user has an approved application
-  // (detail API might not include applications for viewers, so we fetch via /applications/announcement/{id})
+  // Always fetch applications fresh so action buttons reflect real-time status
   useEffect(() => {
-    if (!announcement?.id || !user?.id || announcement.owner_id === user.id) {
-      setHasApprovedApplicationFromApi(false)
-      return
+    if (announcementId) {
+      fetchApplicationsByAnnouncement(announcementId, true)
     }
-    let cancelled = false
-    announcementsAPI.getApplicationsByAnnouncementAPI(announcement.id)
-      .then((list) => {
-        if (cancelled) return
-        const myId = String(user.id)
-        const hasMineApproved = list.some(
-          (app) => String(app.user_id) === myId && /^(approved|accepted)$/i.test(app.status || '')
-        )
-        setHasApprovedApplicationFromApi(hasMineApproved)
-      })
-      .catch(() => {
-        if (!cancelled) setHasApprovedApplicationFromApi(false)
-      })
-    return () => { cancelled = true }
-  }, [announcement?.id, user?.id, announcement?.owner_id])
+  }, [announcementId])
 
   // Extract region and village names from announcement when loaded
   useEffect(() => {
@@ -151,14 +156,16 @@ export function AnnouncementDetailPage() {
   const fetchAnnouncement = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await fetchById(announcementId)
+      // Always fetch fresh from server — status may have changed since last visit
+      const data = await announcementsAPI.getAnnouncementByIdAPI(announcementId)
       setAnnouncement(data)
+      setInCache(data)
     } catch (err) {
       setAnnouncement(null)
     } finally {
       setLoading(false)
     }
-  }, [announcementId, fetchById])
+  }, [announcementId, setInCache])
 
 
   const formatDateRange = (startDate: string, endDate?: string) => {
@@ -170,23 +177,26 @@ export function AnnouncementDetailPage() {
   }
 
   const getStatusLabel = (status: string) => {
-    // Show "Ակտիվ" if published, otherwise "Փակված"
-    if (status === 'published' || status === 'active') {
-      return t('announcementDetail.active')
-    }
-    return t('announcementDetail.closed')
+    const s = (status || '').toLowerCase()
+    if (s === 'to_be_verified') return t('announcementDetail.toBeVerified')
+    if (s === 'active' || s === 'published') return t('announcementDetail.active')
+    if (s === 'closed') return t('announcementDetail.closed')
+    if (s === 'blocked') return t('announcementDetail.blocked')
+    if (s === 'canceled' || s === 'cancelled') return t('announcementDetail.canceled')
+    return status
   }
 
   const getStatusColor = (status: string) => {
-    // Green for published/active, gray for others
-    if (status === 'published' || status === 'active') {
-      return colors.success
-    }
+    const s = (status || '').toLowerCase()
+    if (s === 'active' || s === 'published') return colors.success
+    if (s === 'to_be_verified') return colors.warning
+    if (s === 'blocked') return colors.error
     return colors.textTertiary
   }
 
-  const isPublished = (status: string) => {
-    return status === 'published' || status === 'active'
+  const isPublishedStatus = (status: string) => {
+    const s = (status || '').toLowerCase()
+    return s === 'active' || s === 'published'
   }
 
   const getTypeLabel = (announcement: Announcement) => {
@@ -317,25 +327,6 @@ export function AnnouncementDetailPage() {
     }
   }
 
-  const handleEdit = () => {
-    if (!announcement) return
-    
-    const parent = navigation.getParent()
-    if (parent) {
-      parent.navigate('NewAnnouncementForm', {
-        type: announcement.category as 'goods' | 'service' | 'rent',
-        announcementId: announcement.id,
-        announcement: announcement,
-      })
-    } else {
-      ;(navigation as any).navigate('NewAnnouncementForm', {
-        type: announcement.category as 'goods' | 'service' | 'rent',
-        announcementId: announcement.id,
-        announcement: announcement,
-      })
-    }
-  }
-
   const handleCancel = () => {
     if (!announcement) return
     Alert.alert(
@@ -350,20 +341,53 @@ export function AnnouncementDetailPage() {
             setCancelling(true)
             try {
               await cancelAnnouncementInStore(announcement.id)
-              setAnnouncement(prev => prev ? { ...prev, status: 'cancelled' } : prev)
+              setAnnouncement(prev => prev ? { ...prev, status: 'CANCELED' } : prev)
               Alert.alert(
                 t('common.success'),
                 t('announcements.cancelled'),
                 [{ text: t('common.ok'), onPress: () => navigation.goBack() }],
               )
             } catch (error: any) {
-              console.error('Error cancelling announcement:', error)
               Alert.alert(
                 t('common.error'),
                 error.response?.data?.message || t('announcements.cancelError'),
               )
             } finally {
               setCancelling(false)
+            }
+          },
+        },
+      ],
+    )
+  }
+
+  const handleClose = () => {
+    if (!announcement) return
+    Alert.alert(
+      t('announcements.closeAnnouncementTitle'),
+      t('announcements.closeAnnouncementConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            setClosing(true)
+            try {
+              await closeAnnouncementInStore(announcement.id)
+              setAnnouncement(prev => prev ? { ...prev, status: 'CLOSED' } : prev)
+              Alert.alert(
+                t('common.success'),
+                t('announcements.closedAnnouncement'),
+                [{ text: t('common.ok'), onPress: () => navigation.goBack() }],
+              )
+            } catch (error: any) {
+              Alert.alert(
+                t('common.error'),
+                error.response?.data?.message || t('announcements.closeAnnouncementError'),
+              )
+            } finally {
+              setClosing(false)
             }
           },
         },
@@ -421,57 +445,29 @@ export function AnnouncementDetailPage() {
   const endDate = announcement.date_to || announcement.created_at
   const images = announcement.images || []
   const dailyLimit = announcement.daily_limit ? Number(announcement.daily_limit) : 0
-  const isPublishedStatus = isPublished(announcement.status)
-  // Edit is allowed when announcement is pending or not yet published
-  const canEditAnnouncement = announcement.status === 'pending' || !isPublishedStatus
-  const isMyAnnouncement = user?.id && announcement.owner_id === user.id
-  const hasUserApplied = (): boolean => {
-    if (!user?.id || !announcement) return false
-    const a = announcement as any
-    if (a.my_applications_count !== undefined && a.my_applications_count > 0) return true
-    const apps = a.applications
-    if (Array.isArray(apps) && apps.some((app: any) => (app.user_id || app.userId) === user.id)) return true
-    return false
-  }
 
-  // User can apply only if they do NOT have a pending application (rejected/closed can apply again)
-  const hasPendingApplication = (): boolean => {
-    if (!user?.id || !announcement) return false
-    const a = announcement as any
-    const apps = a.applications
-    if (!Array.isArray(apps) || apps.length === 0) return false
-    const myId = String(user.id)
-    const pendingStatus = (s: string | undefined) => /^pending$/i.test((s || '').trim())
-    return apps.some((app: any) => {
-      const applicantId = app.applicant_id ?? app.user_id ?? app.userId
-      return applicantId && String(applicantId) === myId && pendingStatus(app.status)
-    })
-  }
+  // ── Derive action state from fetched applications ─────────────────────────
+  const allApplications: ApplicationListItem[] = byAnnouncementId[announcementId] ?? []
 
-  const hasApplied = hasUserApplied()
-  const canApply = !hasPendingApplication()
+  const myApplications = user?.id
+    ? allApplications.filter(a => String(a.user_id) === String(user.id))
+    : []
 
-  /**
-   * Contact: show only when there is an approved application linking the current user (me) and this announcement.
-   * Check (1) applicants on the announcement and (2) fetched applications list.
-   */
-  const isApprovedStatus = (status: string | undefined): boolean =>
-    /^(approved|accepted)$/i.test((status || '').trim())
+  // Pick the most relevant application: prefer PENDING, then APPROVED, then latest
+  const myApplication: ApplicationListItem | null =
+    myApplications.find(a => applicationIs.pending(a.status)) ??
+    myApplications.find(a => applicationIs.approved(a.status)) ??
+    myApplications[0] ??
+    null
 
-  const hasApprovedApplication = (): boolean => {
-    if (!user?.id || !announcement) return false
-    const a = announcement as any
-    const apps = a.applications
-    if (!Array.isArray(apps) || apps.length === 0) return false
-    const myId = String(user.id)
-    return apps.some((app: any) => {
-      const applicantId = app.applicant_id ?? app.user_id ?? app.userId
-      if (!applicantId || !isApprovedStatus(app.status)) return false
-      return String(applicantId) === myId
-    })
-  }
+  const hasAnyApprovedApplication = allApplications.some(a => applicationIs.approved(a.status))
 
-  const canContact = hasApprovedApplication() || hasApprovedApplicationFromApi
+  const isMyAnnouncement = isAnnouncementOwner(announcement, user?.id)
+  const showCancel = canCancelAnnouncement(announcement, user?.id)
+  const showClose = canCloseAnnouncement(announcement, user?.id, hasAnyApprovedApplication)
+  const showApply = canApplyOrApplyAgain(announcement, user?.id, myApplication, hasAnyApprovedApplication)
+  const showContact = canApplicantViewContacts(announcement, user?.id, myApplication)
+  const applyButtonIsReapply = isReapply(myApplication)
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.buttonPrimary }}>
@@ -486,11 +482,9 @@ export function AnnouncementDetailPage() {
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {/* Top Row: Status Badge + Engagement Metrics */}
           <View style={styles.topRow}>
-            {isPublishedStatus && (
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(announcement.status) }]}>
-                <Text style={styles.statusText}>{getStatusLabel(announcement.status)}</Text>
-              </View>
-            )}
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(announcement.status) }]}>
+              <Text style={styles.statusText}>{getStatusLabel(announcement.status)}</Text>
+            </View>
             <View style={styles.engagementMetrics}>
               <View style={styles.metricItem}>
                 <Icon name="visibility" size={16} color={colors.textSecondary} />
@@ -657,37 +651,47 @@ export function AnnouncementDetailPage() {
 
         {/* Action Buttons */}
         {isMyAnnouncement ? (
-          // Owner's buttons: Edit and Cancel (if not published), Cancel only (if published and not cancelled)
-          <View style={styles.actionButtons}>
-            {canEditAnnouncement && (
-              <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-              </TouchableOpacity>
-            )}
-            {announcement.status !== 'canceled' && (
-              cancelling ? (
-                <View style={styles.cancelButton}>
-                  <ActivityIndicator size="small" color={colors.error} />
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-                </TouchableOpacity>
-              )
-            )}
-          </View>
-        ) : (
-          // Non-owner buttons: Contact (if approved application) and Apply (if not applied)
-          isPublishedStatus && (
+          // Announcer buttons: Close (Case 2c) and/or Cancel (Cases 1, 2a, 2b, 2c)
+          (showClose || showCancel) && (
             <View style={styles.actionButtons}>
-              {canContact && (
+              {showClose && (
+                closing ? (
+                  <View style={styles.editButton}>
+                    <ActivityIndicator size="small" color={colors.white} />
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.editButton} onPress={handleClose}>
+                    <Text style={styles.editButtonText}>{t('common.close')}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+              {showCancel && (
+                cancelling ? (
+                  <View style={styles.cancelButton}>
+                    <ActivityIndicator size="small" color={colors.error} />
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                    <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+            </View>
+          )
+        ) : (
+          // Applicant buttons: Contact + Apply/Apply Again
+          (showContact || showApply) && (
+            <View style={styles.actionButtons}>
+              {showContact && (
                 <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
                   <Text style={styles.contactButtonText}>{t('announcementDetail.contact')}</Text>
                 </TouchableOpacity>
               )}
-              {canApply && (
+              {showApply && (
                 <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-                  <Text style={styles.applyButtonText}>{t('announcements.apply')}</Text>
+                  <Text style={styles.applyButtonText}>
+                    {applyButtonIsReapply ? t('announcements.applyAgain') : t('announcements.apply')}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>

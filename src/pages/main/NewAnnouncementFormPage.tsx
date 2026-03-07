@@ -585,12 +585,9 @@ export function NewAnnouncementFormPage() {
           apiType = 'buy' // Rent requirement = buy
         }
       }
-      // For goods, subtype is already 'sell' or 'buy', so no mapping needed
-
-      // Prepare announcement data matching API format
       const announcementData: any = {
-        type: apiType, // "sell", "buy", "rent" (mapped from subtype)
-        category: type, // "goods", "service", "rent" (type is from route: goods/service/rent)
+        type: apiType,
+        category: type,
         group_id: formData.group,
         item_id: formData.name,
         price: parseFloat(formData.pricePerUnit),

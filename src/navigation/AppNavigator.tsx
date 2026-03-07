@@ -2,6 +2,7 @@ import React, { useMemo, useEffect } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
+import { registerDeviceToken } from '../services/deviceToken.service'
 import { LoginPage, RegisterPage, ForgotPasswordPage, VerificationPage } from '../pages/auth'
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { AnnouncementApplicationsPage } from '../pages/profile/application/AnnouncementApplicationsPage'
@@ -62,6 +63,13 @@ export function AppNavigator() {
       setInitialLoad(false)
     }
   }, [loading, initialized])
+
+  // Register FCM device token with backend when user is logged in (required for push notifications)
+  useEffect(() => {
+    if (initialized && user) {
+      registerDeviceToken()
+    }
+  }, [initialized, user])
 
   const navigator = useMemo(() => {
     // Wait for initialization to complete before deciding which navigator to show

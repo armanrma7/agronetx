@@ -161,7 +161,12 @@
     "applicantsCount": "Դիմորդներ: {{count}}",
     "closeApplication": "Փակել դիմումը",
     "published": "Հրապարակված",
-    "applied": "Դիմած"
+    "applied": "Դիմած",
+    "applyAgain": "Դիմել",
+    "closeAnnouncementTitle": "Փակել հայտարարությունը",
+    "closeAnnouncementConfirm": "Դուք համոզված եք, որ ցանկանում եք չեղարկել այս հայտարարությունը?",
+    "closedAnnouncement": "Չեղարկել հայտարարությունը",
+    "closeAnnouncementError": "Հայտարարությունը չեղարկելը ձախողվեց"
   },
   "listings": {
     "goods": "Ապրանք",
@@ -392,8 +397,9 @@
     "statusApproved": "Հաստատված",
     "statusRejected": "Մերժված",
     "statusClosed": "Փակված",
-    "approveConfirm": "Հաստատել այս դիմումը?",
-    "rejectConfirm": "Մերժել այս դիմումը?",
+    "statusBlocked": "Արգելափակված",
+    "approveConfirm": "Հաստատե՞լ այս դիմումը:",
+    "rejectConfirm": "Մերժե՞լ այս դիմումը:",
     "status": "Կարգավիճակ",
     "details": "Դիմումի տվյալներ",
     "requestedQuantity": "Պահանջված քանակ",
@@ -442,6 +448,9 @@
     "categoryWork": "Աշխատանք",
     "categoryEquipment": "Գյուղատնտեսական տեխնիկա",
     "defaultItemName": "Ծիրան",
-    "call": "Զանգահարել"
+    "call": "Զանգահարել",
+    "toBeVerified": "Ստուգման սպասելիս",
+    "canceled": "Չեղարկված",
+    "blocked": "Արգելափակված"
   }
 }

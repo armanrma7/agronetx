@@ -86,7 +86,26 @@ export interface AuthContextType {
 
 // Announcement types
 export type AnnouncementType = 'goods' | 'service' | 'rent'
-export type AnnouncementStatus = 'active' | 'completed' | 'canceled' | 'published' | 'closed'
+
+/**
+ * Canonical backend statuses.
+ * The `string` union allows legacy/unmapped values to pass through without TS errors.
+ */
+export type AnnouncementStatus =
+  | 'TO_BE_VERIFIED'
+  | 'PUBLISHED'
+  | 'CLOSED'
+  | 'CANCELED'
+  | 'BLOCKED'
+  | string
+
+export type ApplicationStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CANCELED'
+  | 'BLOCKED'
+  | string
 
 export interface Translation {
   name_am: string;
@@ -133,7 +152,12 @@ export interface ClosedByUser {
 
 export interface AnnouncementApplication {
   id?: string;
-  // add more fields later if needed
+  announcement_id?: string;
+  user_id?: string;
+  applicant_id?: string;
+  status?: ApplicationStatus;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Announcement {
@@ -148,7 +172,7 @@ export interface Announcement {
   description: string;
 
   owner_id: string;
-  status: 'published' | 'pending' | 'closed' | 'rejected' | string;
+  status: AnnouncementStatus;
 
   closed_by: string | null;
 

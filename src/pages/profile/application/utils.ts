@@ -29,6 +29,8 @@ export function getStatusLabel(
       return t('applications.statusApproved')
     case 'rejected':
       return t('applications.statusRejected')
+    case 'blocked':
+      return t('applications.statusBlocked')
     case 'closed':
     case 'cancelled':
     case 'canceled':
@@ -45,11 +47,23 @@ export function getStatusColor(status: string): string {
       return colors.success
     case 'rejected':
       return colors.error
+    case 'blocked':
+      return colors.textTertiary
+    case 'closed':
+    case 'cancelled':
+    case 'canceled':
+      return colors.textTertiary
     default:
       return colors.warning
   }
 }
 
+/** Returns true for any terminal/closed status (no further actions possible). */
+export function isTerminalStatus(s?: string): boolean {
+  return /^(closed|cancelled|canceled|rejected|blocked)$/i.test((s || '').trim())
+}
+
+/** Returns true for any canceled-family status. */
 export function isClosedStatus(s?: string): boolean {
   return /^(closed|cancelled|canceled)$/i.test((s || '').trim())
 }

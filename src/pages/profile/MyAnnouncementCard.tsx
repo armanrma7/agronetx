@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
 import Icon from '../../components/Icon'
+import { announcementIs, applicationIs } from '../../utils/announcementActions'
 
 interface MyAnnouncementCardProps {
   announcement: Announcement
@@ -40,20 +41,11 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
   }
 
   const getStatusColor = (status: string) => {
-    console.info('status', status)
-    switch (status) {
-      case 'active':
-      case 'published':
-        return colors.success
-      case 'completed':
-        return colors.textTertiary
-      case 'canceled':
-      case 'cancelled':
-      case 'closed':
-        return colors.error
-      default:
-        return colors.textTertiary
-    }
+    if (announcementIs.active(status)) return colors.success
+    if (announcementIs.toBeVerified(status)) return colors.warning
+    if (announcementIs.blocked(status)) return colors.error
+    if (announcementIs.canceled(status) || announcementIs.closed(status)) return colors.textTertiary
+    return colors.textTertiary
   }
   const getTypeLabel = (announcement: Announcement) => {
     const subtype = (announcement as any).subtype || (announcement as any).sub_type
@@ -216,31 +208,39 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
 
         <View style={styles.actionButtons}>
           {showMyApplications ? (
-            // For "applied" tab - show close application button
+            // Applied tab: show cancel button only when announcement is PUBLISHED and
+            // the application is PENDING or APPROVED (not BLOCKED, not CANCELED/REJECTED)
             <>
               {(() => {
                 const announcementData = announcement as any
-                const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
-                // Get first active application ID (applications that are not closed)
-                const activeApplication = applications.find((app: any) => app.status !== 'closed' && app.status !== 'cancelled')
-                
-                if (activeApplication && onCloseApplication) {
-                  const isClosing = closingApplicationId === activeApplication.id
-                  return (
-                    isClosing ? (
-                      <View style={styles.buttonClose}>
-                        <ActivityIndicator size="small" color={colors.error} />
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.buttonClose}
-                        onPress={() => {
-                          onCloseApplication(activeApplication.id)
-                        }}
-                      >
-                        <Text style={styles.buttonCloseText}>{t('announcements.closeApplication')}</Text>
-                      </TouchableOpacity>
+                const applications = Array.isArray(announcementData.applications)
+                  ? announcementData.applications
+                  : []
+                const isAnnouncementActive = announcementIs.active(announcement.status)
+                // Find an application that the user can still cancel
+                const cancellableApp = isAnnouncementActive
+                  ? applications.find(
+                      (app: any) =>
+                        (applicationIs.pending(app.status) ||
+                          applicationIs.approved(app.status)),
                     )
+                  : null
+
+                if (cancellableApp && onCloseApplication) {
+                  const isClosing = closingApplicationId === cancellableApp.id
+                  return isClosing ? (
+                    <View style={styles.buttonClose}>
+                      <ActivityIndicator size="small" color={colors.error} />
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.buttonClose}
+                      onPress={() => onCloseApplication(cancellableApp.id)}
+                    >
+                      <Text style={styles.buttonCloseText}>
+                        {t('announcements.closeApplication')}
+                      </Text>
+                    </TouchableOpacity>
                   )
                 }
                 return null
@@ -253,10 +253,10 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
               </TouchableOpacity>
             </>
           ) : (
-            // For "published" tab - show cancel announcement button
+            // Published tab: show cancel button only when announcement is TO_BE_VERIFIED or PUBLISHED
             <>
-              {/* Only show cancel button if announcement is not already cancelled */}
-              {announcement.status !== 'canceled' && announcement.status !== 'cancelled' && announcement.status !== 'closed' && (
+              {(announcementIs.toBeVerified(announcement.status) ||
+                announcementIs.active(announcement.status)) && (
                 cancelling ? (
                   <View style={styles.buttonCancel}>
                     <ActivityIndicator size="small" color={colors.error} />
@@ -264,9 +264,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
                 ) : (
                   <TouchableOpacity
                     style={styles.buttonCancel}
-                    onPress={() => {
-                      onCancel?.(announcement)
-                    }}
+                    onPress={() => onCancel?.(announcement)}
                   >
                     <Text style={styles.buttonCancelText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>

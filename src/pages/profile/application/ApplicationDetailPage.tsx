@@ -16,7 +16,17 @@ import { colors } from '../../../theme/colors'
 import { AppHeader } from '../../../components/AppHeader'
 import { useAuth } from '../../../context/AuthContext'
 import { useApplicationsStore } from '../../../store/applications/useApplicationsStore'
-import { formatDate, getStatusLabel, getStatusColor, isClosedStatus } from './utils'
+import { useAnnouncementsStore } from '../../../store/announcements/useAnnouncementsStore'
+import { formatDate, getStatusLabel, getStatusColor } from './utils'
+import {
+  isAnnouncementOwner,
+  canApproveApplication,
+  canRejectApplication,
+  canCancelApplication,
+  canEditApplication,
+  canApplyAgainFromApplication,
+  canAnnouncerViewApplicantContact,
+} from '../../../utils/announcementActions'
 
 interface RouteParams {
   announcementId: string
@@ -41,9 +51,12 @@ export function ApplicationDetailPage() {
 
   const { byAnnouncementId, actionLoadingId, approveApplication, rejectApplication, closeApplication } =
     useApplicationsStore()
+  const { cache: announcementsCache } = useAnnouncementsStore()
 
   // Always read from the live store so status updates are reflected immediately
   const app = (byAnnouncementId[announcementId] ?? []).find(a => a.id === appId)
+  const announcement = announcementsCache[announcementId] ?? null
+  const announcementStatus = announcement?.status ?? ''
 
   const isActionLoading = actionLoadingId === appId
 
@@ -101,7 +114,7 @@ export function ApplicationDetailPage() {
     )
   }, [appId, announcementId, rejectApplication, runAction, t])
 
-  const handleClose = useCallback(() => {
+  const handleCancelApplication = useCallback(() => {
     Alert.alert(
       t('applications.closeTitle'),
       t('applications.closeConfirm'),
@@ -122,6 +135,45 @@ export function ApplicationDetailPage() {
     )
   }, [appId, announcementId, closeApplication, runAction, t])
 
+  const handleApplyAgain = useCallback(() => {
+    const a = announcement as any
+    const nav = (navigation.getParent() ?? navigation) as any
+    nav.navigate('ApplicationForm', {
+      announcementId,
+      announcementType: announcement?.category ?? 'goods',
+      announcementTitle:
+        announcement?.item?.name_am ||
+        announcement?.item?.name_en ||
+        a?.name_hy ||
+        a?.title ||
+        '',
+    })
+  }, [navigation, announcementId, announcement])
+
+  const handleEdit = useCallback(() => {
+    if (!app) return
+    const a = announcement as any
+    const nav = (navigation.getParent() ?? navigation) as any
+    nav.navigate('ApplicationForm', {
+      announcementId,
+      announcementType: announcement?.category ?? (announcement as any)?.type ?? 'goods',
+      announcementTitle:
+        announcement?.item?.name_am ||
+        announcement?.item?.name_en ||
+        a?.name_hy ||
+        a?.title ||
+        '',
+      announcement,
+      applicationId: app.id,
+      prefill: {
+        deliveryDates: app.delivery_dates,
+        count: app.count,
+        unit: app.unit,
+        notes: app.notes,
+      },
+    })
+  }, [navigation, announcementId, announcement, app])
+
   if (!app) {
     return (
       <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -132,12 +184,6 @@ export function ApplicationDetailPage() {
       </SafeAreaView>
     )
   }
-
-  const isApproved = /approved|accepted/i.test(app.status)
-  const isRejected = /rejected/i.test(app.status)
-  const isClosed = isClosedStatus(app.status)
-  const isMyApplication = user?.id != null && String(app.user_id) === String(user.id)
-  const isPending = !isApproved && !isRejected && !isClosed
 
   const statusLabel = getStatusLabel(app.status, t)
   const statusColor = getStatusColor(app.status)
@@ -153,9 +199,23 @@ export function ApplicationDetailPage() {
   const allDates = app.delivery_dates ?? []
   const transactionDate = allDates[0]
 
-  const showOwnerActions = !isMyApplication && isPending
-  const showOwnerCancel = !isMyApplication && isApproved && !isClosed
-  const showMyCancel = isMyApplication && isPending
+  // Role derived from announcement ownership
+  const isAnnouncerUser = announcement != null && isAnnouncementOwner(announcement, user?.id)
+  const isMyApplication = user?.id != null && String(app.user_id) === String(user.id)
+
+  // Case 2f: BLOCKED — no actions for anyone
+  const isBlockedApp = /^blocked$/i.test((app.status || '').trim())
+
+  // Derive action visibility from centralized utilities
+  const showApprove = !isBlockedApp && canApproveApplication(announcementStatus, app, isAnnouncerUser)
+  const showReject = !isBlockedApp && canRejectApplication(announcementStatus, app, isAnnouncerUser)
+  const showCancelApp = !isBlockedApp && canCancelApplication(announcementStatus, app, user?.id)
+  const showEdit = !isBlockedApp && canEditApplication(announcementStatus, app, user?.id)
+  // On own application detail: only Edit (when pending) and Cancel — no Apply Again
+  const showApplyAgain =
+    !isBlockedApp &&
+    canApplyAgainFromApplication(announcementStatus, app, user?.id) &&
+    !isMyApplication
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
@@ -243,45 +303,72 @@ export function ApplicationDetailPage() {
         </ScrollView>
 
         {/* Action buttons */}
-        {(showOwnerActions || showOwnerCancel || showMyCancel) && (
+        {(showApprove || showReject || showCancelApp || showEdit || showApplyAgain) && (
           <View style={styles.actions}>
-            {showOwnerActions && (
-              <>
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  disabled={isActionLoading}
-                  onPress={handleReject}
-                >
-                  {isActionLoading ? (
-                    <ActivityIndicator size="small" color={colors.error} />
-                  ) : (
-                    <Text style={styles.rejectButtonText}>{t('applications.reject')}</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  disabled={isActionLoading}
-                  onPress={handleApprove}
-                >
-                  {isActionLoading ? (
-                    <ActivityIndicator size="small" color={colors.white} />
-                  ) : (
-                    <Text style={styles.approveButtonText}>{t('applications.approve')}</Text>
-                  )}
-                </TouchableOpacity>
-              </>
+            {/* Applicant: Edit (only when own application and PENDING) */}
+            {showEdit && (
+              <TouchableOpacity
+                style={styles.approveButton}
+                disabled={isActionLoading}
+                onPress={handleEdit}
+              >
+                <Text style={styles.approveButtonText}>{t('common.edit')}</Text>
+              </TouchableOpacity>
             )}
-            {(showOwnerCancel || showMyCancel) && (
+
+            {/* Announcer: Reject (for PENDING and APPROVED applications) */}
+            {showReject && (
+              <TouchableOpacity
+                style={styles.rejectButton}
+                disabled={isActionLoading}
+                onPress={handleReject}
+              >
+                {isActionLoading ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Text style={styles.rejectButtonText}>{t('applications.reject')}</Text>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Announcer: Approve (for PENDING applications only) */}
+            {showApprove && (
+              <TouchableOpacity
+                style={styles.approveButton}
+                disabled={isActionLoading}
+                onPress={handleApprove}
+              >
+                {isActionLoading ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={styles.approveButtonText}>{t('applications.approve')}</Text>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Applicant: Cancel (for PENDING and APPROVED applications) */}
+            {showCancelApp && (
               <TouchableOpacity
                 style={styles.cancelButton}
                 disabled={isActionLoading}
-                onPress={handleClose}
+                onPress={handleCancelApplication}
               >
                 {isActionLoading ? (
                   <ActivityIndicator size="small" color={colors.error} />
                 ) : (
                   <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
                 )}
+              </TouchableOpacity>
+            )}
+
+            {/* Applicant: Apply Again (for APPROVED/REJECTED/CANCELED applications) */}
+            {showApplyAgain && (
+              <TouchableOpacity
+                style={styles.approveButton}
+                disabled={isActionLoading}
+                onPress={handleApplyAgain}
+              >
+                <Text style={styles.approveButtonText}>{t('announcements.applyAgain')}</Text>
               </TouchableOpacity>
             )}
           </View>

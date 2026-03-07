@@ -3,22 +3,21 @@ import { SafeAreaView, StyleSheet, StatusBar } from 'react-native'
 import { AuthProvider } from './src/context/AuthContext'
 import { AppNavigator } from './src/navigation/AppNavigator'
 import { colors } from './src/theme/colors'
-import { registerDeviceToken, setupTokenRefreshListener } from './src/services/deviceToken.service'
+import { setupTokenRefreshListener, setupForegroundMessageHandler } from './src/services/deviceToken.service'
 
 // Initialize i18n (side effects: registers react-i18next + loads persisted language)
 import './src/i18n'
 
 export default function App() {
   useEffect(() => {
-    // Register device token when app opens
-    registerDeviceToken()
+    // Show notifications when app is in foreground (Android: Alert; iOS: via firebase.json)
+    const unsubForeground = setupForegroundMessageHandler()
+    // Listen for FCM token refresh and re-register with backend
+    const unsubToken = setupTokenRefreshListener()
 
-    // Setup listener for token refresh
-    const unsubscribe = setupTokenRefreshListener()
-
-    // Cleanup listener on unmount
     return () => {
-      unsubscribe()
+      unsubForeground()
+      unsubToken()
     }
   }, [])
 

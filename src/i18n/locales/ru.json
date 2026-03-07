@@ -139,7 +139,12 @@
     "closeApplication": "Закрыть заявку",
     "published": "Опубликовано",
     "applied": "Подано",
-    "notFound": "Объявление не найдено"
+    "notFound": "Объявление не найдено",
+    "applyAgain": "Подать заявку снова",
+    "closeAnnouncementTitle": "Закрыть объявление",
+    "closeAnnouncementConfirm": "Вы уверены, что хотите закрыть это объявление?",
+    "closedAnnouncement": "Объявление успешно закрыто",
+    "closeAnnouncementError": "Не удалось закрыть объявление"
   },
   "listings": {
     "offer": "Товар",
@@ -331,7 +336,8 @@
     "approveSuccess": "Заявка одобрена",
     "approveError": "Не удалось одобрить заявку",
     "rejectSuccess": "Заявка отклонена",
-    "rejectError": "Не удалось отклонить заявку"
+    "rejectError": "Не удалось отклонить заявку",
+    "statusBlocked": "Заблокировано"
   },
   "units": {
     "daily": "Ежедневно",
@@ -371,7 +377,10 @@
     "categoryWork": "Работа",
     "categoryEquipment": "Сельскохозяйственная техника",
     "defaultItemName": "Абрикос",
-    "call": "Позвонить"
+    "call": "Позвонить",
+    "toBeVerified": "На проверке",
+    "canceled": "Отменено",
+    "blocked": "Заблокировано"
   },
   "favorites": {
     "empty": "У вас нет избранных объявлений",
@@ -404,4 +413,3 @@
     "apply": "Применить"
   }
 }
-

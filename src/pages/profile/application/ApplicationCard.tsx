@@ -9,11 +9,21 @@ import {
 import { useTranslation } from 'react-i18next'
 import { colors } from '../../../theme/colors'
 import type { ApplicationListItem } from '../../../lib/api/announcements.api'
-import { formatDate, getStatusLabel, getStatusColor, isClosedStatus } from './utils'
+import { formatDate, getStatusLabel, getStatusColor } from './utils'
+import {
+  canApproveApplication,
+  canRejectApplication,
+  canCancelApplication,
+  canEditApplication,
+} from '../../../utils/announcementActions'
 
 export interface ApplicationCardProps {
   app: ApplicationListItem
   announcementId: string
+  /** Status of the parent announcement (e.g. 'PUBLISHED', 'CLOSED') */
+  announcementStatus: string
+  /** owner_id of the announcement — used to determine if current user is the announcer */
+  announcementOwnerId: string | null
   quantityUnit: string
   currentUserId: string | null
   actionLoadingId: string | null
@@ -26,7 +36,8 @@ export interface ApplicationCardProps {
 
 export const ApplicationCard = React.memo(function ApplicationCard({
   app,
-  announcementId,
+  announcementStatus,
+  announcementOwnerId,
   quantityUnit,
   currentUserId,
   actionLoadingId,
@@ -46,15 +57,28 @@ export const ApplicationCard = React.memo(function ApplicationCard({
       .filter(Boolean)
       .join(', ') || t('common.notSpecified')
   const isActionLoading = actionLoadingId === app.id
-  const isApproved = /approved|accepted/i.test(app.status)
-  const isRejected = /rejected/i.test(app.status)
-  const isClosed = isClosedStatus(app.status)
-  const isMyApplication =
-    currentUserId != null && String(app.user_id) === String(currentUserId)
-  const isPending = !isApproved && !isRejected && !isClosed
 
-  const hasThreeButtons =
-    !isMyApplication && !isApproved && !isRejected
+  // Role derived from ownership
+  const isAnnouncerUser =
+    announcementOwnerId != null &&
+    currentUserId != null &&
+    String(announcementOwnerId) === String(currentUserId)
+
+  // Derive available actions using centralized utilities
+  const showApprove = canApproveApplication(announcementStatus, app, isAnnouncerUser)
+  const showReject = canRejectApplication(announcementStatus, app, isAnnouncerUser)
+  const showCancel = canCancelApplication(announcementStatus, app, currentUserId)
+  const showEdit = canEditApplication(announcementStatus, app, currentUserId) && !!onEdit
+
+  // Case 2f (BLOCKED): no actions for anyone — view only
+  const isBlocked = /^blocked$/i.test((app.status || '').trim())
+
+  // Show the top-row action button: "View" for announcer with approve/reject, "Edit" for applicant
+  const showViewTop = !isBlocked && (showApprove || showReject)
+  const showEditTop = !isBlocked && showEdit
+
+  // Show actions bar at bottom
+  const hasActions = !isBlocked && (showApprove || showReject || showCancel)
 
   return (
     <View style={styles.card}>
@@ -63,17 +87,17 @@ export const ApplicationCard = React.memo(function ApplicationCard({
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={styles.statusText}>{statusLabel}</Text>
         </View>
-        {isMyApplication && isPending && onEdit && (
+        {showEditTop && (
           <TouchableOpacity
             style={styles.editButtonTop}
-            onPress={() => onEdit(app)}
+            onPress={() => onEdit!(app)}
           >
             <Text style={styles.editButtonTopText}>
               {t('common.edit')}
             </Text>
           </TouchableOpacity>
         )}
-        {hasThreeButtons && (
+        {showViewTop && (
           <TouchableOpacity
             style={styles.viewButtonTop}
             onPress={() => onView(app)}
@@ -110,27 +134,10 @@ export const ApplicationCard = React.memo(function ApplicationCard({
 
       <View style={styles.actions}>
         <View style={styles.actionsLeft}>
-          {isMyApplication ? (
+          {hasActions && (
             <>
-              {!isClosed || isRejected && (
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  disabled={isActionLoading}
-                  onPress={() => onCloseApplication(app.id)}
-                >
-                  {isActionLoading ? (
-                    <ActivityIndicator size="small" color={colors.error} />
-                  ) : (
-                    <Text style={styles.cancelButtonText}>
-                      {t('common.cancel')}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </>
-          ) : (
-            <>
-              {!isApproved && !isRejected && (
+              {/* Announcer: Reject */}
+              {showReject && (
                 <TouchableOpacity
                   style={styles.rejectButton}
                   disabled={isActionLoading}
@@ -145,7 +152,9 @@ export const ApplicationCard = React.memo(function ApplicationCard({
                   )}
                 </TouchableOpacity>
               )}
-              {!isRejected && !isApproved && (
+
+              {/* Announcer: Approve */}
+              {showApprove && (
                 <TouchableOpacity
                   style={styles.approveButton}
                   disabled={isActionLoading}
@@ -160,7 +169,9 @@ export const ApplicationCard = React.memo(function ApplicationCard({
                   )}
                 </TouchableOpacity>
               )}
-              {isApproved && !isClosed && (
+
+              {/* Applicant: Cancel */}
+              {showCancel && (
                 <TouchableOpacity
                   style={styles.cancelButton}
                   disabled={isActionLoading}
@@ -178,7 +189,9 @@ export const ApplicationCard = React.memo(function ApplicationCard({
             </>
           )}
         </View>
-        {!hasThreeButtons && (
+
+        {/* View button is shown when no top-level view button */}
+        {!showViewTop && (
           <TouchableOpacity
             style={styles.viewButtonBottom}
             onPress={() => onView(app)}

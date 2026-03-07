@@ -192,13 +192,13 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
   closeApplication: async (id: string, announcementId: string) => {
     set({ actionLoadingId: id })
     try {
-      await announcementsAPI.closeApplicationAPI(id)
+      await announcementsAPI.cancelApplicationAPI(id)
       const currentUserId = useAuthStore.getState().user?.id
       set(state => {
         const apps = state.byAnnouncementId[announcementId] || []
         const closedApp = apps.find(app => app.id === id)
         const updatedApps = apps.map(app =>
-          app.id === id ? { ...app, status: 'closed' } : app,
+          app.id === id ? { ...app, status: 'CANCELED' } : app,
         )
 
         // Only remove from applied/pending sets when the user cancelled their OWN application.
@@ -331,14 +331,14 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
       // Update myList
       set(state => ({
         cancellingId: null,
-        myList: state.myList.map(a => a.id === id ? { ...a, status: 'cancelled' } : a),
+        myList: state.myList.map(a => a.id === id ? { ...a, status: 'CANCELED' } : a),
       }))
       // Sync status to the announcements store (cache + browseable list)
       useAnnouncementsStore.setState(s => ({
         cache: s.cache[id]
-          ? { ...s.cache, [id]: { ...s.cache[id], status: 'cancelled' } }
+          ? { ...s.cache, [id]: { ...s.cache[id], status: 'CANCELED' } }
           : s.cache,
-        list: s.list.map(a => a.id === id ? { ...a, status: 'cancelled' } : a),
+        list: s.list.map(a => a.id === id ? { ...a, status: 'CANCELED' } : a),
       }))
     } catch (error) {
       set({ cancellingId: null })
@@ -349,7 +349,7 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
   closeMyApplication: async (applicationId: string, announcementId: string) => {
     set({ closingApplicationId: applicationId })
     try {
-      await announcementsAPI.closeApplicationAPI(applicationId)
+      await announcementsAPI.cancelApplicationAPI(applicationId)
       set(state => {
         const newApplied = new Set(state.appliedIds)
         const newPending = new Set(state.pendingIds)

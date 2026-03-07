@@ -19,8 +19,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     delegate.dependencyProvider = RCTAppDependencyProvider()
     if FirebaseApp.app() == nil {
         FirebaseApp.configure()
-     }
+    }
     Messaging.messaging().isAutoInitEnabled = true
+    // Required for FCM: request APNs token so Firebase can deliver push notifications on iOS
+    application.registerForRemoteNotifications()
+
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
@@ -33,6 +36,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     )
 
     return true
+  }
+
+  // Forward APNs token to Firebase so FCM can send push notifications to this device
+  func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    Messaging.messaging().apnsToken = deviceToken
   }
 }
 

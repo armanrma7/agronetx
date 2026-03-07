@@ -226,11 +226,16 @@ export function AnnouncementApplicationsPage() {
     [title, quantity, quantityUnit, price, priceUnit, applications.length, loading, t],
   )
 
+  const announcementStatus = announcement?.status ?? ''
+  const announcementOwnerId = announcement?.owner_id ?? null
+
   const renderItem = useCallback(
     ({ item: app }: { item: ApplicationListItem }) => (
       <ApplicationCard
         app={app}
         announcementId={announcementId}
+        announcementStatus={announcementStatus}
+        announcementOwnerId={announcementOwnerId}
         quantityUnit={quantityUnit}
         currentUserId={user?.id ?? null}
         actionLoadingId={actionLoadingId}
@@ -243,6 +248,8 @@ export function AnnouncementApplicationsPage() {
     ),
     [
       announcementId,
+      announcementStatus,
+      announcementOwnerId,
       quantityUnit,
       user?.id,
       actionLoadingId,

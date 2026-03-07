@@ -399,7 +399,8 @@
     "approveSuccess": "Application approved",
     "approveError": "Failed to approve application",
     "rejectSuccess": "Application rejected",
-    "rejectError": "Failed to reject application"
+    "rejectError": "Failed to reject application",
+    "statusBlocked": "Blocked"
   },
   "announcements": {
     "offer": "Goods",
@@ -428,7 +429,12 @@
     "applicantsCount": "Applicants: {{count}}",
     "closeApplication": "Close Application",
     "published": "Published",
-    "applied": "Applied"
+    "applied": "Applied",
+    "applyAgain": "Apply Again",
+    "closeAnnouncementTitle": "Close Announcement",
+    "closeAnnouncementConfirm": "Are you sure you want to close this announcement?",
+    "closedAnnouncement": "Announcement closed successfully",
+    "closeAnnouncementError": "Failed to close announcement"
   },
   "units": {
     "daily": "Daily",
@@ -468,6 +474,9 @@
     "categoryWork": "Work",
     "categoryEquipment": "Agricultural Equipment",
     "defaultItemName": "Apricot",
-    "call": "Call"
+    "call": "Call",
+    "toBeVerified": "Pending Verification",
+    "canceled": "Cancelled",
+    "blocked": "Blocked"
   }
 }
