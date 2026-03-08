@@ -1,8 +1,8 @@
-import React, { useMemo, useEffect } from 'react'
-import { NavigationContainer } from '@react-navigation/native'
+import React, { useMemo, useEffect, useRef } from 'react'
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAuth } from '../context/AuthContext'
-import { registerDeviceToken } from '../services/deviceToken.service'
+import { registerDeviceToken, setupNotificationOpenedHandler } from '../services/deviceToken.service'
 import { LoginPage, RegisterPage, ForgotPasswordPage, VerificationPage } from '../pages/auth'
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { AnnouncementApplicationsPage } from '../pages/profile/application/AnnouncementApplicationsPage'
@@ -10,26 +10,15 @@ import { ApplicationDetailPage } from '../pages/profile/application/ApplicationD
 import { LanguagesPage, SettingsPage, HelpPage } from '../pages/settings'
 import { NewAnnouncementFormPage, AnnouncementDetailPage, ApplicationFormPage } from '../pages/main'
 import { HomeTabs } from './HomeTabs'
-import { View, Text, TouchableOpacity, Pressable, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Pressable } from 'react-native'
 import { colors } from '../theme/colors'
 import Icon from '../components/Icon'
 import { LoaderScreen } from '../components/LoaderScreen'
 
-// ✅ Disable iOS glass effect at native level (iOS only)
-if (Platform.OS === 'ios') {
-  try {
-    const { NativeModules } = require('react-native')
-    // Attempt to disable iOS blur effects at system level
-    if (NativeModules.RNGestureHandlerModule) {
-      // Disable native animations that might cause glass effects
-    }
-  } catch (e) {
-    // Ignore if modules not available
-  }
-}
-
 const AuthStack = createNativeStackNavigator()
 const MainStack = createNativeStackNavigator()
+
+export const navigationRef = createNavigationContainerRef()
 
 function AuthNavigator() {
   return (
@@ -70,6 +59,23 @@ export function AppNavigator() {
       registerDeviceToken()
     }
   }, [initialized, user])
+
+  // Push notification opened: navigate when user taps notification (background or cold start)
+  const handleInitialNotificationRef = useRef<(() => Promise<void>) | null>(null)
+  useEffect(() => {
+    if (!user) return
+    const navigateFromPush = (screen: string, params: object) => {
+      if (navigationRef.current?.isReady()) {
+        ;(navigationRef.current.navigate as (name: string, params: object) => void)(screen, params)
+      }
+    }
+    const { handleInitial, unsubscribe } = setupNotificationOpenedHandler(navigateFromPush)
+    handleInitialNotificationRef.current = handleInitial
+    return () => {
+      handleInitialNotificationRef.current = null
+      unsubscribe()
+    }
+  }, [user])
 
   const navigator = useMemo(() => {
     // Wait for initialization to complete before deciding which navigator to show
@@ -232,7 +238,12 @@ export function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        handleInitialNotificationRef.current?.()
+      }}
+    >
       {navigator}
     </NavigationContainer>
   )

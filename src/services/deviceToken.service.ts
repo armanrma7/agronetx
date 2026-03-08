@@ -118,6 +118,74 @@ export function setupForegroundMessageHandler(): () => void {
   return unsubscribe
 }
 
+// Same notification type logic as NotificationsPage — used when user opens app from push (background/quit)
+const APPLICATION_TYPES = [
+  'application_created',
+  'application_approved',
+  'application_rejected',
+  'application_closed',
+  'application_canceled',
+]
+const ANNOUNCEMENT_TYPES = [
+  'announcement_published',
+  'announcement_closed',
+  'announcement_blocked',
+  'announcement_canceled',
+  'announcement_created',
+  'announcement_edited',
+  'announcement_expiring_soon',
+  'announcement_auto_closed',
+]
+
+/**
+ * Resolve navigation target from FCM push message data (when user taps notification).
+ * Returns { screen, params } or null. Used for both getInitialNotification and onNotificationOpenedApp.
+ */
+export function getNotificationTargetFromFCMData(data: Record<string, string> | undefined): { screen: string; params: object } | null {
+  if (!data) return null
+  const type = (data.type || '').toLowerCase().trim()
+  const announcementId = data.announcement_id || data.announcementId
+  const applicationId = data.application_id || data.applicationId
+  const quantityUnit = data.quantity_unit || data.quantityUnit || ''
+
+  if (APPLICATION_TYPES.includes(type) && announcementId && applicationId) {
+    return { screen: 'ApplicationDetail', params: { announcementId, appId: applicationId, quantityUnit } }
+  }
+  if (ANNOUNCEMENT_TYPES.includes(type) && announcementId) {
+    return { screen: 'AnnouncementDetail', params: { announcementId } }
+  }
+  if (type === 'account_status_changed') {
+    return { screen: 'Profile', params: {} }
+  }
+  return null
+}
+
+/**
+ * Handle push notification opened (user tapped notification).
+ * - Call handleInitial() when navigation is ready (e.g. from NavigationContainer onReady) for cold start.
+ * - onNotificationOpenedApp is registered here for when app was in background.
+ * Returns { handleInitial, unsubscribe } so caller can run handleInitial on ready and unsubscribe on unmount.
+ */
+export function setupNotificationOpenedHandler(navigate: (screen: string, params: object) => void): {
+  handleInitial: () => Promise<void>
+  unsubscribe: () => void
+} {
+  const unsubscribe = messaging().onNotificationOpenedApp((remoteMessage) => {
+    const target = getNotificationTargetFromFCMData(remoteMessage?.data)
+    if (target) navigate(target.screen, target.params)
+  })
+
+  const handleInitial = async () => {
+    try {
+      const remoteMessage = await messaging().getInitialNotification()
+      const target = getNotificationTargetFromFCMData(remoteMessage?.data)
+      if (target) navigate(target.screen, target.params)
+    } catch (_) {}
+  }
+
+  return { handleInitial, unsubscribe }
+}
+
 /**
  * Handle FCM token refresh
  */

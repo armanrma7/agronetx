@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../context/AuthContext'
 import { colors } from '../../theme/colors'
@@ -22,6 +23,7 @@ import { useAuthStore } from '../../store/auth/useAuthStore'
 import { useProfileStore } from '../../store/profile/useProfileStore'
 
 export function ProfilePage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const updateUser = useAuthStore(state => state.updateUser)
   console.log('User data:', user)
@@ -209,7 +211,7 @@ export function ProfilePage() {
       )
     } catch (error: any) {
       console.error('Error updating profile:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Թարմացման սխալ'
+      const errorMessage = error.response?.data?.message || error.message || t('profile.updateError')
       Alert.alert('Սխալ', errorMessage, [{ text: 'Լավ' }])
     } finally {
       setUpdating(false)
@@ -217,8 +219,8 @@ export function ProfilePage() {
   }
 
   const USER_TYPE_OPTIONS = [
-    { value: 'farmer', label: 'Ֆերմեր' },
-    { value: 'organization', label: 'Կազմակերպություն' },
+    { value: 'farmer', label: t('profile.accountType.farmer') },
+    { value: 'organization', label: t('profile.accountType.organization') },
   ]
 
   // Convert regions and villages to select options
@@ -244,7 +246,7 @@ export function ProfilePage() {
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           {/* Title */}
-          <Text style={styles.pageTitle}>Անձնական տվյալներ</Text>
+          <Text style={styles.pageTitle}>{t('profile.personalData')}</Text>
 
           {/* User Profile Section */}
           <View style={styles.userProfileSection}>
@@ -257,8 +259,8 @@ export function ProfilePage() {
           {/* Status Section */}
           <View style={styles.statusSection}>
             <View style={styles.statusLeft}>
-              <Text style={styles.statusLabel}>Կարգավիճակ</Text>
-              <Text style={styles.statusValue}>Վավերացված</Text>
+              <Text style={styles.statusLabel}>{t('profile.status')}</Text>
+              <Text style={styles.statusValue}>{t('profile.verified')}</Text>
             </View>
             <View style={styles.statusCheck}>
               <Icon name="check" size={20} color={colors.white} />
@@ -271,7 +273,7 @@ export function ProfilePage() {
               style={styles.sectionHeader}
               onPress={() => setIdentityExpanded(!identityExpanded)}
             >
-              <Text style={styles.sectionTitle}>Իմքմություն</Text>
+              <Text style={styles.sectionTitle}>{t('profile.identity')}</Text>
               <Icon
                 name={identityExpanded ? 'keyboard-arrow-down' : 'chevron-right'}
                 size={24}
@@ -286,7 +288,7 @@ export function ProfilePage() {
                     style={styles.input}
                     value={name}
                     onChangeText={setName}
-                    placeholder="Անուն Ազգանուն"
+                    placeholder={t('profile.nameSurname')}
                   />
                 </View>
 
@@ -296,7 +298,7 @@ export function ProfilePage() {
                     value={userType}
                     onValueChange={setUserType}
                     options={USER_TYPE_OPTIONS}
-                    placeholder="Օգտագործողի տեսակ"
+                    placeholder={t('profile.userType')}
                     label=""  
                   />
                 </View>
@@ -310,7 +312,7 @@ export function ProfilePage() {
               style={styles.sectionHeader}
               onPress={() => setOrganizationExpanded(!organizationExpanded)}
             >
-              <Text style={styles.sectionTitle}>Կոնտակտային տվյալներ</Text>
+              <Text style={styles.sectionTitle}>{t('profile.contactDetails')}</Text>
               <Icon
                 name={organizationExpanded ? 'keyboard-arrow-down' : 'chevron-right'}
                 size={24}
@@ -326,7 +328,7 @@ export function ProfilePage() {
                     style={styles.input}
                     value={primaryPhone}
                     onChangeText={setPrimaryPhone}
-                    placeholder="Հիմնական համար"
+                    placeholder={t('profile.primaryNumber')}
                     keyboardType="phone-pad"
                   />
                 </View>
@@ -340,7 +342,7 @@ export function ProfilePage() {
                           style={styles.input}
                           value={secondaryPhone}
                           onChangeText={setSecondaryPhone}
-                          placeholder="2-րդ Համար"
+                          placeholder={t('profile.secondaryNumber')}
                           keyboardType="phone-pad"
                         />
                       </View>
@@ -357,7 +359,7 @@ export function ProfilePage() {
                     style={styles.addButton}
                     onPress={handleAddSecondaryPhone}
                   >
-                    <Text style={styles.addButtonText}>+ Ավելացնել 2-րդ համար</Text>
+                    <Text style={styles.addButtonText}>+ {t('profile.addSecond')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -370,7 +372,7 @@ export function ProfilePage() {
               style={styles.sectionHeader}
               onPress={() => setLocationExpanded(!locationExpanded)}
             >
-              <Text style={styles.sectionTitle}>Գտնվելու վայր</Text>
+              <Text style={styles.sectionTitle}>{t('profile.location')}</Text>
               <Icon
                 name={locationExpanded ? 'keyboard-arrow-down' : 'chevron-right'}
                 size={24}
@@ -384,7 +386,7 @@ export function ProfilePage() {
                   {loadingRegions ? (
                     <View style={styles.loadingContainer}>
                       <ActivityIndicator size="small" color={colors.buttonPrimary} />
-                      <Text style={styles.loadingText}>Բեռնվում է...</Text>
+                      <Text style={styles.loadingText}>{t('common.loading')}</Text>
                     </View>
                   ) : (
                     <Select
@@ -401,7 +403,7 @@ export function ProfilePage() {
                   {loadingVillages ? (
                     <View style={styles.loadingContainer}>
                       <ActivityIndicator size="small" color={colors.buttonPrimary} />
-                      <Text style={styles.loadingText}>Բեռնվում է...</Text>
+                      <Text style={styles.loadingText}>{t('common.loading')}</Text>
                     </View>
                   ) : (
                     <Select
@@ -422,7 +424,7 @@ export function ProfilePage() {
           <View style={styles.saveButtonContainer}>
             <Button
               onPress={handleSaveProfile}
-              title="Պահպանել փոփոխությունները"
+              title={t('profile.saveChanges')}
               disabled={updating}
               loading={updating}
             />

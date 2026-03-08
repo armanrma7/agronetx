@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   FlatList,
+  SectionList,
   TextInput,
   ActivityIndicator,
   Platform,
@@ -184,6 +185,7 @@ export function RegionVillageSelector({
     } else {
       setVillages([])
       setVillagesCache({})
+      setLastFetchedRegionIds('')
     }
   }, [selectedRegions, fetchVillages])
 
@@ -242,15 +244,36 @@ export function RegionVillageSelector({
     })
   }, [regions, regionSearchQuery, currentLang])
 
-  // Filtered villages for search
+  // Only villages that belong to currently selected regions (exact match)
+  const villagesForSelectedRegions = useMemo(() => {
+    if (selectedRegions.length === 0) return []
+    return villages.filter(v => selectedRegions.includes(v.region_id))
+  }, [villages, selectedRegions])
+
+  // Filtered villages for search (from villages for selected regions only)
   const filteredVillages = useMemo(() => {
-    if (!villageSearchQuery) return villages
+    if (!villageSearchQuery) return villagesForSelectedRegions
     const query = villageSearchQuery.toLowerCase()
-    return villages.filter(village => {
+    return villagesForSelectedRegions.filter(village => {
       const name = getLocalizedName(village).toLowerCase()
       return name.includes(query)
     })
-  }, [villages, villageSearchQuery, currentLang])
+  }, [villagesForSelectedRegions, villageSearchQuery, currentLang])
+
+  // True when the loaded villages are for the current selectedRegions (avoid showing stale list)
+  const villagesReadyForSelectedRegions =
+    selectedRegions.length === 0 ||
+    lastFetchedRegionIds === selectedRegions.slice().sort().join(',')
+
+  // Sections: each selected region with its villages (for village sheet)
+  const villageSections = useMemo(() => {
+    return selectedRegions.map(regionId => {
+      const region = regions.find(r => r.id === regionId)
+      const regionName = region ? getLocalizedName(region) : ''
+      const villagesInRegion = filteredVillages.filter(v => v.region_id === regionId)
+      return { regionId, title: regionName, data: villagesInRegion }
+    })
+  }, [selectedRegions, regions, filteredVillages, currentLang])
 
   // Open region sheet
   const handleOpenRegionSheet = () => {
@@ -607,24 +630,29 @@ export function RegionVillageSelector({
               )}
             </View>
 
-            {/* List */}
+            {/* List: region as section header, then related villages under each */}
             <View style={styles.listContainer}>
-              {loadingVillages ? (
+              {!villagesReadyForSelectedRegions || loadingVillages ? (
                 renderSkeleton()
+              ) : selectedRegions.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>{t('addAnnouncement.selectRegionFirst')}</Text>
+                </View>
               ) : filteredVillages.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    {selectedRegions.length === 0 
-                      ? t('addAnnouncement.selectRegionFirst')
-                      : t('common.noResults')
-                    }
-                  </Text>
+                  <Text style={styles.emptyText}>{t('common.noResults')}</Text>
                 </View>
               ) : (
-                <FlatList
-                  data={filteredVillages}
-                  renderItem={renderVillageItem}
+                <SectionList
+                  sections={villageSections.filter(s => s.data.length > 0)}
                   keyExtractor={item => item.id}
+                  renderSectionHeader={({ section }) => (
+                    <View style={styles.villageSectionHeader}>
+                      <Text style={styles.villageSectionHeaderText}>{section.title}</Text>
+                    </View>
+                  )}
+                  renderItem={({ item }) => renderVillageItem({ item })}
+                  stickySectionHeadersEnabled={false}
                   showsVerticalScrollIndicator={false}
                 />
               )}
@@ -746,6 +774,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.buttonPrimary,
     fontWeight: '500',
+  },
+  villageSectionHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  villageSectionHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   searchContainer: {
     flexDirection: 'row',

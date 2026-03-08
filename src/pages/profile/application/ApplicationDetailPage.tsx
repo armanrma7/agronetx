@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import {
   View,
   Text,
@@ -49,13 +49,33 @@ export function ApplicationDetailPage() {
   const { user } = useAuth()
   const { announcementId, appId, quantityUnit } = (route.params as RouteParams) || {}
 
-  const { byAnnouncementId, actionLoadingId, approveApplication, rejectApplication, closeApplication } =
-    useApplicationsStore()
-  const { cache: announcementsCache } = useAnnouncementsStore()
+  const {
+    byAnnouncementId,
+    loadingByAnnouncementId,
+    actionLoadingId,
+    approveApplication,
+    rejectApplication,
+    closeApplication,
+    fetchApplicationsByAnnouncement,
+  } = useApplicationsStore()
+  const { cache: announcementsCache, fetchById: fetchAnnouncementById } = useAnnouncementsStore()
+
+  // When opened from notification (or deep link), data may not be in store yet — fetch it
+  useEffect(() => {
+    if (!announcementId || !appId) return
+    const apps = byAnnouncementId[announcementId] ?? []
+    const appFound = apps.some(a => a.id === appId)
+    const hasAnnouncement = !!announcementsCache[announcementId]
+    if (!appFound || !hasAnnouncement) {
+      fetchAnnouncementById(announcementId, true).catch(() => {})
+      fetchApplicationsByAnnouncement(announcementId, true).catch(() => {})
+    }
+  }, [announcementId, appId, byAnnouncementId, announcementsCache, fetchAnnouncementById, fetchApplicationsByAnnouncement])
 
   // Always read from the live store so status updates are reflected immediately
   const app = (byAnnouncementId[announcementId] ?? []).find(a => a.id === appId)
   const announcement = announcementsCache[announcementId] ?? null
+  const loadingApplications = !!loadingByAnnouncementId[announcementId]
   const announcementStatus = announcement?.status ?? ''
 
   const isActionLoading = actionLoadingId === appId
@@ -178,8 +198,14 @@ export function ApplicationDetailPage() {
     return (
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <AppHeader showBack />
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t('applications.empty')}</Text>
+        <View style={styles.emptyStateWrapper}>
+          <View style={styles.emptyContainer}>
+            {loadingApplications ? (
+              <ActivityIndicator size="large" color={colors.buttonPrimary} />
+            ) : (
+              <Text style={styles.emptyText}>{t('applications.empty')}</Text>
+            )}
+          </View>
         </View>
       </SafeAreaView>
     )
@@ -393,6 +419,10 @@ const styles = StyleSheet.create({
     padding: 25,
     paddingBottom: 32,
     gap: 20,
+  },
+  emptyStateWrapper: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
   },
   emptyContainer: {
     flex: 1,

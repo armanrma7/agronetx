@@ -31,6 +31,11 @@ export interface APIItem {
     hy: string
     ru: string
   }>
+  rent_measurements?: Array<{
+    en: string
+    hy: string
+    ru: string
+  }>
 }
 
 // API Subcategory interface (name_am = Armenian, used for current language display)

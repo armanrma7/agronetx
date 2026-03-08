@@ -253,7 +253,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
               </TouchableOpacity>
             </>
           ) : (
-            // Published tab: show cancel button only when announcement is TO_BE_VERIFIED or PUBLISHED
+            // Published tab: View (go to details) and Cancel (when TO_BE_VERIFIED or PUBLISHED)
             <>
               {(announcementIs.toBeVerified(announcement.status) ||
                 announcementIs.active(announcement.status)) && (

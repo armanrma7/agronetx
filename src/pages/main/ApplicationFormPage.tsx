@@ -109,7 +109,7 @@ export function ApplicationFormPage() {
 
   // Fetch applications for this announcement (for calendar: disable days already in applied applications)
   useEffect(() => {
-    if (!announcementId || announcementType !== 'goods') return
+    if (!announcementId || (announcementType !== 'goods' && announcementType !== 'rent')) return
     let cancelled = false
     announcementsAPI.getApplicationsByAnnouncementAPI(announcementId)
       .then((list) => {
@@ -221,11 +221,42 @@ export function ApplicationFormPage() {
     return disabledDates
   }
 
-  // Returns announcement end date in YYYY-MM-DD or undefined (for Calendar maxDate and validation)
+  const getAnnouncementStartDateKey = (): string | undefined => {
+    if (!announcement) return undefined
+    const startStr = announcement.date_from || (announcement as any).date_from
+    return startStr ? startStr.split('T')[0] : undefined
+  }
+
   const getAnnouncementEndDateKey = (): string | undefined => {
     if (!announcement) return undefined
     const endDateStr = announcement.date_to || (announcement as any).date_to
     return endDateStr ? endDateStr.split('T')[0] : undefined
+  }
+
+  const getCalendarMinDate = (): string => {
+    const startKey = getAnnouncementStartDateKey()
+    const today = new Date().toISOString().split('T')[0]
+    if (!startKey) return today
+    return startKey < today ? today : startKey
+  }
+
+  const getCalendarMaxDate = (): string => {
+    const endKey = getAnnouncementEndDateKey()
+    if (endKey) return endKey
+    const d = new Date()
+    d.setFullYear(d.getFullYear() + 3)
+    return d.toISOString().split('T')[0]
+  }
+
+  // Calendar type from unit and rent_unit (if exist). Yearly = only years, monthly = only months, daily = only days. Else default daily.
+  type CalendarViewMode = 'yearly' | 'monthly' | 'daily'
+  const getCalendarViewMode = (): CalendarViewMode => {
+    const a = announcement as any
+    const unit = (a?.rent_unit ?? a?.quantity_unit ?? announcement?.unit ?? '').toString().toLowerCase()
+    if (unit.includes('year') || unit === 'yearly') return 'yearly'
+    if (unit.includes('month') || unit === 'monthly' || unit.includes('ամիս')) return 'monthly'
+    if (unit.includes('day') || unit === 'daily' || unit.includes('օր')) return 'daily'
+    return 'daily'
   }
 
   // Get marked dates for Calendar component
@@ -258,30 +289,16 @@ export function ApplicationFormPage() {
     return marked
   }
 
-  // Handle calendar date selection
   const handleCalendarDayPress = (day: DateData) => {
     const dateKey = day.dateString
     const disabledDates = getDisabledDates()
-    const endDateKey = getAnnouncementEndDateKey()
-    
-    // Don't allow selection of disabled dates (days already in applied applications)
+    const minKey = getCalendarMinDate()
+    const maxKey = getCalendarMaxDate()
+    if (dateKey < minKey || dateKey > maxKey) return
     if (disabledDates.has(dateKey)) {
-      Alert.alert(
-        t('applications.dateNotAvailable'),
-        t('applications.dateTaken')
-      )
+      Alert.alert(t('applications.dateNotAvailable'), t('applications.dateTaken'))
       return
     }
-    
-    // Don't allow selection of dates after announcement end date
-    if (endDateKey && dateKey > endDateKey) {
-      Alert.alert(
-        t('applications.dateNotAvailable'),
-        t('applications.dateAfterEnd')
-      )
-      return
-    }
-    
     const selectedDate = keyToDate(day.dateString)
     
     // Check if date is already selected
@@ -324,7 +341,12 @@ export function ApplicationFormPage() {
         Alert.alert(t('common.error'), t('applications.quantityExceedsLimit', { limit: dailyLimit, unit: announcementData?.quantity_unit ?? announcement?.unit ?? '' }))
         return false
       }
-    } else if (announcementType === 'rent' || announcementType === 'service') {
+    } else if (announcementType === 'rent') {
+      if (deliveryDates.length === 0) {
+        Alert.alert(t('common.error'), t('applications.selectAtLeastOneDate'))
+        return false
+      }
+    } else if (announcementType === 'service') {
       if (!selectedUnit) {
         Alert.alert(t('common.error'), t('applications.selectUnit'))
         return false
@@ -348,16 +370,19 @@ export function ApplicationFormPage() {
       }
 
       if (announcementType === 'goods') {
-        // Format dates as YYYY-MM-DD array
         if (deliveryDates.length > 0) {
           applicationData.delivery_dates = deliveryDates.map(date => formatDateToString(date))
         }
         if (quantity) {
           applicationData.count = parseFloat(quantity)
         }
-      } else if (announcementType === 'rent' || announcementType === 'service') {
+      } else if (announcementType === 'rent') {
+        if (deliveryDates.length > 0) {
+          applicationData.delivery_dates = deliveryDates.map(date => formatDateToString(date))
+          applicationData.unit = getCalendarViewMode()
+        }
+      } else if (announcementType === 'service') {
         if (selectedUnit) {
-          // If hourly is selected for rent, use daily
           applicationData.unit = selectedUnit === 'hourly' ? 'daily' : selectedUnit
         }
       }
@@ -451,41 +476,36 @@ export function ApplicationFormPage() {
           
           {/* Instructional Text */}
           <Text style={styles.instructionText}>
-            {t('applications.title')}
+            {t('applications.sendToAnnouncer')}
           </Text>
 
           {/* Daily Limit Banner - Only for goods */}
           {dailyLimitInfo && (
             <View style={styles.limitBanner}>
               <Text style={styles.limitText}>{t('announcementDetail.limit')}: {dailyLimitInfo}</Text>
-              <View style={styles.infoIcon}>
-                <Icon name="info" size={16} color={colors.buttonPrimary} />
-              </View>
             </View>
           )}
 
-          {/* Delivery Dates - Only for goods */}
-          {announcementType === 'goods' && (
+          {/* Delivery Dates - For goods and rent (rent uses calendar instead of unit dropdown) */}
+          {(announcementType === 'goods' || announcementType === 'rent') && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>{t('applications.deliveryDates')}*</Text>
+              <Text style={styles.fieldLabel}>{t('applications.deliveryDate')}*</Text>
               <TouchableOpacity 
                 style={styles.dateInput} 
                 onPress={handleOpenDatePicker}
               >
-                <Text style={styles.dateInputText}>
-                  {deliveryDates.length > 0 ? t('applications.selectedDates', { count: deliveryDates.length }) : t('common.select')}
+                <Text style={[styles.dateInputText, deliveryDates.length === 0 && styles.dateInputPlaceholder]}>
+                  {deliveryDates.length > 0 ? t('applications.selectedDates', { count: deliveryDates.length }) : t('applications.selectDates')}
                 </Text>
                 <Icon name="calendar" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           )}
 
-          {/* Unit Selection - For rent and service */}
-          {(announcementType === 'rent' || announcementType === 'service') && (
+          {/* Unit Selection - Only for service (rent uses calendar) */}
+          {announcementType === 'service' && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>
-                {announcementType === 'rent' ? t('applications.rentUnit') : t('applications.serviceUnit')}
-              </Text>
+              <Text style={styles.fieldLabel}>{t('applications.serviceUnit')}</Text>
               <TouchableOpacity 
                 style={styles.unitInput} 
                 onPress={() => setShowUnitPicker(true)}
@@ -495,12 +515,6 @@ export function ApplicationFormPage() {
                 </Text>
                 <Icon name="chevronDown" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
-              {/* Show daily option if hourly is selected for rent */}
-              {announcementType === 'rent' && selectedUnit === 'hourly' && (
-                <Text style={styles.hourlyNote}>
-                  Ժամային միավորի դեպքում ցուցադրվում է օրական
-                </Text>
-              )}
             </View>
           )}
 
@@ -567,8 +581,8 @@ export function ApplicationFormPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Calendar Modal - For goods type */}
-        {announcementType === 'goods' && showDatePicker && (
+        {/* Calendar Modal - Normal month calendar for goods and rent */}
+        {(announcementType === 'goods' || announcementType === 'rent') && showDatePicker && (
           <Modal
             transparent
             animationType="fade"
@@ -583,6 +597,7 @@ export function ApplicationFormPage() {
               />
               <View style={styles.calendarSheet}>
                 <View style={styles.pickerHeader}>
+                  <View style={styles.pickerHeaderBack} />
                   <Text style={styles.pickerTitle}>{t('applications.deliveryDates')}</Text>
                   <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                     <Text style={styles.doneButton}>{t('common.done')}</Text>
@@ -591,8 +606,9 @@ export function ApplicationFormPage() {
                 <Calendar
                   onDayPress={handleCalendarDayPress}
                   markedDates={getMarkedDates()}
-                  minDate={new Date().toISOString().split('T')[0]}
-                  maxDate={getAnnouncementEndDateKey()}
+                  minDate={getCalendarMinDate()}
+                  maxDate={getCalendarMaxDate()}
+                  current={getCalendarMinDate()}
                   enableSwipeMonths={true}
                   theme={{
                     backgroundColor: colors.white,
@@ -607,7 +623,7 @@ export function ApplicationFormPage() {
                     selectedDotColor: colors.white,
                     arrowColor: colors.buttonPrimary,
                     monthTextColor: colors.textPrimary,
-                    textDayFontWeight: '500',
+                    textDayFontWeight: '700',
                     textMonthFontWeight: '600',
                     textDayHeaderFontWeight: '600',
                     textDayFontSize: 16,
@@ -616,59 +632,6 @@ export function ApplicationFormPage() {
                   }}
                   style={styles.calendar}
                 />
-              </View>
-            </View>
-          </Modal>
-        )}
-
-        {/* Unit Picker Modal */}
-        {showUnitPicker && (
-          <Modal
-            transparent
-            animationType="fade"
-            visible={showUnitPicker}
-            onRequestClose={() => setShowUnitPicker(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <TouchableOpacity 
-                style={{ flex: 1 }}
-                activeOpacity={1}
-                onPress={() => setShowUnitPicker(false)}
-              />
-              <View style={styles.pickerSheet}>
-                <View style={styles.pickerHeader}>
-                  <Text style={styles.pickerTitle}>{t('applications.unit')}</Text>
-                  <TouchableOpacity onPress={() => setShowUnitPicker(false)}>
-                    <Text style={styles.doneButton}>{t('common.done')}</Text>
-                  </TouchableOpacity>
-                </View>
-                <ScrollView style={styles.unitPickerList}>
-                  {getAvailableUnits().map((unit) => (
-                    <TouchableOpacity
-                      key={unit}
-                      style={[
-                        styles.unitPickerItem,
-                        selectedUnit === unit && styles.unitPickerItemSelected,
-                      ]}
-                      onPress={() => {
-                        setSelectedUnit(unit)
-                        setShowUnitPicker(false)
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.unitPickerItemText,
-                          selectedUnit === unit && styles.unitPickerItemTextSelected,
-                        ]}
-                      >
-                        {getUnitLabel(unit)}
-                      </Text>
-                      {selectedUnit === unit && (
-                        <Icon name="check" size={20} color={colors.buttonPrimary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
               </View>
             </View>
           </Modal>
@@ -686,6 +649,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    gap: 12,
     backgroundColor: colors.white,
   },
   scrollView: {
@@ -714,7 +678,8 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.black,
+    marginTop: 12,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -723,9 +688,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    borderRadius: 50,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 18,
     marginBottom: 24,
   },
   limitText: {
@@ -743,11 +708,12 @@ const styles = StyleSheet.create({
   },
   fieldContainer: {
     marginBottom: 24,
+
   },
   fieldLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontWeight: '400',
+    color: "000#",
     marginBottom: 8,
   },
   dateInput: {
@@ -756,10 +722,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.borderLight,
-    borderRadius: 8,
+    borderRadius: 50,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#F9FAFB',
   },
   dateInputText: {
     fontSize: 16,
@@ -795,12 +760,11 @@ const styles = StyleSheet.create({
   quantityInput: {
     borderWidth: 1,
     borderColor: colors.borderLight,
-    borderRadius: 8,
+    borderRadius: 50,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     color: colors.textPrimary,
-    backgroundColor: '#F9FAFB',
   },
   quantityHint: {
     fontSize: 12,
@@ -815,7 +779,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: colors.textPrimary,
-    backgroundColor: '#F9FAFB',
     minHeight: 100,
   },
   postSubmissionInfo: {
@@ -886,6 +849,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
+  pickerHeaderBack: {
+    width: 24,
+    height: 24,
+  },
+  calendarListContent: {
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+  },
+  calendarYearItem: {
+    flex: 1,
+    minWidth: '30%',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    margin: 4,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  calendarYearItemSelected: {
+    backgroundColor: colors.buttonPrimary,
+  },
+  calendarYearItemText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  calendarYearItemTextSelected: {
+    color: colors.white,
+  },
+  dailyDateItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  dailyDateItemSelected: {
+    backgroundColor: '#EFF6FF',
+  },
+  dailyDateItemText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  dailyDateItemTextDisabled: {
+    fontWeight: '400',
+    color: colors.textTertiary,
+  },
+  dailyDateItemTextSelected: {
+    color: colors.buttonPrimary,
+  },
   pickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -896,9 +915,11 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   pickerTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
+    textAlign: 'center',
   },
   doneButton: {
     fontSize: 17,

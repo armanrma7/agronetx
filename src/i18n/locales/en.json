@@ -177,6 +177,7 @@
     "group": "Group",
     "name": "Name",
     "unitOfMeasurement": "Unit of measurement",
+    "rentUnit": "Rent",
     "price": "Price"
   },
   "announcementSubtype": {
@@ -202,6 +203,7 @@
     "type": "Type",
     "quantity": "Quantity",
     "unitOfMeasurement": "Unit of measurement",
+    "rentUnit": "Rent",
     "price": "Price",
     "pricePerUnit": "Price per 1 unit",
     "totalArea": "Total area",
@@ -246,6 +248,7 @@
     "welcome": "Welcome to AgronetX platform, you have successfully registered:",
     "announcementRemoved": "Your announcement has been removed from the platform due to violation of the platform's Regulations and Terms.",
     "announcementId": "Announcement ID",
+    "viewAnnouncement": "View announcement",
     "ago": "ago",
     "hours": "hours",
     "hour": "hour",
@@ -298,7 +301,9 @@
     "changePasswordSuccess": "Password changed successfully",
     "changePasswordError": "Failed to change password",
     "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters"
+    "passwordTooShort": "Password must be at least 6 characters",
+    "saveChanges": "Save changes",
+    "updateError": "Update error"
   },
   "filters": {
     "title": "Filters",

@@ -10,9 +10,29 @@ import {
   ScrollView,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useNavigation } from '@react-navigation/native'
 import { colors } from '../../theme/colors'
 import { useNotificationsStore } from '../../store/notifications/useNotificationsStore'
 import type { NotificationItem } from '../../lib/api/notifications.api'
+
+// Notification types that support deep link navigation
+const APPLICATION_TYPES = [
+  'application_created',
+  'application_approved',
+  'application_rejected',
+  'application_closed',
+  'application_canceled',
+] as const
+const ANNOUNCEMENT_TYPES = [
+  'announcement_published',
+  'announcement_closed',
+  'announcement_blocked',
+  'announcement_canceled',
+  'announcement_created',
+  'announcement_edited',
+  'announcement_expiring_soon',
+  'announcement_auto_closed',
+] as const
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -34,6 +54,33 @@ function getAnnouncementId(n: NotificationItem): string | undefined {
   return n.data?.announcement_id || n.data?.announcementId
 }
 
+function getApplicationId(n: NotificationItem): string | undefined {
+  return n.data?.application_id || n.data?.applicationId
+}
+
+function getQuantityUnit(n: NotificationItem): string | undefined {
+  return n.data?.quantity_unit || n.data?.quantityUnit || ''
+}
+
+/** Resolve navigation target from notification type and data. Returns screen name + params or null. */
+function getNotificationNavigationTarget(n: NotificationItem): { screen: string; params: object } | null {
+  const type = (n.type || '').toLowerCase().trim()
+  const announcementId = getAnnouncementId(n)
+  const applicationId = getApplicationId(n)
+  const quantityUnit = getQuantityUnit(n) || ''
+
+  if (APPLICATION_TYPES.includes(type as any) && announcementId && applicationId) {
+    return { screen: 'ApplicationDetail', params: { announcementId, appId: applicationId, quantityUnit } }
+  }
+  if (ANNOUNCEMENT_TYPES.includes(type as any) && announcementId) {
+    return { screen: 'AnnouncementDetail', params: { announcementId } }
+  }
+  if (type === 'account_status_changed') {
+    return { screen: 'Profile', params: {} }
+  }
+  return null
+}
+
 type Period = 'today' | 'yesterday' | 'earlier'
 
 interface GroupedNotifications {
@@ -47,9 +94,10 @@ interface GroupedNotifications {
 interface NotificationBottomSheetProps {
   notification: NotificationItem | null
   onClose: () => void
+  onOpenAnnouncement?: (announcementId: string) => void
 }
 
-function NotificationBottomSheet({ notification, onClose }: NotificationBottomSheetProps) {
+function NotificationBottomSheet({ notification, onClose, onOpenAnnouncement }: NotificationBottomSheetProps) {
   const { t } = useTranslation()
   if (!notification) return null
 
@@ -86,12 +134,18 @@ function NotificationBottomSheet({ notification, onClose }: NotificationBottomSh
             {/* Message */}
             <Text style={sheetStyles.message}>{message}</Text>
 
-            {/* Announcement link */}
+            {/* Announcement link — show as link for all types that have announcement */}
             {announcementId && (
-              <View style={sheetStyles.announcementRow}>
-                <Text style={sheetStyles.announcementLabel}>{t('notifications.announcementId')}</Text>
-                <Text style={sheetStyles.announcementValue}>#{announcementId}</Text>
-              </View>
+              <TouchableOpacity
+                style={sheetStyles.announcementLinkRow}
+                onPress={() => {
+                  onOpenAnnouncement?.(announcementId)
+                  onClose()
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={sheetStyles.announcementLinkText}>{t('notifications.viewAnnouncement')}</Text>
+              </TouchableOpacity>
             )}
 
             {/* Extra data fields */}
@@ -132,6 +186,7 @@ export function NotificationsPage() {
     markSeen,
   } = useNotificationsStore()
 
+  const navigation = useNavigation()
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null)
 
   useEffect(() => {
@@ -140,9 +195,19 @@ export function NotificationsPage() {
   }, [])
 
   const handleNotificationPress = useCallback((notification: NotificationItem) => {
-    setSelectedNotification(notification)
     markSeen(notification.id)
-  }, [markSeen])
+    const target = getNotificationNavigationTarget(notification)
+    if (target) {
+      const nav = (navigation.getParent?.() ?? navigation) as any
+      if (nav?.navigate) {
+        nav.navigate(target.screen, target.params)
+      }
+      setSelectedNotification(null)
+      return
+    }
+    // No redirect for this type (e.g. general, or missing ids) — open bottom sheet with notification details
+    setSelectedNotification(notification)
+  }, [markSeen, navigation])
 
   const handleCloseSheet = useCallback(() => {
     setSelectedNotification(null)
@@ -191,7 +256,6 @@ export function NotificationsPage() {
     }
     const n = item.notification
     const message = getNotificationMessage(n)
-    const announcementId = getAnnouncementId(n)
 
     return (
       <TouchableOpacity
@@ -206,11 +270,6 @@ export function NotificationsPage() {
               <Text style={[styles.notificationText, !n.is_seen && styles.notificationTextUnread]}>
                 {message}
               </Text>
-              {announcementId && (
-                <Text style={styles.announcementId}>
-                  {t('notifications.announcementId')} #{announcementId}
-                </Text>
-              )}
             </View>
           </View>
           <Text style={styles.timestamp}>{getTimeAgo(n.created_at, t)}</Text>
@@ -272,6 +331,11 @@ export function NotificationsPage() {
       <NotificationBottomSheet
         notification={selectedNotification}
         onClose={handleCloseSheet}
+        onOpenAnnouncement={(id) => {
+          handleCloseSheet()
+          const nav = (navigation.getParent?.() ?? navigation) as any
+          if (nav?.navigate) nav.navigate('AnnouncementDetail', { announcementId: id })
+        }}
       />
     </View>
   )
@@ -475,23 +539,15 @@ const sheetStyles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 16,
   },
-  announcementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  announcementLinkRow: {
     marginBottom: 12,
-    padding: 12,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: 8,
+    paddingVertical: 8,
   },
-  announcementLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  announcementValue: {
-    fontSize: 13,
+  announcementLinkText: {
+    fontSize: 16,
     color: colors.buttonPrimary,
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   dataRow: {
     flexDirection: 'row',

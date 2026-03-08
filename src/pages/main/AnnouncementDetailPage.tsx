@@ -28,6 +28,7 @@ import {
   isAnnouncementOwner,
   canCancelAnnouncement,
   canCloseAnnouncement,
+  canUpdateAnnouncement,
   canApplyOrApplyAgain,
   isReapply,
   canApplicantViewContacts,
@@ -178,7 +179,7 @@ export function AnnouncementDetailPage() {
 
   const getStatusLabel = (status: string) => {
     const s = (status || '').toLowerCase()
-    if (s === 'to_be_verified') return t('announcementDetail.toBeVerified')
+    if (s === 'to_be_verified' || s === 'pending') return t('announcementDetail.toBeVerified')
     if (s === 'active' || s === 'published') return t('announcementDetail.active')
     if (s === 'closed') return t('announcementDetail.closed')
     if (s === 'blocked') return t('announcementDetail.blocked')
@@ -189,7 +190,7 @@ export function AnnouncementDetailPage() {
   const getStatusColor = (status: string) => {
     const s = (status || '').toLowerCase()
     if (s === 'active' || s === 'published') return colors.success
-    if (s === 'to_be_verified') return colors.warning
+    if (s === 'to_be_verified' || s === 'pending') return colors.warning
     if (s === 'blocked') return colors.error
     return colors.textTertiary
   }
@@ -463,6 +464,7 @@ export function AnnouncementDetailPage() {
   const hasAnyApprovedApplication = allApplications.some(a => applicationIs.approved(a.status))
 
   const isMyAnnouncement = isAnnouncementOwner(announcement, user?.id)
+  const showEdit = canUpdateAnnouncement(announcement, user?.id)
   const showCancel = canCancelAnnouncement(announcement, user?.id)
   const showClose = canCloseAnnouncement(announcement, user?.id, hasAnyApprovedApplication)
   const showApply = canApplyOrApplyAgain(announcement, user?.id, myApplication, hasAnyApprovedApplication)
@@ -651,9 +653,25 @@ export function AnnouncementDetailPage() {
 
         {/* Action Buttons */}
         {isMyAnnouncement ? (
-          // Announcer buttons: Close (Case 2c) and/or Cancel (Cases 1, 2a, 2b, 2c)
-          (showClose || showCancel) && (
+          // Announcer buttons: Edit (when pending), Close (Case 2c), Cancel (Cases 1, 2a, 2b, 2c)
+          (showEdit || showClose || showCancel) && (
             <View style={styles.actionButtons}>
+              {showEdit && (
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => {
+                    const parent = navigation.getParent()
+                    const nav = parent ?? (navigation as any)
+                    nav.navigate('NewAnnouncementForm', {
+                      type: (announcement.category as 'goods' | 'service' | 'rent') || 'goods',
+                      announcementId: announcement.id,
+                      announcement,
+                    })
+                  }}
+                >
+                  <Text style={styles.editButtonText}>{t('common.edit')}</Text>
+                </TouchableOpacity>
+              )}
               {showClose && (
                 closing ? (
                   <View style={styles.editButton}>

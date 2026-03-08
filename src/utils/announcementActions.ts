@@ -16,7 +16,8 @@ import type { ApplicationListItem } from '../lib/api/announcements.api'
 // All matchers are case-insensitive and handle legacy spellings (published, accepted, etc.)
 
 export const announcementIs = {
-  toBeVerified: (s?: string) => /^to_be_verified$/i.test((s || '').trim()),
+  /** Pending / awaiting verification; API may return to_be_verified or pending */
+  toBeVerified: (s?: string) => /^(to_be_verified|pending)$/i.test((s || '').trim()),
   /** Canonical status for live announcements; 'active' accepted from API for backward compat */
   active:       (s?: string) => /^(published|active)$/i.test((s || '').trim()),
   closed:       (s?: string) => /^closed$/i.test((s || '').trim()),
@@ -58,6 +59,18 @@ export function canCancelAnnouncement(
     announcementIs.toBeVerified(announcement.status) ||
     announcementIs.active(announcement.status)
   )
+}
+
+/**
+ * Owner can update (edit) announcement only when status is TO_BE_VERIFIED or PENDING.
+ */
+export function canUpdateAnnouncement(
+  announcement: Announcement,
+  userId: string | null | undefined,
+): boolean {
+  if (!isAnnouncementOwner(announcement, userId)) return false
+  const status = (announcement.status || '').trim().toLowerCase()
+  return status === 'to_be_verified' || status === 'pending'
 }
 
 /**

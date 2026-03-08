@@ -209,6 +209,7 @@
     "type": "Տեսակ",
     "quantity": "Քանակ",
     "unitOfMeasurement": "Չափման միավոր",
+    "rentUnit": "Վարձակալություն",
     "price": "Գին",
     "pricePerUnit": "1 միավորի գին",
     "totalArea": "Ընդհանուր տարածք",
@@ -253,6 +254,7 @@
     "welcome": "Բարի գալուստ AgronetX հարթակ, դուք հաջողությամբ գրանցվել եք:",
     "announcementRemoved": "Ձեր հայտարարությունը հեռացվել է հարթակից հարթակի Կանոնակարգը և Պայմանները խախտելու պատճառով։",
     "announcementId": "Հայտարարություն ID",
+    "viewAnnouncement": "Դիտել հայտարարությունը",
     "ago": "առաջ",
     "hours": "ժամ",
     "hour": "ժամ",
@@ -305,7 +307,9 @@
     "changePasswordSuccess": "Գաղտնաբառը հաջողությամբ փոխվել է",
     "changePasswordError": "Գաղտնաբառի փոփոխությունը ձախողվեց",
     "passwordMismatch": "Գաղտնաբառերը չեն համընկնում",
-    "passwordTooShort": "Գաղտնաբառը պետք է լինի առնվազն 6 նիշ"
+    "passwordTooShort": "Գաղտնաբառը պետք է լինի առնվազն 6 նիշ",
+    "saveChanges": "Պահպանել փոփոխությունները",
+    "updateError": "Թարմացման սխալ"
   },
   "filters": {
     "title": "Ֆիլտրեր",
@@ -356,10 +360,12 @@
   },
   "applications": {
     "title": "Դիմում",
+    "sendToAnnouncer": "Ուղարկեք ձեր հայտը հայտարարատուին,",
     "goodsApplication": "Ապրանքի Դիմում",
     "serviceApplication": "Ծառայության Դիմում",
     "rentApplication": "Վարձակալության Դիմում",
     "deliveryDates": "Առաքման ամսաթվեր",
+    "deliveryDate": "Առաքման ամսաթիվ",
     "selectDates": "Ընտրել",
     "selectedDates": "Ընտրված է {{count}} ամսաթիվ",
     "quantity": "Քանակ",
