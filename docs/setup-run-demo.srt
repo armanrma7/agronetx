@@ -1,0 +1,38 @@
+1
+00:00:00,000 --> 00:00:06,000
+AgronetX React Native Setup and Run Demo
+Repository: /workspace
+Date: 2026-03-06
+
+2
+00:00:06,000 --> 00:00:13,000
+Step 1 - Install dependencies
+$ npm install
+Result: added 994 packages
+
+3
+00:00:13,000 --> 00:00:20,000
+Step 2 - Start Metro bundler
+$ npm run start -- --reset-cache
+Result: Dev server ready on http://localhost:8081
+
+4
+00:00:20,000 --> 00:00:27,000
+Step 3 - Attempt Android launch
+$ npm run android
+Result: blocked in cloud env (adb/sdk missing)
+Gradle toolchain issue: JvmVendorSpec IBM_SEMERU
+
+5
+00:00:27,000 --> 00:00:34,000
+Environment checks (react-native doctor)
+- adb not found
+- Android SDK / ANDROID_HOME missing
+- JDK found 21, supported 17-20 for this setup
+
+6
+00:00:34,000 --> 00:00:40,000
+Outcome
+JavaScript side is runnable (Metro up).
+Native install requires Android SDK, emulator/device,
+and JDK alignment on a full dev machine.
