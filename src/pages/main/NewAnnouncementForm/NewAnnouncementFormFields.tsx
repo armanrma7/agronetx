@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native'
 import { AppHeader } from '../../../components/AppHeader'
 import { Select } from '../../../components/Select'
@@ -80,8 +81,6 @@ export function NewAnnouncementFormFields({
   MAX_IMAGES,
 }: NewAnnouncementFormFieldsProps) {
   const groupValue = typeof formData.group === 'string' ? formData.group : String(formData.group ?? '')
-  console.info('formData', formData)
-
   return (
     <>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -153,16 +152,20 @@ export function NewAnnouncementFormFields({
               />
             </View> 
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>{t('addAnnouncement.rentUnit')}</Text>
-              <Select
-                value={typeof formData.rentUnit === 'string' ? formData.rentUnit : String(formData.rentUnit ?? '')}
-                onValueChange={value => setFormData(prev => ({ ...prev, rentUnit: value }))}
-                options={rentMeasurementOptions}
-                placeholder={t('common.select')}
-                disabled={rentMeasurementOptions.length === 0}
-              />
-            </View>
+
+           {
+            type === 'rent' && <View style={styles.fieldContainer}>
+            <Text style={styles.label}>{t('addAnnouncement.rentUnit')}</Text>
+            <Select
+              value={formData.rentUnit}
+              onValueChange={value => setFormData(prev => ({ ...prev, rentUnit: value }))}
+              options={rentMeasurementOptions}
+              placeholder={t('common.select')}
+              disabled={rentMeasurementOptions.length === 0}
+            />
+          </View>
+           }
+      
 
           {(type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) && (
             <View style={styles.fieldContainer}>

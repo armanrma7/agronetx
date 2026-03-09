@@ -312,8 +312,18 @@ export function useNewAnnouncementForm() {
     if (!formData.group) err.group = `${t('addAnnouncement.group')} ${t('addAnnouncement.required')}`
     if (!formData.name) err.name = `${t('addAnnouncement.name')} ${t('addAnnouncement.required')}`
     if (type !== 'rent' && !formData.measurementUnit) err.measurementUnit = `${t('addAnnouncement.unitOfMeasurement')} ${t('addAnnouncement.required')}`
-    if (type === 'rent' && rentMeasurementOptions.length > 0 && !formData.rentUnit) err.rentUnit = `${t('addAnnouncement.rentUnit')} ${t('addAnnouncement.required')}`
-    if (type === 'goods' && !formData.quantity) err.quantity = `${t('addAnnouncement.quantity')} ${t('addAnnouncement.required')}`
+    if (type === 'rent' && rentMeasurementOptions.length > 0 && !formData.rentUnit) {
+      err.rentUnit = `${t('addAnnouncement.rentUnit')} ${t('addAnnouncement.required')}`
+    }
+    if (
+      !isEditMode &&
+      (type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) &&
+      !formData.quantity
+    ) {
+      err.quantity = `${
+        type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')
+      } ${t('addAnnouncement.required')}`
+    }
     if (!formData.pricePerUnit) err.pricePerUnit = `${t('addAnnouncement.price')} ${t('addAnnouncement.required')}`
     if (Object.keys(err).length > 0) {
       Alert.alert('Validation Error', Object.values(err)[0])
