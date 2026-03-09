@@ -90,7 +90,6 @@ export function AppNavigator() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.background },
-            // ✅ Remove all glass effects globally (native-stack compatible)
             headerTransparent: false,
             headerBlurEffect: undefined,
             headerLargeTitle: false,

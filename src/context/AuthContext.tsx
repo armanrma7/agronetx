@@ -6,6 +6,7 @@
 
 import React, { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useAuthStore } from '../store/auth/useAuthStore'
+import { unregisterDeviceToken } from '../services/deviceToken.service'
 import { Profile } from '../types'
 import type { User } from '../store/auth/useAuthStore'
 
@@ -80,6 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
+    try {
+      await unregisterDeviceToken()
+    } catch {
+      // Ignore FCM cleanup errors during logout
+    }
     await logoutStore()
   }
 

@@ -102,6 +102,21 @@ export async function registerDeviceToken(): Promise<void> {
 }
 
 /**
+ * Unregister device from FCM and clear local token.
+ * Call this on logout so this device stops receiving pushes for the logged-out user.
+ */
+export async function unregisterDeviceToken(): Promise<void> {
+  try {
+    // Best-effort delete of the current FCM token on this device
+    await messaging().deleteToken()
+    console.log('FCM token deleted locally on logout')
+    // Optionally, backend can also clean up tokens per user/device if needed.
+  } catch (error) {
+    console.error('Error deleting FCM token on logout:', error)
+  }
+}
+
+/**
  * Handle FCM messages when app is in foreground.
  * - iOS: notifications are shown by the system when firebase.json has messaging_ios_foreground_presentation_options.
  * - Android: FCM does not display notifications in foreground by default, so we show an Alert.

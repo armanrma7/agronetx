@@ -63,8 +63,6 @@ export function NewAnnouncementFormFields({
   rentMeasurementOptions,
   loadingCategories,
   loadingSubcategories,
-  showUnitField,
-  showRentUnitField,
   additionalFieldsExpanded,
   setAdditionalFieldsExpanded,
   selectedImages,
@@ -82,6 +80,7 @@ export function NewAnnouncementFormFields({
   MAX_IMAGES,
 }: NewAnnouncementFormFieldsProps) {
   const groupValue = typeof formData.group === 'string' ? formData.group : String(formData.group ?? '')
+  console.info('formData', formData)
 
   return (
     <>
@@ -143,35 +142,33 @@ export function NewAnnouncementFormFields({
             )}
           </View>
 
-          {showUnitField && (
-            <View style={styles.fieldContainer}>
+          <View style={styles.fieldContainer}>
               <Text style={styles.label}>{t('addAnnouncement.unitOfMeasurement')}</Text>
               <Select
-                value={formData.measurementUnit}
+                value={typeof formData.measurementUnit === 'string' ? formData.measurementUnit : String(formData.measurementUnit ?? '')}
                 onValueChange={value => setFormData(prev => ({ ...prev, measurementUnit: value }))}
                 options={measurementOptions}
                 placeholder={t('common.select')}
                 disabled={measurementOptions.length === 0}
               />
-            </View>
-          )}
+            </View> 
 
-          {showRentUnitField && (
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>{t('addAnnouncement.rentUnit')}</Text>
               <Select
-                value={formData.rentUnit}
+                value={typeof formData.rentUnit === 'string' ? formData.rentUnit : String(formData.rentUnit ?? '')}
                 onValueChange={value => setFormData(prev => ({ ...prev, rentUnit: value }))}
                 options={rentMeasurementOptions}
                 placeholder={t('common.select')}
                 disabled={rentMeasurementOptions.length === 0}
               />
             </View>
-          )}
 
-          {type === 'goods' && (
+          {(type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.label}>{t('addAnnouncement.quantity')}</Text>
+              <Text style={styles.label}>
+                {type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')}
+              </Text>
               <TextInput
                 style={styles.input}
                 value={formData.quantity}

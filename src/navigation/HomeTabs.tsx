@@ -150,7 +150,7 @@ export function HomeTabs() {
                 return (
                   <View style={styles.addButtonContainer}>
                     <View style={styles.addButtonCircle}>
-                      <Icon name="add" size={24} color={colors.white} />
+                      <Icon name="add" size={30} color={colors.white} />
                     </View>
                   </View>
                 )
@@ -162,7 +162,7 @@ export function HomeTabs() {
                 iconName = 'campaign'
               }
 
-              return <Icon name={iconName} size={size} color={color} />
+              return <Icon name={iconName} size={30} color={color} />
             },
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.textTertiary,

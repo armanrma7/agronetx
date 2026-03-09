@@ -1,9 +1,9 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { useNewAnnouncementForm } from './useNewAnnouncementForm'
 import { NewAnnouncementFormFields } from './NewAnnouncementFormFields'
 import { styles } from './styles'
+import { useNewAnnouncementForm } from './useNewAnnouncementForm'
 
 export function NewAnnouncementFormPage() {
   const {
