@@ -575,7 +575,7 @@ export function RegionVillageSelector({
                 style={styles.doneButton}
                 onPress={handleRegionDone}
               >
-                <Text style={styles.doneButtonText}>{t('common.done')}</Text>
+                <Text style={styles.doneButtonText}>{t('register.selectContactMethod')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
   doneButton: {
     backgroundColor: colors.buttonPrimary,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 50,
     alignItems: 'center',
   },
   doneButtonText: {

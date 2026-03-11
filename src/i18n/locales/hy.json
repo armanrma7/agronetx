@@ -129,10 +129,10 @@
     }
   },
   "tabs": {
-    "home": "Գլխավոր",
-    "addAnnouncement": "Նոր Հայտ",
-    "notifications": "Ծանուցումներ",
-    "myAnnouncements": "Իմ"
+  "home": "Գլխավոր",
+  "addAnnouncement": "Նոր հայտարարություն",
+  "notifications": "Ծանուցումներ",
+  "myAnnouncements": "Իմ"
   },
   "announcements": {
     "offer": "Ապրանք",
@@ -196,11 +196,11 @@
     "rentRequirement": "Վարձակալության պահանջարկ"
   },
   "addAnnouncement": {
-    "title": "Նոր Հայտ",
+    "title": "Նոր հայտարարություն",
     "newAnnouncement": "Նոր",
     "announcement": "հայտարարություն",
     "product": "Ապրանք",
-    "service": "Ծառայություններ",
+    "service": "Ծառայություն",
     "rent": "Վարձույթ",
     "applicationType": "Հայտի տեսակ",
     "productType": "Ապրանքի տեսակ",
@@ -238,7 +238,12 @@
     "required": "պարտադիր է",
     "locationRequired": "Առնվազն մեկ մարզ/գյուղ զույգ պարտադիր է",
     "publishSuccess": "Ձեր հայտարարությունը հաջողությամբ հրապարակվել է!",
-    "publishError": "Հայտարարությունը հրապարակելը ձախողվեց։ Խndրում ենք կրկին փորձել։"
+    "createSuccess": "Ձեր հայտարարությունը հաջողությամբ ստեղծվեց։\n\n24 ժամվա ընթացքում այն կստուգվի և կհրապարակվի։",
+    "updateSuccess": "Հայտարարությունը հաջողությամբ թարմացվեց։",
+    "publishError": "Հայտարարությունը հրապարակելը ձախողվեց։ Խնդրում ենք կրկին փորձել։",
+    "fileSizeExceedsLimit": "Ֆայլի չափը գերազանցում է 5MB սահմանը։",
+    "onlyJPEGPNGWebPAllowed": "Նվիրաբեռնելում եք միայն JPEG, PNG և WebP ֆորմատները։",
+    "maximumImagesAllowed": "Առավելագույն {{count}} լուսանկար թույլատրված է։"
   },
   "notifications": {
     "title": "Ծանուցումներ",

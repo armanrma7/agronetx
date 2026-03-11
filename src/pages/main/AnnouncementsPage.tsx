@@ -123,7 +123,6 @@ export function AnnouncementsPage() {
     />
   ), [favoriteIds, appliedIds, pendingIds, handleApply, handleView, handleFavoriteChange])
 
-  console.log('loading', loading)
   return (
     <View style={styles.container}>
       {/* Top Tabs */}

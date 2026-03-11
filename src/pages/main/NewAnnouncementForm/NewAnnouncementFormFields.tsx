@@ -81,6 +81,9 @@ export function NewAnnouncementFormFields({
   MAX_IMAGES,
 }: NewAnnouncementFormFieldsProps) {
   const groupValue = typeof formData.group === 'string' ? formData.group : String(formData.group ?? '')
+  const sortedCategoryOptions = [...categoryOptions].sort((a, b) =>
+    a.label.localeCompare(b.label),
+  )
   return (
     <>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -114,7 +117,7 @@ export function NewAnnouncementFormFields({
               <Select
                 value={groupValue}
                 onValueChange={value => setFormData(prev => ({ ...prev, group: value }))}
-                options={categoryOptions}
+                options={sortedCategoryOptions}
                 placeholder={t('common.select')}
                 disabled={categoryOptions.length === 0}
               />

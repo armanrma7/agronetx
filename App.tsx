@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { SafeAreaView, StyleSheet, StatusBar } from 'react-native'
+import { StatusBar } from 'react-native'
 import { AuthProvider } from './src/context/AuthContext'
 import { AppNavigator } from './src/navigation/AppNavigator'
 import { colors } from './src/theme/colors'
@@ -35,11 +35,5 @@ export default function App() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-})
 
 

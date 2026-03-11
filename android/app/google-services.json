@@ -1,0 +1,155 @@
+{
+  "project_info": {
+    "project_number": "1089861063803",
+    "firebase_url": "https://notyexample.firebaseio.com",
+    "project_id": "notyexample",
+    "storage_bucket": "notyexample.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089861063803:android:e404178a4c75de40cdbede",
+        "android_client_info": {
+          "package_name": "com.agronetx.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfW68SLPzMg28EHWfFJodQPypyj2ullF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1089861063803-soogc0hcegcsfaq5bl02fkf2dc4221f2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agronetx.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089861063803:android:6472110a685db131cdbede",
+        "android_client_info": {
+          "package_name": "com.dialer.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfW68SLPzMg28EHWfFJodQPypyj2ullF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1089861063803-soogc0hcegcsfaq5bl02fkf2dc4221f2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agronetx.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089861063803:android:34aec902cd388f49",
+        "android_client_info": {
+          "package_name": "com.exrtaapps.stadiumhorn"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfW68SLPzMg28EHWfFJodQPypyj2ullF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1089861063803-soogc0hcegcsfaq5bl02fkf2dc4221f2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agronetx.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089861063803:android:3eaf1191627cb326cdbede",
+        "android_client_info": {
+          "package_name": "com.markings.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfW68SLPzMg28EHWfFJodQPypyj2ullF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1089861063803-kg4387h5nuijre3re5qhvg50rpr8pesu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1089861063803-soogc0hcegcsfaq5bl02fkf2dc4221f2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agronetx.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

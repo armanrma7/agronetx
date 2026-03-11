@@ -5,7 +5,15 @@
 
 import DeviceInfo from 'react-native-device-info'
 import messaging from '@react-native-firebase/messaging'
-import { Alert, Platform } from 'react-native'
+import { Platform } from 'react-native'
+// Try to load Notifee; if native module is missing we gracefully fall back.
+let notifee: any | null = null
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  notifee = require('@notifee/react-native')
+} catch {
+  notifee = null
+}
 import { registerDeviceTokenAPI, DeviceTokenRequest } from '../lib/api/device.api'
 
 /**
@@ -118,17 +126,51 @@ export async function unregisterDeviceToken(): Promise<void> {
 
 /**
  * Handle FCM messages when app is in foreground.
- * - iOS: notifications are shown by the system when firebase.json has messaging_ios_foreground_presentation_options.
- * - Android: FCM does not display notifications in foreground by default, so we show an Alert.
+ * We use Notifee to show a normal notification (status bar) instead of an Alert.
  */
 export function setupForegroundMessageHandler(): () => void {
+  // Ensure we have a default Android channel for notifications
+  const ensureAndroidChannel = async () => {
+    if (!notifee) return
+    if (Platform.OS === 'android') {
+      await notifee.createChannel({
+        id: 'default',
+        name: 'Default',
+        importance: notifee.AndroidImportance?.HIGH ?? 4,
+      })
+    }
+  }
+
   const unsubscribe = messaging().onMessage(async (remoteMessage) => {
     const title = remoteMessage.notification?.title ?? remoteMessage.data?.title ?? 'Notification'
     const body = remoteMessage.notification?.body ?? remoteMessage.data?.body ?? ''
-    if (Platform.OS === 'android') {
-      Alert.alert(title, body || undefined)
+
+    try {
+      if (notifee) {
+        await ensureAndroidChannel()
+        await notifee.displayNotification(
+          Platform.OS === 'android'
+            ? {
+                title,
+                body,
+                android: {
+                  channelId: 'default',
+                  importance: notifee.AndroidImportance?.HIGH ?? 4,
+                  pressAction: { id: 'default' },
+                },
+              }
+            : {
+                title,
+                body,
+              }
+        )
+      } else {
+        // Fallback: show nothing or log; avoid crashing when Notifee is not available
+        console.log('Foreground FCM message (Notifee not available):', title, body)
+      }
+    } catch (error) {
+      console.error('Error displaying foreground notification with Notifee:', error)
     }
-    // On iOS, firebase.json foreground_presentation_options handles display
   })
   return unsubscribe
 }
@@ -186,14 +228,14 @@ export function setupNotificationOpenedHandler(navigate: (screen: string, params
   unsubscribe: () => void
 } {
   const unsubscribe = messaging().onNotificationOpenedApp((remoteMessage) => {
-    const target = getNotificationTargetFromFCMData(remoteMessage?.data)
+    const target = getNotificationTargetFromFCMData(remoteMessage?.data as any)
     if (target) navigate(target.screen, target.params)
   })
 
   const handleInitial = async () => {
     try {
       const remoteMessage = await messaging().getInitialNotification()
-      const target = getNotificationTargetFromFCMData(remoteMessage?.data)
+      const target = getNotificationTargetFromFCMData(remoteMessage?.data as any)
       if (target) navigate(target.screen, target.params)
     } catch (_) {}
   }

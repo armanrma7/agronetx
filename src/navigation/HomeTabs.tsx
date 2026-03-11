@@ -189,6 +189,7 @@ export function HomeTabs() {
               elevation: 0,
               shadowOpacity: 0,
               borderBottomWidth: 0,
+  
             },
             // ✅ Remove ALL glass/blur effects from tab headers
             headerTransparent: false,
@@ -199,7 +200,7 @@ export function HomeTabs() {
             headerTitleAlign: 'left',
             headerTitleStyle: {
               fontWeight: '700',
-              fontSize: 24,
+              fontSize: 20,
               fontStyle: 'italic',
             },
             headerRight: () => (

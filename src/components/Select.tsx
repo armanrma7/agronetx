@@ -29,12 +29,12 @@ export function Select({
   value,
   onValueChange,
   options,
-  placeholder = 'Ընտրել',
+  placeholder = '',
   required = false,
   error,
   disabled = false,
   searchable = false,
-  searchPlaceholder = 'Փնտրել...',
+  searchPlaceholder = '',
 }: SelectProps) {
   const [modalVisible, setModalVisible] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')

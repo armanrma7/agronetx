@@ -53,7 +53,7 @@ export function AddAnnouncementModal({ visible, onClose, onSelectType }: AddAnno
               >
                 <View style={styles.optionLeft}>
                   <View style={styles.iconContainer}>
-                    <Icon name="compare-arrows" size={24} color={colors.primary} />
+                    <Icon name="repeat" size={24} color={colors.primary} />
                   </View>
                   <Text style={styles.optionText}>{t('addAnnouncement.product')}</Text>
                 </View>

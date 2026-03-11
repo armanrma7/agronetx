@@ -312,18 +312,8 @@ export function useNewAnnouncementForm() {
     if (!formData.group) err.group = `${t('addAnnouncement.group')} ${t('addAnnouncement.required')}`
     if (!formData.name) err.name = `${t('addAnnouncement.name')} ${t('addAnnouncement.required')}`
     if (type !== 'rent' && !formData.measurementUnit) err.measurementUnit = `${t('addAnnouncement.unitOfMeasurement')} ${t('addAnnouncement.required')}`
-    if (type === 'rent' && rentMeasurementOptions.length > 0 && !formData.rentUnit) {
-      err.rentUnit = `${t('addAnnouncement.rentUnit')} ${t('addAnnouncement.required')}`
-    }
-    if (
-      !isEditMode &&
-      (type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) &&
-      !formData.quantity
-    ) {
-      err.quantity = `${
-        type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')
-      } ${t('addAnnouncement.required')}`
-    }
+    if (type === 'rent' && rentMeasurementOptions.length > 0 && !formData.rentUnit) err.rentUnit = `${t('addAnnouncement.rentUnit')} ${t('addAnnouncement.required')}`
+    if (type === 'goods' && !formData.quantity) err.quantity = `${t('addAnnouncement.quantity')} ${t('addAnnouncement.required')}`
     if (!formData.pricePerUnit) err.pricePerUnit = `${t('addAnnouncement.price')} ${t('addAnnouncement.required')}`
     if (Object.keys(err).length > 0) {
       Alert.alert('Validation Error', Object.values(err)[0])
@@ -366,15 +356,15 @@ export function useNewAnnouncementForm() {
         const newFiles = validImages.filter(img => img.uri?.startsWith('file://') || img.uri?.startsWith('content://'))
         payload.images = existingUrls as any
         await announcementsAPI.updateAnnouncementAPI(announcementId, payload, newFiles.length ? newFiles : undefined)
-        Alert.alert(t('common.success'), 'Announcement updated successfully', [{ text: 'OK', onPress: () => navigation.goBack() }])
+        Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => navigation.navigate('MyAnnouncements' as never) }])
       } else {
         await announcementsAPI.createAnnouncementAPI(payload, validImages.length ? validImages : undefined)
-        Alert.alert(t('common.success'), t('addAnnouncement.publishSuccess'), [{ text: 'OK', onPress: () => navigation.goBack() }])
+        Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => navigation.navigate('MyAnnouncements' as never) }])
       }
     } catch (error: any) {
       Alert.alert(
-        t('common.error'),
-        error.response?.data?.message || error.message || (isEditMode ? 'Failed to update announcement' : t('addAnnouncement.publishError'))
+        "",
+        error.response?.data?.message || error.message || (isEditMode ? t('addAnnouncement.updateError') : t('addAnnouncement.publishError'))
       )
     } finally {
       setUpdating(false)
@@ -415,12 +405,12 @@ export function useNewAnnouncementForm() {
   const validateImage = (asset: Asset): boolean => {
     if (!asset.fileSize) return false
     if (asset.fileSize > MAX_FILE_SIZE) {
-      Alert.alert('Error', `File size exceeds 5MB limit.`)
+      Alert.alert(t('common.error'), t('addAnnouncement.fileSizeExceedsLimit'))
       return false
     }
     const uri = (asset.uri || '').toLowerCase()
     if (!/\.(jpg|jpeg|png|webp)$/.test(uri)) {
-      Alert.alert('Error', 'Only JPEG, PNG, and WebP allowed')
+      Alert.alert(t('common.error'), t('addAnnouncement.onlyJPEGPNGWebPAllowed'))
       return false
     }
     return true
@@ -436,7 +426,7 @@ export function useNewAnnouncementForm() {
 
   const openCamera = () => {
     if (selectedImages.length >= MAX_IMAGES) {
-      Alert.alert('Error', `Maximum ${MAX_IMAGES} images allowed`)
+      Alert.alert(t('common.error'), t('addAnnouncement.maximumImagesAllowed', { count: MAX_IMAGES }))
       return
     }
     launchCamera({ mediaType: 'photo', quality: 0.8, maxWidth: 1920, maxHeight: 1920 }, res => {
@@ -449,7 +439,7 @@ export function useNewAnnouncementForm() {
   const openGallery = () => {
     const remaining = MAX_IMAGES - selectedImages.length
     if (remaining <= 0) {
-      Alert.alert('Error', `Maximum ${MAX_IMAGES} images allowed`)
+      Alert.alert("", t('addAnnouncement.maximumImagesAllowed', { count: MAX_IMAGES }))
       return
     }
     launchImageLibrary(

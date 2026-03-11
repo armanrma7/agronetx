@@ -5,6 +5,7 @@ import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
 import Icon from '../../components/Icon'
 import { announcementIs, applicationIs } from '../../utils/announcementActions'
+import { useAuth } from '../../context/AuthContext'
 
 interface MyAnnouncementCardProps {
   announcement: Announcement
@@ -19,6 +20,7 @@ interface MyAnnouncementCardProps {
 
 export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseApplication, onApplicationsPress, showMyApplications = false, cancelling = false, closingApplicationId = null }: MyAnnouncementCardProps) {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   
   // Get translated item name based on current language
   const getItemName = (): string => {
@@ -206,79 +208,79 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
           )}
         </TouchableOpacity>
 
-        <View style={styles.actionButtons}>
-          {showMyApplications ? (
-            // Applied tab: show cancel button only when announcement is PUBLISHED and
-            // the application is PENDING or APPROVED (not BLOCKED, not CANCELED/REJECTED)
-            <>
-              {(() => {
-                const announcementData = announcement as any
-                const applications = Array.isArray(announcementData.applications)
-                  ? announcementData.applications
-                  : []
-                const isAnnouncementActive = announcementIs.active(announcement.status)
-                // Find an application that the user can still cancel
-                const cancellableApp = isAnnouncementActive
-                  ? applications.find(
-                      (app: any) =>
-                        (applicationIs.pending(app.status) ||
-                          applicationIs.approved(app.status)),
-                    )
-                  : null
+        {user != null && (
+          <View style={styles.actionButtons}>
+            {showMyApplications ? (
+              // Applied tab: close application (reject) + View — only when authenticated
+              <>
+                {(() => {
+                  const announcementData = announcement as any
+                  const applications = Array.isArray(announcementData.applications)
+                    ? announcementData.applications
+                    : []
+                  const isAnnouncementActive = announcementIs.active(announcement.status)
+                  const cancellableApp = isAnnouncementActive
+                    ? applications.find(
+                        (app: any) =>
+                          (applicationIs.pending(app.status) ||
+                            applicationIs.approved(app.status)),
+                      )
+                    : null
 
-                if (cancellableApp && onCloseApplication) {
-                  const isClosing = closingApplicationId === cancellableApp.id
-                  return isClosing ? (
-                    <View style={styles.buttonClose}>
+                  if (cancellableApp && onCloseApplication) {
+                    const isClosing = closingApplicationId === cancellableApp.id
+                    return isClosing ? (
+                      <View style={styles.buttonClose}>
+                        <ActivityIndicator size="small" color={colors.error} />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.buttonClose}
+                        onPress={() => onCloseApplication(cancellableApp.id)}
+                      >
+                        <Text style={styles.buttonCloseText}>
+                          {t('announcements.closeApplication')}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  }
+                  return null
+                })()}
+                <TouchableOpacity
+                  style={styles.buttonView}
+                  onPress={() => onView?.(announcement)}
+                >
+                  <Text style={styles.buttonViewText}>{t('announcements.view')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              // Published tab: Cancel + View — only when authenticated
+              <>
+                {(announcementIs.toBeVerified(announcement.status) ||
+                  announcementIs.active(announcement.status)) && (
+                  cancelling ? (
+                    <View style={styles.buttonCancel}>
                       <ActivityIndicator size="small" color={colors.error} />
                     </View>
                   ) : (
                     <TouchableOpacity
-                      style={styles.buttonClose}
-                      onPress={() => onCloseApplication(cancellableApp.id)}
+                      style={styles.buttonCancel}
+                      onPress={() => onCancel?.(announcement)}
                     >
-                      <Text style={styles.buttonCloseText}>
-                        {t('announcements.closeApplication')}
-                      </Text>
+                      <Text style={styles.buttonCancelText}>{t('common.cancel')}</Text>
                     </TouchableOpacity>
                   )
-                }
-                return null
-              })()}
-              <TouchableOpacity
-                style={styles.buttonView}
-                onPress={() => onView?.(announcement)}
-              >
-                <Text style={styles.buttonViewText}>{t('announcements.view')}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            // Published tab: View (go to details) and Cancel (when TO_BE_VERIFIED or PUBLISHED)
-            <>
-              {(announcementIs.toBeVerified(announcement.status) ||
-                announcementIs.active(announcement.status)) && (
-                cancelling ? (
-                  <View style={styles.buttonCancel}>
-                    <ActivityIndicator size="small" color={colors.error} />
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.buttonCancel}
-                    onPress={() => onCancel?.(announcement)}
-                  >
-                    <Text style={styles.buttonCancelText}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                )
-              )}
-              <TouchableOpacity
-                style={styles.buttonView}
-                onPress={() => onView?.(announcement)}
-              >
-                <Text style={styles.buttonViewText}>{t('announcements.view')}</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+                )}
+                <TouchableOpacity
+                  style={styles.buttonView}
+                  onPress={() => onView?.(announcement)}
+                >
+                  <Text style={styles.buttonViewText}>{t('announcements.view')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
       </View>
     </View>
   )
@@ -379,45 +381,45 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   buttonCancel: {
     backgroundColor: 'transparent',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
   buttonCancelText: {
     color: colors.error,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   buttonClose: {
     backgroundColor: 'transparent',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
   buttonCloseText: {
     color: colors.error,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   buttonView: {
     backgroundColor: 'transparent',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
   buttonViewText: {
     color: colors.textPrimary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
 })

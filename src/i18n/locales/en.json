@@ -178,7 +178,10 @@
     "name": "Name",
     "unitOfMeasurement": "Unit of measurement",
     "rentUnit": "Rent",
-    "price": "Price"
+    "price": "Price",
+    "fileSizeExceedsLimit": "File size exceeds 5MB limit.",
+    "onlyJPEGPNGWebPAllowed": "Only JPEG, PNG, and WebP allowed.",
+    "maximumImagesAllowed": "Maximum {{count}} images allowed."
   },
   "announcementSubtype": {
     "title": "Announcement Type",
@@ -232,6 +235,8 @@
     "required": "is required",
     "locationRequired": "At least one region/village pair is required",
     "publishSuccess": "Your announcement has been published successfully!",
+    "createSuccess": "Your announcement has been successfully created.\n\nIt will be reviewed and published within 24 hours.",
+    "updateSuccess": "Announcement updated successfully.",
     "publishError": "Failed to publish announcement. Please try again."
   },
   "notifications": {
