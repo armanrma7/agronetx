@@ -5,7 +5,7 @@
 
 export const API_CONFIG = {
   // baseURL: 'https://agronetx-server-z68kk.ondigitalocean.app/',
-  baseURL: 'https://3c96f38177f6.ngrok.app/',
+  baseURL: 'https://022d5f8ab63c.ngrok.app/',
   timeout: 0, // 30 seconds
 }
 

@@ -178,7 +178,8 @@
     "name": "Name",
     "unitOfMeasurement": "Unit of measurement",
     "rentUnit": "Rent",
-    "price": "Price",
+    "price": "Unit Price",
+    "transactionLocation": "Transaction Location",
     "fileSizeExceedsLimit": "File size exceeds 5MB limit.",
     "onlyJPEGPNGWebPAllowed": "Only JPEG, PNG, and WebP allowed.",
     "maximumImagesAllowed": "Maximum {{count}} images allowed."
@@ -222,7 +223,7 @@
     "images": "Images",
     "uploadImages": "Upload",
     "uploadImagesInfo": "Upload up to 3 photos • Max size: 5MB",
-    "availabilityPeriod": "Availability period",
+    "availabilityPeriod": "Transaction Period",
     "dailyMaxQuantity": "Daily maximum quantity",
     "from": "From",
     "until": "Until",

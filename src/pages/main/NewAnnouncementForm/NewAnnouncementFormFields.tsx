@@ -97,7 +97,7 @@ export function NewAnnouncementFormFields({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>{t('announcementSubtype.title')}</Text>
+            <Text style={styles.label}>{t('announcementSubtype.title')} *</Text>
             <Select
               value={formData.subtype}
               onValueChange={value => setFormData(prev => ({ ...prev, subtype: value }))}
@@ -107,7 +107,7 @@ export function NewAnnouncementFormFields({
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>{t('addAnnouncement.group')}</Text>
+            <Text style={styles.label}>{t('addAnnouncement.group')} *</Text>
             {loadingCategories ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={colors.buttonPrimary} />
@@ -125,7 +125,7 @@ export function NewAnnouncementFormFields({
           </View>
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>{t('addAnnouncement.name')}</Text>
+            <Text style={styles.label}>{t('addAnnouncement.name')} *</Text>
             {loadingSubcategories ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={colors.buttonPrimary} />
@@ -145,7 +145,7 @@ export function NewAnnouncementFormFields({
           </View>
 
           <View style={styles.fieldContainer}>
-              <Text style={styles.label}>{t('addAnnouncement.unitOfMeasurement')}</Text>
+              <Text style={styles.label}>{t('addAnnouncement.unitOfMeasurement')} *</Text>
               <Select
                 value={typeof formData.measurementUnit === 'string' ? formData.measurementUnit : String(formData.measurementUnit ?? '')}
                 onValueChange={value => setFormData(prev => ({ ...prev, measurementUnit: value }))}
@@ -158,7 +158,7 @@ export function NewAnnouncementFormFields({
 
            {
             type === 'rent' && <View style={styles.fieldContainer}>
-            <Text style={styles.label}>{t('addAnnouncement.rentUnit')}</Text>
+            <Text style={styles.label}>{t('addAnnouncement.rentUnit')} *</Text>
             <Select
               value={formData.rentUnit}
               onValueChange={value => setFormData(prev => ({ ...prev, rentUnit: value }))}
@@ -174,6 +174,7 @@ export function NewAnnouncementFormFields({
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>
                 {type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')}
+                {type === 'goods' ? ' *' : ''}
               </Text>
               <TextInput
                 style={styles.input}
@@ -187,7 +188,7 @@ export function NewAnnouncementFormFields({
           )}
 
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>{t('addAnnouncement.price')}</Text>
+            <Text style={styles.label}>{t('addAnnouncement.price')} *</Text>
             <TextInput
               style={styles.input}
               value={formData.pricePerUnit}

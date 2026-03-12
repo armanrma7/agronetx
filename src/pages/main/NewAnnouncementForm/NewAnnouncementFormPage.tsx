@@ -98,7 +98,7 @@ export function NewAnnouncementFormPage() {
                   {currentDateField === 'start' ? t('addAnnouncement.from') : t('addAnnouncement.until')}
                 </Text>
                 <TouchableOpacity onPress={() => confirmDate()}>
-                  <Text style={styles.datePickerConfirm}>{t('common.save')}</Text>
+                  <Text style={styles.datePickerConfirm}>{t('applications.selectDates')}</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker

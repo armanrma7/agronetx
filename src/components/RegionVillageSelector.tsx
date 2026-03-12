@@ -507,7 +507,7 @@ export function RegionVillageSelector({
             {/* Header */}
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>
-                {t('addAnnouncement.region')} {tempSelectedRegions.length > 0 && `(${tempSelectedRegions.length} ${t('common.selected')})`}
+                {t('addAnnouncement.transactionLocation')}
               </Text>
               {tempSelectedRegions.length > 0 && (
                 <TouchableOpacity onPress={handleClearRegions}>
@@ -575,7 +575,7 @@ export function RegionVillageSelector({
                 style={styles.doneButton}
                 onPress={handleRegionDone}
               >
-                <Text style={styles.doneButtonText}>{t('register.selectContactMethod')}</Text>
+                <Text style={styles.doneButtonText}>{t('applications.selectDates')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -602,7 +602,7 @@ export function RegionVillageSelector({
             {/* Header */}
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>
-                {t('addAnnouncement.village')} {tempSelectedVillages.length > 0 && `(${tempSelectedVillages.length} ${t('common.selected')})`}
+                {t('addAnnouncement.transactionLocation')}
               </Text>
               {tempSelectedVillages.length > 0 && (
                 <TouchableOpacity onPress={handleClearVillages}>
@@ -664,7 +664,7 @@ export function RegionVillageSelector({
                 style={styles.doneButton}
                 onPress={handleVillageDone}
               >
-                <Text style={styles.doneButtonText}>{t('common.done')}</Text>
+                <Text style={styles.doneButtonText}>{t('applications.selectDates')}</Text>
               </TouchableOpacity>
             </View>
           </View>

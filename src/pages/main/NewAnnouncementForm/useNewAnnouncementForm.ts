@@ -306,17 +306,31 @@ export function useNewAnnouncementForm() {
     }
   }
 
+  const requiredFieldMessage = (fieldLabel: string): string => {
+    const lang = getCurrentLang(i18n)
+    if (lang === 'hy') {
+      return `«${fieldLabel} դաշտը պարտադիր է։»`
+    }
+    if (lang === 'ru') {
+      return `«Поле “${fieldLabel}” является обязательным.»`
+    }
+    return `“The ${fieldLabel} field is required.”`
+  }
+
   const validateForm = (): boolean => {
-    const err: Record<string, string> = {}
-    if (!formData.subtype) err.subtype = `${t('announcementSubtype.title')} ${t('addAnnouncement.required')}`
-    if (!formData.group) err.group = `${t('addAnnouncement.group')} ${t('addAnnouncement.required')}`
-    if (!formData.name) err.name = `${t('addAnnouncement.name')} ${t('addAnnouncement.required')}`
-    if (type !== 'rent' && !formData.measurementUnit) err.measurementUnit = `${t('addAnnouncement.unitOfMeasurement')} ${t('addAnnouncement.required')}`
-    if (type === 'rent' && rentMeasurementOptions.length > 0 && !formData.rentUnit) err.rentUnit = `${t('addAnnouncement.rentUnit')} ${t('addAnnouncement.required')}`
-    if (type === 'goods' && !formData.quantity) err.quantity = `${t('addAnnouncement.quantity')} ${t('addAnnouncement.required')}`
-    if (!formData.pricePerUnit) err.pricePerUnit = `${t('addAnnouncement.price')} ${t('addAnnouncement.required')}`
-    if (Object.keys(err).length > 0) {
-      Alert.alert('Validation Error', Object.values(err)[0])
+    const requiredFields: Array<{ ok: boolean; label: string }> = [
+      { ok: !!formData.subtype, label: t('announcementSubtype.title') },
+      { ok: !!formData.group, label: t('addAnnouncement.group') },
+      { ok: !!formData.name, label: t('addAnnouncement.name') },
+      { ok: type === 'rent' ? true : !!formData.measurementUnit, label: t('addAnnouncement.unitOfMeasurement') },
+      { ok: type === 'rent' && rentMeasurementOptions.length > 0 ? !!formData.rentUnit : true, label: t('addAnnouncement.rentUnit') },
+      { ok: type === 'goods' ? !!formData.quantity : true, label: t('addAnnouncement.quantity') },
+      { ok: !!formData.pricePerUnit, label: t('addAnnouncement.price') },
+    ]
+
+    const firstMissing = requiredFields.find(f => !f.ok)
+    if (firstMissing) {
+      Alert.alert('', requiredFieldMessage(firstMissing.label))
       return false
     }
     return true

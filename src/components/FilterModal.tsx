@@ -581,7 +581,7 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
                     <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={handleFromDateDone}>
-                    <Text style={styles.pickerDone}>{t('common.done')}</Text>
+                    <Text style={styles.pickerDone}>{t('applications.selectDates')}</Text>
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker
@@ -618,7 +618,7 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
                     <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={handleToDateDone}>
-                    <Text style={styles.pickerDone}>{t('common.done')}</Text>
+                    <Text style={styles.pickerDone}>{t('applications.selectDates')}</Text>
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker

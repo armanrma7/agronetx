@@ -15,6 +15,9 @@ interface InputProps {
   secureTextEntry?: boolean
   keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'numeric'
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
+  /** Non-editable prefix shown before the input (e.g. "+374"). */
+  prefix?: string
+  maxLength?: number
 }
 
 export function Input({
@@ -29,6 +32,8 @@ export function Input({
   secureTextEntry = false,
   keyboardType = 'default',
   autoCapitalize = 'none',
+  prefix,
+  maxLength,
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
@@ -38,16 +43,20 @@ export function Input({
         {label} {required && <Text style={styles.required}>*</Text>}
       </Text>
       <View style={styles.inputWrapper}>
-        <TextInput
-          style={[styles.input]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textPlaceholder}
-          secureTextEntry={showPasswordToggle ? !isPasswordVisible : secureTextEntry}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-        />
+        <View style={[styles.input, prefix ? styles.inputWithPrefix : undefined]}>
+          {prefix ? <Text style={styles.prefix}>{prefix}</Text> : null}
+          <TextInput
+            style={styles.textInput}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textPlaceholder}
+            secureTextEntry={showPasswordToggle ? !isPasswordVisible : secureTextEntry}
+            keyboardType={keyboardType}
+            autoCapitalize={autoCapitalize}
+            maxLength={maxLength}
+          />
+        </View>
         {showPasswordToggle && (
           <TouchableOpacity
             style={styles.passwordToggle}
@@ -88,8 +97,27 @@ const styles = StyleSheet.create({
     borderColor: colors.borderInput,
     borderRadius: 50,
     backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: 16,
     fontSize: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inputWithPrefix: {
+    paddingLeft: 16,
+    paddingRight: 16,
+  },
+  prefix: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    marginRight: 8,
+  },
+  textInput: {
+    flex: 1,
+    height: '100%',
+    color: colors.textPrimary,
+    fontSize: 16,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   inputError: {
     borderColor: colors.error,

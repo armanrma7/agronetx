@@ -68,7 +68,7 @@ export function RegisterPage() {
 
     if (!formData.emailOrPhone.trim()) {
       e.emailOrPhone = t('register.errors.phoneRequired')
-    } else if (!/^\+?[0-9]{10,}$/.test(formData.emailOrPhone.replace(/\s/g, ''))) {
+    } else if (!/^[0-9]{8}$/.test(formData.emailOrPhone.replace(/\s/g, ''))) {
       e.emailOrPhone = t('register.errors.invalidPhone')
     }
 
@@ -96,7 +96,7 @@ export function RegisterPage() {
     if (!validate()) return
 
     try {
-      const phone = formData.emailOrPhone
+      const phone = `+374${formData.emailOrPhone.trim()}`
       console.info('accountType', formData.accountType)
 
       await register(phone, formData.password, formData.fullname, formData.accountType as AccountType)
@@ -167,9 +167,11 @@ export function RegisterPage() {
           value={formData.emailOrPhone}
           keyboardType="phone-pad"
           onChangeText={value =>
-            setFormData({ ...formData, emailOrPhone: value })
+            setFormData({ ...formData, emailOrPhone: value.replace(/\D/g, '').slice(0, 8) })
           }
           error={errors.emailOrPhone}
+          prefix="+374"
+          maxLength={8}
         />
         
         {/* PHONE NOTE */}

@@ -11,16 +11,18 @@ export function LoginPage() {
   const navigation = useNavigation()
   const { t } = useTranslation()
   const { login, loading, error } = useAuth()
-  const [phone, setPhone] = useState('')
+  const [phoneDigits, setPhoneDigits] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ phone?: string; password?: string }>({})
+
+  const phone = `+374${phoneDigits}`
 
   const validate = (): boolean => {
     const newErrors: { phone?: string; password?: string } = {}
 
-    if (!phone.trim()) {
+    if (!phoneDigits.trim()) {
       newErrors.phone = t('login.errors.phoneRequired')
-    } else if (!/^\+?[0-9]{10,}$/.test(phone.replace(/\s/g, ''))) {
+    } else if (!/^[0-9]{8}$/.test(phoneDigits)) {
       newErrors.phone = t('login.errors.invalidPhone')
     }
     if (!password) {
@@ -44,7 +46,7 @@ export function LoginPage() {
     if (!validate()) return
 
     try {
-      await login(phone.trim(), password)
+      await login(phone, password)
       // Login successful - navigation handled by AppNavigator
     } catch (err: any) {
       console.error('Login error:', err)
@@ -87,13 +89,15 @@ export function LoginPage() {
 
   {/* Inputs */}
   <Input
-    value={phone}
+    value={phoneDigits}
     label=""
-    onChangeText={setPhone}
+    onChangeText={v => setPhoneDigits(v.replace(/\D/g, '').slice(0, 8))}
     placeholder={t('login.phone')}
     keyboardType="phone-pad"
     error={errors.phone}
     autoCapitalize="none"
+    prefix="+374"
+    maxLength={8}
   />
 
   <Input
@@ -120,7 +124,7 @@ export function LoginPage() {
     title={t('login.submit')}
     onPress={handleSubmit}
     loading={loading}
-    disabled={loading || !phone.trim() || !password.trim()}
+    disabled={loading || phoneDigits.trim().length !== 8 || !password.trim()}
   />
 
   {/* Register */}

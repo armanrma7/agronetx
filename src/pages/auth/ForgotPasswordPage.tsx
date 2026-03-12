@@ -20,16 +20,18 @@ export function ForgotPasswordPage() {
   const navigation = useNavigation()
   const { t } = useTranslation()
 
-  const [phone, setPhone] = useState('')
+  const [phoneDigits, setPhoneDigits] = useState('')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<{ phone?: string }>({})
+
+  const phone = `+374${phoneDigits}`
 
   const validate = (): boolean => {
     const newErrors: { phone?: string } = {}
 
-    if (!phone.trim()) {
+    if (!phoneDigits.trim()) {
       newErrors.phone = t('forgotPassword.errors.phoneOrEmail')
-    } else if (!/^\+?[0-9]{10,}$/.test(phone.replace(/\s/g, ''))) {
+    } else if (!/^[0-9]{8}$/.test(phoneDigits)) {
       newErrors.phone = t('forgotPassword.errors.invalidPhone')
     }
 
@@ -48,14 +50,14 @@ export function ForgotPasswordPage() {
 
     try {
       setLoading(true)
-      await authAPI.forgotPasswordAPI({ phone: phone.trim() })
+      await authAPI.forgotPasswordAPI({ phone })
 
       Alert.alert(
         t('common.success'),
         t('forgotPassword.codeSent'),
         [{
           text: t('common.ok'),
-          onPress: () => (navigation as any).navigate('Verification', { phone: phone.trim() }),
+          onPress: () => (navigation as any).navigate('Verification', { phone }),
         }]
       )
     } catch (err: any) {
@@ -86,20 +88,22 @@ export function ForgotPasswordPage() {
 
         <Input
           label={t('forgotPassword.phoneLabel')}
-          value={phone}
+          value={phoneDigits}
           required
-          onChangeText={setPhone}
+          onChangeText={v => setPhoneDigits(v.replace(/\D/g, '').slice(0, 8))}
           placeholder={t('forgotPassword.phonePlaceholder')}
           keyboardType="phone-pad"
           error={errors.phone}
           autoCapitalize="none"
+          prefix="+374"
+          maxLength={8}
         />
 
         <View style={styles.buttonWrapper}>
           <Button
             onPress={handleSubmit}
             title={t('forgotPassword.submit')}
-            disabled={loading || !phone.trim()}
+            disabled={loading || phoneDigits.trim().length !== 8}
             loading={loading}
           />
         </View>
