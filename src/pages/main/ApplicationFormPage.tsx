@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -66,6 +66,66 @@ export function ApplicationFormPage() {
   // UI state
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
+  const skipUnsavedPromptRef = useRef(false)
+
+  const isValidForSubmit = useMemo(() => {
+    if (announcementType === 'goods') {
+      if (deliveryDates.length === 0) return false
+      const qty = parseFloat(quantity)
+      return !!quantity.trim() && !isNaN(qty) && qty > 0
+    }
+    if (announcementType === 'rent') {
+      return deliveryDates.length > 0
+    }
+    if (announcementType === 'service') {
+      return !!selectedUnit
+    }
+    return false
+  }, [announcementType, deliveryDates.length, quantity, selectedUnit])
+
+  const initialSnapshotRef = useRef<string | null>(null)
+  const didInitSnapshotRef = useRef(false)
+  const currentSnapshot = useMemo(() => {
+    const snap = {
+      announcementType,
+      deliveryDates: deliveryDates.map(d => d.toISOString().split('T')[0]),
+      quantity: quantity ?? '',
+      selectedUnit: selectedUnit ?? '',
+      notes: notes ?? '',
+    }
+    return JSON.stringify(snap)
+  }, [announcementType, deliveryDates, quantity, selectedUnit, notes])
+
+  useEffect(() => {
+    if (didInitSnapshotRef.current) return
+    // Initialize after prefill effect runs (or immediately if no prefill)
+    initialSnapshotRef.current = currentSnapshot
+    didInitSnapshotRef.current = true
+  }, [currentSnapshot])
+
+  const isDirty = useMemo(() => {
+    if (!didInitSnapshotRef.current) return false
+    return initialSnapshotRef.current !== currentSnapshot
+  }, [currentSnapshot])
+
+  const canSubmit = isEditMode ? isDirty && isValidForSubmit : isValidForSubmit
+
+  useEffect(() => {
+    const unsubscribe = (navigation as any).addListener('beforeRemove', (e: any) => {
+      if (skipUnsavedPromptRef.current) return
+      if (!isDirty) return
+      e.preventDefault()
+      Alert.alert(
+        '',
+        t('common.unsavedChangesConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.continue'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
+        ],
+      )
+    })
+    return unsubscribe
+  }, [isDirty, navigation, t])
 
   // Pre-fill form when editing an existing application
   useEffect(() => {
@@ -402,7 +462,7 @@ export function ApplicationFormPage() {
       Alert.alert(t('common.success'), isEditMode ? t('applications.updateSuccess') : t('applications.submitSuccess'), [
         {
           text: t('common.ok'),
-          onPress: () => navigation.goBack(),
+          onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() },
         },
       ])
     } catch (error: any) {
@@ -571,7 +631,7 @@ export function ApplicationFormPage() {
           <TouchableOpacity 
             style={[styles.submitButton, submitting && styles.submitButtonDisabled]} 
             onPress={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || !canSubmit}
           >
             {submitting ? (
               <ActivityIndicator size="small" color={colors.white} />

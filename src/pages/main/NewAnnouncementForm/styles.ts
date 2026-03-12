@@ -194,7 +194,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   publishButtonDisabled: {
-    backgroundColor: colors.textSecondary,
     opacity: 0.6,
   },
   publishButtonText: {

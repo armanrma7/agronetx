@@ -23,6 +23,7 @@ interface NewAnnouncementFormFieldsProps {
   t: (key: string) => string
   type: string
   isEditMode: boolean
+  canSubmit: boolean
   formData: FormData
   setFormData: React.Dispatch<React.SetStateAction<FormData>>
   subtypeOptions: SelectOption[]
@@ -55,6 +56,7 @@ export function NewAnnouncementFormFields({
   t,
   type,
   isEditMode,
+  canSubmit,
   formData,
   setFormData,
   subtypeOptions,
@@ -318,9 +320,12 @@ export function NewAnnouncementFormFields({
               <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.publishButton, updating && styles.publishButtonDisabled]}
+              style={[
+                styles.publishButton,
+                (updating || !canSubmit) && styles.publishButtonDisabled,
+              ]}
               onPress={handlePublish}
-              disabled={updating}
+              disabled={updating || !canSubmit}
             >
               {updating ? (
                 <ActivityIndicator size="small" color={colors.white} />

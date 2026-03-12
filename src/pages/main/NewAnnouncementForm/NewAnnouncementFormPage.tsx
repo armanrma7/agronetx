@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { NewAnnouncementFormFields } from './NewAnnouncementFormFields'
 import { styles } from './styles'
@@ -38,11 +38,31 @@ export function NewAnnouncementFormPage() {
     showImagePickerOptions,
     removeImage,
     handlePublish,
+    canSubmit,
+    isDirty,
+    skipUnsavedPromptRef,
     navigation,
     showUnitField,
     showRentUnitField,
     MAX_IMAGES,
   } = useNewAnnouncementForm()
+
+  React.useEffect(() => {
+    const unsubscribe = (navigation as any).addListener('beforeRemove', (e: any) => {
+      if (skipUnsavedPromptRef?.current) return
+      if (!isDirty) return
+      e.preventDefault()
+      Alert.alert(
+        '',
+        t('common.unsavedChangesConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.continue'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
+        ],
+      )
+    })
+    return unsubscribe
+  }, [isDirty, navigation, skipUnsavedPromptRef, t])
 
   return (
     <KeyboardAvoidingView
@@ -53,6 +73,7 @@ export function NewAnnouncementFormPage() {
         t={t}
         type={type}
         isEditMode={isEditMode}
+        canSubmit={canSubmit}
         formData={formData}
         setFormData={setFormData}
         subtypeOptions={subtypeOptions}

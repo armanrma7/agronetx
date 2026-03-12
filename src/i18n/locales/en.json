@@ -29,6 +29,8 @@
     "buyer": "Buyer",
     "ok": "OK",
     "confirm": "Confirm",
+    "continue": "Continue",
+    "unsavedChangesConfirm": "If you continue, the entered data will not be saved. Do you want to continue?",
     "success": "Success",
     "error": "Error",
     "empty": "Empty",

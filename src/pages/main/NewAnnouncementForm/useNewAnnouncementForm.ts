@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Alert, Platform } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -336,6 +336,90 @@ export function useNewAnnouncementForm() {
     return true
   }
 
+  const isValidForSubmit = useMemo(() => {
+    const requiredFields: Array<{ ok: boolean }> = [
+      { ok: !!formData.subtype },
+      { ok: !!formData.group },
+      { ok: !!formData.name },
+      { ok: type === 'rent' ? true : !!formData.measurementUnit },
+      { ok: type === 'rent' && rentMeasurementOptions.length > 0 ? !!formData.rentUnit : true },
+      { ok: type === 'goods' ? !!formData.quantity : true },
+      { ok: !!formData.pricePerUnit },
+    ]
+    return requiredFields.every(f => f.ok)
+  }, [
+    formData.subtype,
+    formData.group,
+    formData.name,
+    formData.measurementUnit,
+    formData.rentUnit,
+    formData.quantity,
+    formData.pricePerUnit,
+    type,
+    rentMeasurementOptions.length,
+  ])
+
+  const initialSnapshotRef = useRef<string | null>(null)
+  const didInitSnapshotRef = useRef(false)
+  const skipUnsavedPromptRef = useRef(false)
+
+  const currentSnapshot = useMemo(() => {
+    const snap = {
+      type,
+      subtype: formData.subtype ?? '',
+      group: formData.group ?? '',
+      name: formData.name ?? '',
+      measurementUnit: formData.measurementUnit ?? '',
+      rentUnit: formData.rentUnit ?? '',
+      quantity: formData.quantity ?? '',
+      pricePerUnit: formData.pricePerUnit ?? '',
+      description: formData.description ?? '',
+      dailyMaxQuantity: formData.dailyMaxQuantity ?? '',
+      periodStart: formData.periodStart ?? '',
+      salesPeriod: formData.salesPeriod ?? '',
+      regions: selectedRegions,
+      villages: selectedVillages,
+      images: selectedImages.map(i => i.uri ?? ''),
+    }
+    return JSON.stringify(snap)
+  }, [
+    type,
+    formData.subtype,
+    formData.group,
+    formData.name,
+    formData.measurementUnit,
+    formData.rentUnit,
+    formData.quantity,
+    formData.pricePerUnit,
+    formData.description,
+    formData.dailyMaxQuantity,
+    formData.periodStart,
+    formData.salesPeriod,
+    selectedRegions,
+    selectedVillages,
+    selectedImages,
+  ])
+
+  useEffect(() => {
+    if (didInitSnapshotRef.current) return
+    if (!isEditMode) {
+      initialSnapshotRef.current = currentSnapshot
+      didInitSnapshotRef.current = true
+      return
+    }
+    if (isEditMode && editAnnouncementData) {
+      initialSnapshotRef.current = currentSnapshot
+      didInitSnapshotRef.current = true
+    }
+  }, [currentSnapshot, editAnnouncementData, isEditMode])
+
+  const isDirty = useMemo(() => {
+    if (!didInitSnapshotRef.current) return false
+    return initialSnapshotRef.current !== currentSnapshot
+  }, [currentSnapshot])
+
+  const canSubmit = isEditMode ? isDirty && isValidForSubmit : isValidForSubmit
+
   const handlePublish = async () => {
     if (!validateForm()) return
     try {
@@ -370,10 +454,10 @@ export function useNewAnnouncementForm() {
         const newFiles = validImages.filter(img => img.uri?.startsWith('file://') || img.uri?.startsWith('content://'))
         payload.images = existingUrls as any
         await announcementsAPI.updateAnnouncementAPI(announcementId, payload, newFiles.length ? newFiles : undefined)
-        Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => navigation.navigate('MyAnnouncements' as never) }])
+        Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.navigate('MyAnnouncements' as never) } }])
       } else {
         await announcementsAPI.createAnnouncementAPI(payload, validImages.length ? validImages : undefined)
-        Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => navigation.navigate('MyAnnouncements' as never) }])
+        Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.navigate('MyAnnouncements' as never) } }])
       }
     } catch (error: any) {
       Alert.alert(
@@ -504,6 +588,9 @@ export function useNewAnnouncementForm() {
     showImagePickerOptions,
     removeImage,
     handlePublish,
+    canSubmit,
+    isDirty,
+    skipUnsavedPromptRef,
     navigation,
     showUnitField,
     showRentUnitField,
