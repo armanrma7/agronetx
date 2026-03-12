@@ -226,7 +226,7 @@
     "uploadImages": "Upload",
     "uploadImagesInfo": "Upload up to 3 photos • Max size: 5MB",
     "availabilityPeriod": "Transaction Period",
-    "dailyMaxQuantity": "Daily maximum quantity",
+    "dailyMaxQuantity": "Maximum Daily Transaction Volume",
     "from": "From",
     "until": "Until",
     "region": "Region",

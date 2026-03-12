@@ -113,6 +113,14 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
     }
   }
 
+  const getRegionVillageLabel = (rv: any | undefined | null): string => {
+    if (!rv) return ''
+    const lang = i18n.language || 'hy'
+    if (lang.startsWith('en') && rv.name_en) return rv.name_en
+    if (lang.startsWith('ru') && rv.name_ru) return rv.name_ru
+    return rv.name_am || rv.name_hy || rv.name_en || rv.name_ru || ''
+  }
+
   const getTypeLabel = (announcement: Announcement) => {
     const subtype = (announcement as any).subtype || (announcement as any).sub_type
     const category = announcement.category || announcement.type
@@ -216,30 +224,48 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{getItemName()}</Text>
         </View>
         <Text style={styles.price}>
-          {Number(announcement.price || 0).toLocaleString()} դր {translateUnit((announcement as any).price_unit ?? announcement.unit)}
+          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')}\{translateUnit((announcement as any).price_unit ?? announcement.unit)}
         </Text>
       </View>
 
       {/* Details */}
       {announcement.available_quantity ? (
         <Text style={styles.detail}>
-          {t('announcements.availableQuantity')}: {Number(announcement.available_quantity).toLocaleString()} {translateUnit(announcement.unit)}
+          {t('announcements.availableQuantity')}: {Number(announcement.available_quantity).toLocaleString()} {announcement.unit ? translateUnit(announcement.unit) : '-'}
         </Text>
       ) : null}
 
       {(() => {
         const regions = announcement.regions || []
         const villages = announcement.villages || []
+        const regionsData = (announcement as any).regions_data || []
+        const villagesData = (announcement as any).villages_data || []
         const regionCount = regions.length
         const villageCount = villages.length
         
         if (regionCount > 0 || villageCount > 0) {
           const parts: string[] = []
           if (regionCount > 0) {
-            parts.push(`${t('addAnnouncement.region')}: ${regionCount}`)
+            const firstRegion =
+              getRegionVillageLabel(regionsData[0]) ||
+              ((announcement as any).region_names?.[0] ?? '') ||
+              (typeof regions[0] === 'string' ? regions[0] : '')
+            if (regionCount === 1) {
+              parts.push(`${t('addAnnouncement.region')}: ${firstRegion || '–'}`)
+            } else {
+              parts.push(`${t('addAnnouncement.region')}: ${firstRegion || '–'} +${regionCount - 1}`)
+            }
           }
           if (villageCount > 0) {
-            parts.push(`${t('addAnnouncement.village')}: ${villageCount}`)
+            const firstVillage =
+              getRegionVillageLabel(villagesData[0]) ||
+              ((announcement as any).village_names?.[0] ?? '') ||
+              (typeof villages[0] === 'string' ? villages[0] : '')
+            if (villageCount === 1) {
+              parts.push(`${t('addAnnouncement.village')}: ${firstVillage || '–'}`)
+            } else {
+              parts.push(`${t('addAnnouncement.village')}: ${firstVillage || '–'} +${villageCount - 1}`)
+            }
           }
           return (
             <Text style={styles.detail}>
@@ -254,7 +280,14 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
       <View style={styles.footer}>
         <View style={styles.participantsRow}>
           <Icon name="people" size={16} color={colors.textTertiary} />
-          <Text style={styles.participantsText}>{t('announcements.applicants')}: {announcement.applications_count ?? 0}</Text>
+          <Text
+            style={[
+              styles.participantsText,
+              (announcement.applications_count ?? 0) > 0 ? { color: colors.buttonPrimary } : null,
+            ]}
+          >
+            {t('announcements.applicants')}: {announcement.applications_count ?? 0}
+          </Text>
         </View>
         <View style={styles.actionButtons}>
           {canApply && (

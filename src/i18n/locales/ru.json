@@ -35,7 +35,7 @@
     "error": "Ошибка",
     "empty": "Пусто",
     "notSpecified": "–",
-    "currency": "драм",
+    "currency": "др.",
     "perDay": "день",
     "unknownUser": "Неизвестно",
     "location": "Местонахождение"
@@ -285,7 +285,7 @@
     "uploadImages": "Загрузить",
     "uploadImagesInfo": "Загрузить до 3 фотографий • Максимальный размер: 5MB",
     "availabilityPeriod": "Срок сделки",
-    "dailyMaxQuantity": "Ежедневное максимальное количество",
+    "dailyMaxQuantity": "Максимальный дневной объём сделки",
     "from": "С",
     "until": "До",
     "region": "Область",

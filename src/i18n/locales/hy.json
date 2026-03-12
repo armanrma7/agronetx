@@ -36,7 +36,8 @@
     "empty": "Դատարկ է",
     "notSpecified": "–",
     "unknownUser": "Անհայտ",
-    "location": "Գտնվելու վայր"
+    "location": "Գտնվելու վայր",
+    "currency": "դր."
   },
   "register": {
     "title": "Գրանցում",
@@ -229,7 +230,7 @@
     "uploadImages": "Վերբեռնել",
     "uploadImagesInfo": "Վերբեռնել մինչև 3 լուսանկար • Առավելագույն չափը՝ 5MB",
     "availabilityPeriod": "Գործարքի ժամկետ",
-    "dailyMaxQuantity": "Օրական առավելագույն քանակ",
+    "dailyMaxQuantity": "Գործարքի օրական առավելագույն ծավալ",
     "from": "Սկսած",
     "until": "Մինչև",
     "region": "Մարզ",
