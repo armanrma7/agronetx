@@ -197,16 +197,22 @@ function mapAnnouncementResponse(data: any): Announcement {
   }
 
   const measurements = Array.isArray(item.measurements) ? item.measurements.map((m: any) => ({
-    en: m.en ?? m.name_en ?? '',
-    hy: m.hy ?? m.name_hy ?? m.name_am ?? '',
-    ru: m.ru ?? m.name_ru ?? '',
+    en: (m.en ?? m.name_en ?? '').replace(/\u00c2\u00b2/g, '²'),
+    hy: (m.hy ?? m.name_hy ?? m.name_am ?? '').replace(/\u00c2\u00b2/g, '²'),
+    ru: (m.ru ?? m.name_ru ?? '').replace(/\u00c2\u00b2/g, '²'),
   })) : []
+  const rentMeasurements = Array.isArray(item.rent_measurements) ? item.rent_measurements.map((m: any) => ({
+    en: (m.en ?? m.name_en ?? '').replace(/\u00c2\u00b2/g, '²'),
+    hy: (m.hy ?? m.name_hy ?? m.name_am ?? '').replace(/\u00c2\u00b2/g, '²'),
+    ru: (m.ru ?? m.name_ru ?? '').replace(/\u00c2\u00b2/g, '²'),
+  })) : undefined
   const mappedItem: Item = {
     id: item.id ?? data.item_id ?? '',
     name_am: (itemNameAm || item.name) ?? '',
     name_en: (itemNameEn || item.name) ?? '',
     name_ru: (itemNameRu || item.name) ?? '',
     measurements,
+    ...(rentMeasurements && rentMeasurements.length > 0 ? { rent_measurements: rentMeasurements } : {}),
   }
 
   const closedBy = data.closed_by_user ?? data.closedByUser ?? null
@@ -230,6 +236,7 @@ function mapAnnouncementResponse(data: any): Announcement {
     daily_limit: toStr(data.daily_limit),
     available_quantity: toStr(data.available_quantity ?? data.quantity ?? data.count),
     unit: toStr(data.quantity_unit ?? data.quantityUnit ?? data.unit),
+    rent_unit: data.rent_unit != null ? toStr(data.rent_unit) : undefined,
     images: Array.isArray(data.images) ? data.images : data.images ? [data.images] : [],
     date_from: data.date_from ?? data.dateFrom ?? null,
     date_to: data.date_to ?? data.dateTo ?? data.expires_at ?? data.expiresAt ?? null,

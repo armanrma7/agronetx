@@ -72,7 +72,7 @@ export function useNewAnnouncementForm() {
               : 'offer'
 
       const itemIdStr = String(a.item_id ?? '')
-      const rentUnitValue = (a.rent_unit || (category === 'rent' ? a.unit : '') || '') as string
+      const rentUnitValue = ((announcement.rent_unit ?? a.rent_unit ?? (category === 'rent' ? (a.unit ?? '') : '')) || '') as string
       setEditAnnouncementData(a)
       setEditItemId(itemIdStr)
       setEditUnit(a.unit || '')
@@ -188,6 +188,21 @@ export function useNewAnnouncementForm() {
   const [formHydrated, setFormHydrated] = useState(!isEditMode)
   const formHydratedRef = useRef(!isEditMode) // prevents calling setFormHydrated more than once
 
+  const normalizeUnitLabel = (rawValue: string, rawLabel: string, lang: SupportedLang): string => {
+    const key = (rawValue || '').toLowerCase().replace(/\s+/g, '').replace('^2', '2').replace('²', '2')
+    const base = rawLabel || rawValue
+    // Normalize square meters
+    if (key === 'm2') {
+      if (lang === 'hy') return 'մ²'
+      if (lang === 'ru') return 'м²'
+      return 'm²'
+    }
+    return base
+  }
+
+  const normalizeUnitKey = (valueOrLabel: string): string =>
+    (valueOrLabel || '').toLowerCase().replace(/\s+/g, '').replace('^2', '2').replace('²', '2')
+
   useEffect(() => {
     if (!formData.name) {
       setMeasurementOptions([])
@@ -207,63 +222,62 @@ export function useNewAnnouncementForm() {
     }
 
     if (selectedItem?.measurements?.length) {
-      let options = selectedItem.measurements.map(m => {
-        const label = currentLang === 'hy' ? m.hy : currentLang === 'ru' ? m.ru : m.en
+      const options = selectedItem.measurements.map(m => {
+        const baseLabel = currentLang === 'hy' ? m.hy : currentLang === 'ru' ? m.ru : m.en
+        const label = normalizeUnitLabel(m.en, baseLabel, currentLang)
         return { value: m.en, label }
       })
-      if (isEditMode && editUnit) {
-        const match = options.find(o =>
-          o.value.toLowerCase() === editUnit.toLowerCase().trim() || o.label.toLowerCase() === editUnit.toLowerCase().trim()
-        )
-        if (!match) options = [{ value: editUnit, label: editUnit }, ...options]
-      }
       setMeasurementOptions(options)
+
       if (isEditMode && editUnit) {
-        const match = options.find(o =>
-          o.value.toLowerCase() === editUnit.toLowerCase().trim() || o.label.toLowerCase() === editUnit.toLowerCase().trim()
+        const editKey = normalizeUnitKey(editUnit)
+        const match = options.find(
+          o => normalizeUnitKey(o.value) === editKey || normalizeUnitKey(o.label) === editKey,
         )
-        setFormData(prev => ({ ...prev, measurementUnit: match ? match.value : editUnit }))
+        if (match) {
+          setFormData(prev => ({ ...prev, measurementUnit: match.value }))
+        }
       } else if (!isEditMode) {
         setFormData(prev => ({ ...prev, measurementUnit: '' }))
       }
     } else {
-      if (isEditMode && editUnit) {
-        setMeasurementOptions([{ value: editUnit, label: editUnit }])
-        setFormData(prev => ({ ...prev, measurementUnit: editUnit }))
-      } else {
-        setMeasurementOptions([])
-        if (!isEditMode) setFormData(prev => ({ ...prev, measurementUnit: '' }))
-      }
+      // No measurements defined; clear options, don't inject ad-hoc units
+      setMeasurementOptions([])
+      if (!isEditMode) setFormData(prev => ({ ...prev, measurementUnit: '' }))
     }
 
     const rentMeas = (selectedItem as any)?.rent_measurements
     if (rentMeas?.length) {
-      let rentOptions = rentMeas.map((m: { en: string; hy: string; ru: string }) => {
-        const label = currentLang === 'hy' ? m.hy : currentLang === 'ru' ? m.ru : m.en
+      const rentOptions = rentMeas.map((m: { en: string; hy: string; ru: string }) => {
+        const baseLabel = currentLang === 'hy' ? m.hy : currentLang === 'ru' ? m.ru : m.en
+        const label = normalizeUnitLabel(m.en, baseLabel, currentLang)
         return { value: m.en, label }
       })
-      if (isEditMode && editRentUnit) {
-        const match = rentOptions.find(
-          (o: SelectOption) =>
-            o.value.toLowerCase() === editRentUnit.toLowerCase().trim() ||
-            o.label.toLowerCase() === editRentUnit.toLowerCase().trim()
-        )
-        if (!match) rentOptions = [{ value: editRentUnit, label: editRentUnit }, ...rentOptions]
-      }
       setRentMeasurementOptions(rentOptions)
+
       if (isEditMode && editRentUnit) {
+        const editKey = normalizeUnitKey(editRentUnit)
         const match = rentOptions.find(
           (o: SelectOption) =>
-            o.value.toLowerCase() === editRentUnit.toLowerCase().trim() ||
-            o.label.toLowerCase() === editRentUnit.toLowerCase().trim()
+            normalizeUnitKey(o.value) === editKey ||
+            normalizeUnitKey(o.label) === editKey,
         )
-        setFormData(prev => ({ ...prev, rentUnit: match ? match.value : editRentUnit }))
+        if (match) {
+          setFormData(prev => ({ ...prev, rentUnit: match.value }))
+        } else {
+          // Saved value not in catalog: add it so the select shows the saved rent_unit
+          const label = normalizeUnitLabel(editRentUnit, editRentUnit, currentLang)
+          setRentMeasurementOptions(prev => [...prev, { value: editRentUnit, label }])
+          setFormData(prev => ({ ...prev, rentUnit: editRentUnit }))
+        }
       } else if (!isEditMode) {
         setFormData(prev => ({ ...prev, rentUnit: '' }))
       }
     } else {
-      if (isEditMode && type === 'rent' && editRentUnit) {
-        setRentMeasurementOptions([{ value: editRentUnit, label: editRentUnit }])
+      // No rent measurements from catalog: in edit mode show saved rent_unit as single option so select displays it
+      if (isEditMode && editRentUnit) {
+        const label = normalizeUnitLabel(editRentUnit, editRentUnit, currentLang)
+        setRentMeasurementOptions([{ value: editRentUnit, label }])
         setFormData(prev => ({ ...prev, rentUnit: editRentUnit }))
       } else {
         setRentMeasurementOptions([])

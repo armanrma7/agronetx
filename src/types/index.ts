@@ -143,6 +143,8 @@ export interface Group extends Translation {
 export interface Item extends Translation {
   id: string;
   measurements: Measurement[];
+  /** Rent period options when category is rent. Optional; API may omit. */
+  rent_measurements?: Measurement[];
 }
 
 export interface ClosedByUser {
@@ -180,6 +182,8 @@ export interface Announcement {
   daily_limit: string;
   available_quantity: string;
   unit: string;
+  /** Rent billing period (e.g. day, month, year). Present when category is rent. */
+  rent_unit?: string;
 
   images: string[];
 

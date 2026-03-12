@@ -170,7 +170,7 @@ export function NewAnnouncementFormFields({
             />
           </View>
            }
-      
+
 
           {(type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) && (
             <View style={styles.fieldContainer}>
