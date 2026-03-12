@@ -56,8 +56,10 @@ export function NewAnnouncementFormPage() {
         '',
         t('common.unsavedChangesConfirm'),
         [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('common.continue'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
+          // Swapped actions: now \"Cancel\" actually discards changes and leaves,
+          // and \"Continue\" just closes the dialog and keeps the user on the form.
+          { text: t('common.continue'), style: 'cancel' },
+          { text: t('common.cancel'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
         ],
       )
     })
