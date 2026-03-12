@@ -144,6 +144,7 @@ export function AppNavigator() {
             name="NewAnnouncementForm" 
             component={NewAnnouncementFormPage}
             options={({ navigation }) => ({
+            
               headerShown: false,
               headerBackTitleVisible: false,
               headerBackVisible: false,
@@ -181,7 +182,7 @@ export function AppNavigator() {
               headerShadowVisible: false,
               headerTintColor: colors.textPrimary,
               headerTitleAlign: 'center',
-              gestureEnabled: true,
+              gestureEnabled: false,
             })}
           />
         <MainStack.Screen 
@@ -198,7 +199,7 @@ export function AppNavigator() {
           component={ApplicationFormPage}
           options={{
             headerShown: false,
-            gestureEnabled: true,
+            gestureEnabled: false,
             animation: 'slide_from_right',
           }}
         />

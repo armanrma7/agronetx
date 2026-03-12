@@ -50,6 +50,8 @@ export function useNewAnnouncementForm() {
   const [editUnit, setEditUnit] = useState('')
   const [editRentUnit, setEditRentUnit] = useState('')
   const previousGroupRef = useRef<string | undefined>(undefined)
+  const didHydrateEditItemNameRef = useRef(false)
+  const editPrefillAppliedRef = useRef(false)
 
   // Load announcement in edit mode
   useEffect(() => {
@@ -123,6 +125,8 @@ export function useNewAnnouncementForm() {
       } else {
         setSelectedImages([])
       }
+
+      editPrefillAppliedRef.current = true
     }
 
     if (routeAnnouncement) {
@@ -137,6 +141,7 @@ export function useNewAnnouncementForm() {
 
   // Set item name when subcategories loaded (edit mode)
   useEffect(() => {
+    if (didHydrateEditItemNameRef.current) return
     if (isEditMode && editItemId && apiSubcategories.length > 0) {
       const exists = apiSubcategories.some(sub =>
         sub.items?.some(item => String(item.id) === String(editItemId))
@@ -144,6 +149,7 @@ export function useNewAnnouncementForm() {
       if (exists && formData.name !== editItemId) {
         setFormData(prev => ({ ...prev, name: editItemId }))
       }
+      if (exists) didHydrateEditItemNameRef.current = true
     }
   }, [isEditMode, editItemId, apiSubcategories, formData.name])
 
@@ -159,7 +165,6 @@ export function useNewAnnouncementForm() {
     return () => { cancelled = true }
   }, [type])
 
-  // When group changes: allow change, clear name/units when user picks different group
   useEffect(() => {
     if (formData.group) {
       const prev = previousGroupRef.current
@@ -180,7 +185,9 @@ export function useNewAnnouncementForm() {
     }
   }, [formData.group, isEditMode])
 
-  // Build measurement + rent unit options from selected item; in edit mode ensure saved value is in options
+  const [formHydrated, setFormHydrated] = useState(!isEditMode)
+  const formHydratedRef = useRef(!isEditMode) // prevents calling setFormHydrated more than once
+
   useEffect(() => {
     if (!formData.name) {
       setMeasurementOptions([])
@@ -263,6 +270,15 @@ export function useNewAnnouncementForm() {
         if (!isEditMode) setFormData(prev => ({ ...prev, rentUnit: '' }))
       }
     }
+
+    // Signal that the form is fully hydrated.
+    // This is batched with the setFormData calls above into a single render,
+    // so currentSnapshot will already contain the correct measurementUnit /
+    // rentUnit when the snapshot-init effect runs.
+    if (isEditMode && !formHydratedRef.current) {
+      formHydratedRef.current = true
+      setFormHydrated(true)
+    }
   }, [formData.name, apiSubcategories, currentLang, isEditMode, editUnit, editRentUnit, type])
 
   const catalogLang: announcementsAPI.CatalogLang = currentLang === 'ru' || currentLang === 'en' ? currentLang : 'hy'
@@ -312,9 +328,9 @@ export function useNewAnnouncementForm() {
       return `«${fieldLabel} դաշտը պարտադիր է։»`
     }
     if (lang === 'ru') {
-      return `«Поле “${fieldLabel}” является обязательным.»`
+      return `«Поле "${fieldLabel}" является обязательным.»`
     }
-    return `“The ${fieldLabel} field is required.”`
+    return `"The ${fieldLabel} field is required."`
   }
 
   const validateForm = (): boolean => {
@@ -400,18 +416,25 @@ export function useNewAnnouncementForm() {
     selectedImages,
   ])
 
+  // Capture the initial snapshot only once, and only after the form is fully
+  // hydrated (i.e. after the measurement effect has run and applied its
+  // setFormData).  Using formHydrated (instead of !loadingSubcategories) as
+  // the gate ensures we wait for the last setFormData call, not just for the
+  // network request to finish.
   useEffect(() => {
     if (didInitSnapshotRef.current) return
+
     if (!isEditMode) {
       initialSnapshotRef.current = currentSnapshot
       didInitSnapshotRef.current = true
       return
     }
-    if (isEditMode && editAnnouncementData) {
+
+    if (isEditMode && editPrefillAppliedRef.current && formHydrated) {
       initialSnapshotRef.current = currentSnapshot
       didInitSnapshotRef.current = true
     }
-  }, [currentSnapshot, editAnnouncementData, isEditMode])
+  }, [currentSnapshot, isEditMode, formHydrated])
 
   const isDirty = useMemo(() => {
     if (!didInitSnapshotRef.current) return false
@@ -454,10 +477,10 @@ export function useNewAnnouncementForm() {
         const newFiles = validImages.filter(img => img.uri?.startsWith('file://') || img.uri?.startsWith('content://'))
         payload.images = existingUrls as any
         await announcementsAPI.updateAnnouncementAPI(announcementId, payload, newFiles.length ? newFiles : undefined)
-        Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.navigate('MyAnnouncements' as never) } }])
+        Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() } }])
       } else {
         await announcementsAPI.createAnnouncementAPI(payload, validImages.length ? validImages : undefined)
-        Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.navigate('MyAnnouncements' as never) } }])
+        Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() } }])
       }
     } catch (error: any) {
       Alert.alert(
@@ -550,7 +573,9 @@ export function useNewAnnouncementForm() {
     )
   }
 
-  const removeImage = (index: number) => setSelectedImages(prev => prev.filter((_, i) => i !== index))
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+  }
 
   const showUnitField = type !== 'rent' || measurementOptions.length > 0 || (isEditMode && type === 'rent')
   const showRentUnitField = rentMeasurementOptions.length > 0 || (isEditMode && type === 'rent' && !!formData.rentUnit)
