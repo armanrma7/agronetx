@@ -164,7 +164,7 @@ export function HomeTabs() {
 
               return <Icon name={iconName} size={30} color={color} />
             },
-            tabBarActiveTintColor: colors.primary,
+            tabBarActiveTintColor: colors.buttonPrimary,
             tabBarInactiveTintColor: colors.textTertiary,
             tabBarStyle: {
               height: 70,
