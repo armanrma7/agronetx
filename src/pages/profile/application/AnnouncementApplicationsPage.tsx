@@ -93,9 +93,9 @@ export function AnnouncementApplicationsPage() {
         t('applications.approve'),
         t('applications.approveConfirm'),
         [
-          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.no'), style: 'cancel' },
           {
-            text: t('common.confirm'),
+            text: t('common.yes'),
             onPress: () =>
               runAction(
                 () => approveApplication(id, announcementId),
@@ -114,9 +114,9 @@ export function AnnouncementApplicationsPage() {
         t('applications.reject'),
         t('applications.rejectConfirm'),
         [
-          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.no'), style: 'cancel' },
           {
-            text: t('common.confirm'),
+            text: t('common.yes'),
             style: 'destructive',
             onPress: () =>
               runAction(
@@ -136,9 +136,9 @@ export function AnnouncementApplicationsPage() {
         t('applications.closeTitle'),
         t('applications.closeConfirm'),
         [
-          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.no'), style: 'cancel' },
           {
-            text: t('common.confirm'),
+            text: t('common.yes'),
             style: 'destructive',
             onPress: () =>
               runAction(

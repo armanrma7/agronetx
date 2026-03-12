@@ -30,6 +30,8 @@
     "ok": "OK",
     "confirm": "Confirm",
     "continue": "Continue",
+    "yes": "Yes",
+    "no": "No",
     "unsavedChangesConfirm": "If you continue, the entered data will not be saved. Do you want to continue?",
     "success": "Success",
     "error": "Error",

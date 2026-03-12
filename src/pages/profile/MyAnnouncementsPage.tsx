@@ -35,9 +35,9 @@ export function MyAnnouncementsPage() {
       t('announcements.cancelTitle'),
       t('announcements.cancelConfirm'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.no'), style: 'cancel' },
         {
-          text: t('common.confirm'),
+          text: t('common.yes'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -63,9 +63,9 @@ export function MyAnnouncementsPage() {
       t('applications.closeTitle'),
       t('applications.closeConfirm'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.no'), style: 'cancel' },
         {
-          text: t('common.confirm'),
+          text: t('common.yes'),
           style: 'destructive',
           onPress: async () => {
             try {

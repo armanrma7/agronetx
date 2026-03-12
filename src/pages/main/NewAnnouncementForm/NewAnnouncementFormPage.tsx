@@ -56,8 +56,8 @@ export function NewAnnouncementFormPage() {
         '',
         t('common.unsavedChangesConfirm'),
         [
-          { text: t('common.continue'), style: 'cancel' },
-          { text: t('common.cancel'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
+          { text: t('common.no'), style: 'cancel' },
+          { text: t('common.yes'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
         ],
       )
     })

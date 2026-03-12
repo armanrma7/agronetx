@@ -119,8 +119,8 @@ export function ApplicationFormPage() {
         '',
         t('common.unsavedChangesConfirm'),
         [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('common.continue'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
+          { text: t('common.no'), style: 'cancel' },
+          { text: t('common.yes'), style: 'destructive', onPress: () => (navigation as any).dispatch(e.data.action) },
         ],
       )
     })
