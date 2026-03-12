@@ -363,19 +363,56 @@ export function useNewAnnouncementForm() {
       Alert.alert('', requiredFieldMessage(firstMissing.label))
       return false
     }
+
+    const parsePositive = (value: string | undefined | null): number => {
+      if (!value) return NaN
+      const n = parseFloat(value.toString().replace(',', '.'))
+      return isFinite(n) ? n : NaN
+    }
+
+    const qty = type === 'goods' || type === 'rent' ? parsePositive(formData.quantity) : NaN
+    if ((type === 'goods' || type === 'rent') && !(qty > 0)) {
+      Alert.alert('', t('addAnnouncement.quantityMustBeGreaterThanZero'))
+      return false
+    }
+
+    const price = parsePositive(formData.pricePerUnit)
+    if (!(price > 0)) {
+      Alert.alert('', t('addAnnouncement.priceMustBeGreaterThanZero'))
+      return false
+    }
+
+    if (type === 'goods' && formData.dailyMaxQuantity) {
+      const daily = parsePositive(formData.dailyMaxQuantity)
+      if (!(daily > 0)) {
+        Alert.alert('', t('addAnnouncement.dailyMaxQuantityMustBeGreaterThanZero'))
+        return false
+      }
+    }
+
     return true
   }
 
   const isValidForSubmit = useMemo(() => {
+    const parsePositive = (value: string | undefined | null): number => {
+      if (!value) return NaN
+      const n = parseFloat(value.toString().replace(',', '.'))
+      return isFinite(n) ? n : NaN
+    }
+
     const requiredFields: Array<{ ok: boolean }> = [
       { ok: !!formData.subtype },
       { ok: !!formData.group },
       { ok: !!formData.name },
       { ok: type === 'rent' ? true : !!formData.measurementUnit },
       { ok: type === 'rent' && rentMeasurementOptions.length > 0 ? !!formData.rentUnit : true },
-      { ok: type === 'goods' ? !!formData.quantity : true },
-      { ok: !!formData.pricePerUnit },
+      { ok: type === 'goods' ? !!formData.quantity && parsePositive(formData.quantity) > 0 : true },
+      { ok: !!formData.pricePerUnit && parsePositive(formData.pricePerUnit) > 0 },
     ]
+    if (type === 'goods' && formData.dailyMaxQuantity) {
+      requiredFields.push({ ok: parsePositive(formData.dailyMaxQuantity) > 0 })
+    }
+
     return requiredFields.every(f => f.ok)
   }, [
     formData.subtype,
@@ -385,6 +422,7 @@ export function useNewAnnouncementForm() {
     formData.rentUnit,
     formData.quantity,
     formData.pricePerUnit,
+    formData.dailyMaxQuantity,
     type,
     rentMeasurementOptions.length,
   ])
