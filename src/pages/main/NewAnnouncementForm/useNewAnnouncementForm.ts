@@ -462,8 +462,12 @@ export function useNewAnnouncementForm() {
       }
       if (type === 'rent' && formData.rentUnit) payload.rent_unit = formData.rentUnit
       if (formData.description) payload.description = formData.description
-      if (type === 'goods' && formData.quantity) payload.count = parseFloat(formData.quantity)
-      if (type === 'goods' && formData.dailyMaxQuantity) payload.daily_limit = parseFloat(formData.dailyMaxQuantity)
+      if ((type === 'goods' || type === 'rent') && formData.quantity) {
+        payload.count = parseFloat(formData.quantity)
+      }
+      if (type === 'goods' && formData.dailyMaxQuantity) {
+        payload.daily_limit = parseFloat(formData.dailyMaxQuantity)
+      }
       if (formData.periodStart) payload.date_from = formData.periodStart
       if (formData.salesPeriod) payload.date_to = formData.salesPeriod
       if (selectedRegions.length) payload.regions = selectedRegions
