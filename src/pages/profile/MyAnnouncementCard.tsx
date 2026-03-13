@@ -134,7 +134,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{getItemName()}</Text>
         </View>
         <Text style={styles.price}>
-          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')} {translateUnit((announcement as any).price_unit ?? announcement.unit)}
+          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')} \{translateUnit((announcement as any).price_unit ?? announcement.unit)}
         </Text>
       </View>
 
