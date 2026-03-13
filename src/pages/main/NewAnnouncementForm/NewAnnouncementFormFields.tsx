@@ -197,14 +197,23 @@ export function NewAnnouncementFormFields({
 
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>{t('addAnnouncement.price')} *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.pricePerUnit}
-              onChangeText={value => setFormData(prev => ({ ...prev, pricePerUnit: value }))}
-              placeholder={t('common.select')}
-              placeholderTextColor={colors.textPlaceholder}
-              keyboardType="numeric"
-            />
+            <View style={styles.inputWithSuffixWrap}>
+              <TextInput
+                style={styles.inputWithSuffix}
+                value={formData.pricePerUnit}
+                onChangeText={value => {
+                  const normalized = value
+                    .replace(/,/g, '.')
+                    .replace(/[^0-9.]/g, '')
+                    .replace(/(\..*)\./g, '$1')
+                  setFormData(prev => ({ ...prev, pricePerUnit: normalized }))
+                }}
+                placeholder={t('common.select')}
+                placeholderTextColor={colors.textPlaceholder}
+                keyboardType="numeric"
+              />
+              <Text style={styles.inputSuffixText}>{t('common.currency')}</Text>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -297,7 +306,13 @@ export function NewAnnouncementFormFields({
                   <TextInput
                     style={styles.input}
                     value={formData.dailyMaxQuantity}
-                    onChangeText={value => setFormData(prev => ({ ...prev, dailyMaxQuantity: value }))}
+                    onChangeText={value => {
+                      const normalized = value
+                        .replace(/,/g, '.')
+                        .replace(/[^0-9.]/g, '')
+                        .replace(/(\..*)\./g, '$1')
+                      setFormData(prev => ({ ...prev, dailyMaxQuantity: normalized }))
+                    }}
                     placeholder={t('addAnnouncement.fillIn')}
                     placeholderTextColor={colors.textPlaceholder}
                     keyboardType="numeric"
