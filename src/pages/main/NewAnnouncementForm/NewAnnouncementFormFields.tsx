@@ -181,7 +181,13 @@ export function NewAnnouncementFormFields({
               <TextInput
                 style={styles.input}
                 value={formData.quantity}
-                onChangeText={value => setFormData(prev => ({ ...prev, quantity: value }))}
+                onChangeText={value => {
+                  const normalized = value
+                    .replace(/,/g, '.')
+                    .replace(/[^0-9.]/g, '')
+                    .replace(/(\..*)\./g, '$1')
+                  setFormData(prev => ({ ...prev, quantity: normalized }))
+                }}
                 placeholder={t('common.select')}
                 placeholderTextColor={colors.textPlaceholder}
                 keyboardType="numeric"

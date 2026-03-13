@@ -588,7 +588,13 @@ export function ApplicationFormPage() {
               <TextInput
                 style={styles.quantityInput}
                 value={quantity}
-                onChangeText={setQuantity}
+                onChangeText={(text) => {
+                  const normalized = text
+                    .replace(/,/g, '.')
+                    .replace(/[^0-9.]/g, '')
+                    .replace(/(\..*)\./g, '$1')
+                  setQuantity(normalized)
+                }}
                 placeholder={t('applications.fillIn')}
                 placeholderTextColor={colors.textTertiary}
                 keyboardType="numeric"
