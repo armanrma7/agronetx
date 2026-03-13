@@ -85,6 +85,7 @@ export function ApplicationFormPage() {
 
   const initialSnapshotRef = useRef<string | null>(null)
   const didInitSnapshotRef = useRef(false)
+  const prefillAppliedRef = useRef(false)
   const currentSnapshot = useMemo(() => {
     const snap = {
       announcementType,
@@ -98,10 +99,11 @@ export function ApplicationFormPage() {
 
   useEffect(() => {
     if (didInitSnapshotRef.current) return
-    // Initialize after prefill effect runs (or immediately if no prefill)
+    // For edit mode with prefill, wait until prefill effect has applied initial values
+    if (isEditMode && prefill && !prefillAppliedRef.current) return
     initialSnapshotRef.current = currentSnapshot
     didInitSnapshotRef.current = true
-  }, [currentSnapshot])
+  }, [currentSnapshot, isEditMode, prefill])
 
   const isDirty = useMemo(() => {
     if (!didInitSnapshotRef.current) return false
@@ -142,6 +144,7 @@ export function ApplicationFormPage() {
     if (prefill.notes) {
       setNotes(prefill.notes)
     }
+    prefillAppliedRef.current = true
   }, [])
 
   // Fetch announcement details only when not already provided via params
