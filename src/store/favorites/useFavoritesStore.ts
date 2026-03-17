@@ -51,6 +51,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
     set(reset ? { loading: true } : { loadingMore: true })
     try {
       const response = await announcementsAPI.getFavoritesAPI({ page: pageNum, limit: LIMIT, signal })
+      console.info(response)
       if (signal?.aborted) return
       const items = response.announcements || []
       set(state => ({

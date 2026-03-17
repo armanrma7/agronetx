@@ -41,6 +41,9 @@ interface ApplicationsState {
   cancellingId: string | null
   closingApplicationId: string | null
 
+  /** User id for which appliedIds/pendingIds were last fetched (simple cache marker). */
+  appliedLoadedForUser?: string | null
+
   // ── Actions ──────────────────────────────────────────────────────────────
 
   /** Fetch all applied announcement IDs + compute pending IDs. */
@@ -100,10 +103,19 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
   myActiveTab: 'published',
   cancellingId: null,
   closingApplicationId: null,
+  appliedLoadedForUser: null,
 
   // ── Applied IDs ──────────────────────────────────────────────────────────
 
   fetchAppliedIds: async (userId: string) => {
+    const state = get()
+    const userKey = String(userId)
+    // Avoid repeated calls when nothing changed: if we already fetched for this
+    // user during this session, just reuse the cached appliedIds/pendingIds.
+    if (state.appliedLoadedForUser === userKey && state.appliedIds && state.pendingIds) {
+      return
+    }
+
     try {
       const response = await announcementsAPI.getAppliedAnnouncementsAPI({ page: 1, limit: 200 })
       const announcements = response.announcements || []
@@ -122,9 +134,9 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
         }
       })
 
-      set({ appliedIds: applied, pendingIds: pending })
+      set({ appliedIds: applied, pendingIds: pending, appliedLoadedForUser: userKey })
     } catch {
-      set({ appliedIds: new Set(), pendingIds: new Set() })
+      set({ appliedIds: new Set(), pendingIds: new Set(), appliedLoadedForUser: userKey })
     }
   },
 

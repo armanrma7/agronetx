@@ -6,10 +6,13 @@ import { Announcement } from '../../types'
 import { AnnouncementCard } from '../../components/AnnouncementCard'
 import { useNavigation } from '@react-navigation/native'
 import { useFavoritesStore } from '../../store/favorites/useFavoritesStore'
+import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
+import { useAuth } from '../../context/AuthContext'
 
 export function FavoritesPage() {
   const { t } = useTranslation()
   const navigation = useNavigation()
+  const { user } = useAuth()
 
   const {
     list,
@@ -20,10 +23,17 @@ export function FavoritesPage() {
     loadMore,
   } = useFavoritesStore()
 
+  const { pendingIds, fetchAppliedIds } = useApplicationsStore()
+
   // Fetch once on mount
   useEffect(() => {
     refresh()
   }, [])
+
+  // Fetch pending applications for current user (so Apply button can be hidden like main page)
+  useEffect(() => {
+    if (user) fetchAppliedIds(String(user.id))
+  }, [user, fetchAppliedIds])
 
   const handleView = useCallback((announcement: Announcement) => {
     ;(navigation as any).navigate('AnnouncementDetail', { announcementId: announcement.id })
@@ -45,15 +55,17 @@ export function FavoritesPage() {
       }
     })
   }, [])
-
-  const renderItem = useCallback(({ item }: { item: Announcement }) => (
-    <AnnouncementCard
-      announcement={item}
-      onView={handleView}
-      isFavorite={true}
-      onFavoriteChange={handleFavoriteChange}
-    />
-  ), [handleView, handleFavoriteChange])
+  const renderItem = useCallback(({ item }: { item: Announcement }) => {
+    return (
+      <AnnouncementCard
+        announcement={item}
+        onView={handleView}
+        isFavorite={true}
+        onFavoriteChange={handleFavoriteChange}
+        pendingApplicationAnnouncementIds={pendingIds}
+      />
+    )
+   }, [handleView, handleFavoriteChange, pendingIds])
 
   return (
     <View style={styles.container}>

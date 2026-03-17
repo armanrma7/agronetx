@@ -42,7 +42,7 @@ interface RouteParams {
 type UnitType = 'daily' | 'monthly' | 'yearly' | 'hourly'
 
 export function ApplicationFormPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
   const { announcementId, announcementType, announcement: paramAnnouncement, applicationId, prefill } = (route.params as RouteParams) || {}
@@ -524,6 +524,47 @@ export function ApplicationFormPage() {
 
   const dailyLimitInfo = getDailyLimitInfo()
 
+  const getAnnouncementCategoryName = (): string => {
+    if (!announcement) return ''
+    const lang = (i18n.language || 'hy').toLowerCase()
+    const group = (announcement as any).group
+    if (group) {
+      if (lang.startsWith('en') && group.name_en) return group.name_en
+      if (lang.startsWith('ru') && group.name_ru) return group.name_ru
+      return group.name_am || group.name_hy || group.name_en || group.name_ru || ''
+    }
+    // Fallback: show category code if group is missing
+    return (announcement.category || '').toString()
+  }
+
+  const getAnnouncementSubcategoryName = (): string => {
+    if (!announcement) return ''
+    const lang = (i18n.language || 'hy').toLowerCase()
+    const item = (announcement as any).item
+    if (item) {
+      if (lang.startsWith('en') && item.name_en) return item.name_en
+      if (lang.startsWith('ru') && item.name_ru) return item.name_ru
+      return item.name_am || item.name_hy || item.name_en || item.name_ru || ''
+    }
+    return ''
+  }
+
+  const getAnnouncementCountAndUnit = (): { count: string; unit: string } => {
+    if (!announcement) return { count: '', unit: '' }
+    const a = announcement as any
+    const countStr = (announcement.count ?? a.count ?? a.available_quantity ?? announcement.available_quantity ?? '').toString()
+    const unitStr = (announcement.unit ?? a.quantity_unit ?? a.unit ?? '').toString()
+    return { count: countStr, unit: unitStr }
+  }
+
+  const getAnnouncementPriceAndUnit = (): { price: string; unit: string } => {
+    if (!announcement) return { price: '', unit: '' }
+    const a = announcement as any
+    const priceStr = (announcement.price ?? a.price ?? '').toString()
+    const unitStr = ((a.price_unit ?? announcement.unit ?? a.unit) ?? '').toString()
+    return { price: priceStr, unit: unitStr }
+  }
+
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
@@ -541,6 +582,37 @@ export function ApplicationFormPage() {
           <Text style={styles.instructionText}>
             {t('applications.sendToAnnouncer')}
           </Text>
+
+          {/* Announcement summary (title, quantity, price) */}
+          {announcement && (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle} numberOfLines={2}>
+              {getAnnouncementSubcategoryName()}
+              </Text>
+            
+              {(() => {
+                const { count, unit } = getAnnouncementCountAndUnit()
+                const showCount = count && count !== '0' && count !== '0.00' && count !== '0.0'
+                if (!showCount) return null
+                const unitLabel = unit || '-'
+                const { price, unit: priceUnit } = getAnnouncementPriceAndUnit()
+                const n = parseFloat(price)
+                const formattedPrice = price ? (isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : price) : ''
+                const perUnit = priceUnit ? `/${priceUnit}.` : ''
+
+                return (
+                  <View style={styles.summaryInlineRow}>
+                    <Text style={styles.summaryInlineLeft} numberOfLines={1}>
+                      {t('applications.quantity')} {count} {unitLabel}
+                    </Text>
+                    <Text style={styles.summaryInlineRight} numberOfLines={1}>
+                      {formattedPrice ? `${formattedPrice} ${t('common.currency')}${perUnit}` : ''}
+                    </Text>
+                  </View>
+                )
+              })()}
+            </View>
+          )}
 
           {/* Daily Limit Banner - Only for goods */}
           {dailyLimitInfo && (
@@ -722,11 +794,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   scrollView: {
+
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 100,
+    paddingHorizontal: 28,
+    paddingVertical: 15,    
   },
   loadingContainer: {
     flex: 1,
@@ -750,7 +823,41 @@ const styles = StyleSheet.create({
     color: colors.black,
     marginTop: 12,
     textAlign: 'center',
-    marginBottom: 24,
+    fontWeight: '600',
+    marginBottom: 15,
+  },
+  summaryCard: {
+    backgroundColor: colors.white,
+    marginBottom: 20,
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 10,
+  },
+  summarySubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: -6,
+    marginBottom: 8,
+  },
+  summaryInlineRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryInlineLeft: {
+    fontSize: 16,
+    color: colors.black,
+    fontWeight: '400',
+  },
+  summaryInlineRight: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.black,
   },
   limitBanner: {
     flexDirection: 'row',
@@ -777,7 +884,6 @@ const styles = StyleSheet.create({
   },
   fieldContainer: {
     marginBottom: 24,
-
   },
   fieldLabel: {
     fontSize: 14,
