@@ -178,20 +178,30 @@ export function NewAnnouncementFormFields({
                 {type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')}
                 {type === 'goods' ? ' *' : ''}
               </Text>
-              <TextInput
-                style={styles.input}
-                value={formData.quantity}
-                onChangeText={value => {
-                  const normalized = value
-                    .replace(/,/g, '.')
-                    .replace(/[^0-9.]/g, '')
-                    .replace(/(\..*)\./g, '$1')
-                  setFormData(prev => ({ ...prev, quantity: normalized }))
-                }}
-                placeholder={t('common.select')}
-                placeholderTextColor={colors.textPlaceholder}
-                keyboardType="numeric"
-              />
+              <View style={styles.inputWithSuffixWrap}>
+                <TextInput
+                  style={styles.inputWithSuffix}
+                  value={formData.quantity}
+                  onChangeText={value => {
+                    const normalized = value
+                      .replace(/,/g, '.')
+                      .replace(/[^0-9.]/g, '')
+                      .replace(/(\..*)\./g, '$1')
+                    setFormData(prev => ({ ...prev, quantity: normalized }))
+                  }}
+                  placeholder={t('common.select')}
+                  placeholderTextColor={colors.textPlaceholder}
+                  keyboardType="numeric"
+                />
+                <Text style={styles.inputSuffixText}>
+                  {(() => {
+                    const key = (formData.measurementUnit || '').toString()
+                    if (!key) return ''
+                    const opt = measurementOptions.find(o => String(o.value) === key)
+                    return opt?.label ?? ''
+                  })()}
+                </Text>
+              </View>
             </View>
           )}
 
