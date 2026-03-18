@@ -626,7 +626,7 @@ export function ApplicationFormPage() {
                 return (
                   <View style={styles.summaryInlineRow}>
                     <Text style={styles.summaryInlineLeft} numberOfLines={1}>
-                      {t('applications.quantity')} {count} {unitLabel}
+                      {t('applications.quantity')} {count} / {unitLabel}
                     </Text>
                     <Text style={styles.summaryInlineRight} numberOfLines={1}>
                       {formattedPrice ? `${formattedPrice} ${t('common.currency')}${perUnit}` : ''}
