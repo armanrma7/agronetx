@@ -220,7 +220,6 @@ export function useNewAnnouncementForm() {
         break
       }
     }
-
     if (selectedItem?.measurements?.length) {
       const options = selectedItem.measurements.map(m => {
         const baseLabel = currentLang === 'hy' ? m.hy : currentLang === 'ru' ? m.ru : m.en
@@ -241,7 +240,6 @@ export function useNewAnnouncementForm() {
         setFormData(prev => ({ ...prev, measurementUnit: '' }))
       }
     } else {
-      // No measurements defined; clear options, don't inject ad-hoc units
       setMeasurementOptions([])
       if (!isEditMode) setFormData(prev => ({ ...prev, measurementUnit: '' }))
     }
@@ -348,13 +346,15 @@ export function useNewAnnouncementForm() {
   }
 
   const validateForm = (): boolean => {
+    const requiresQuantity =
+      type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)
     const requiredFields: Array<{ ok: boolean; label: string }> = [
       { ok: !!formData.subtype, label: t('announcementSubtype.title') },
       { ok: !!formData.group, label: t('addAnnouncement.group') },
       { ok: !!formData.name, label: t('addAnnouncement.name') },
       { ok: type === 'rent' ? true : !!formData.measurementUnit, label: t('addAnnouncement.unitOfMeasurement') },
       { ok: type === 'rent' && rentMeasurementOptions.length > 0 ? !!formData.rentUnit : true, label: t('addAnnouncement.rentUnit') },
-      { ok: type === 'goods' ? !!formData.quantity : true, label: t('addAnnouncement.quantity') },
+      { ok: requiresQuantity ? !!formData.quantity : true, label: t('addAnnouncement.quantity') },
       { ok: !!formData.pricePerUnit, label: t('addAnnouncement.price') },
     ]
 
@@ -370,8 +370,8 @@ export function useNewAnnouncementForm() {
       return isFinite(n) ? n : NaN
     }
 
-    const qty = type === 'goods' || type === 'rent' ? parsePositive(formData.quantity) : NaN
-    if ((type === 'goods' || type === 'rent') && !(qty > 0)) {
+    const qty = requiresQuantity ? parsePositive(formData.quantity) : NaN
+    if (requiresQuantity && !(qty > 0)) {
       Alert.alert('', t('addAnnouncement.quantityMustBeGreaterThanZero'))
       return false
     }
@@ -400,13 +400,15 @@ export function useNewAnnouncementForm() {
       return isFinite(n) ? n : NaN
     }
 
+    const requiresQuantity =
+      type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)
     const requiredFields: Array<{ ok: boolean }> = [
       { ok: !!formData.subtype },
       { ok: !!formData.group },
       { ok: !!formData.name },
       { ok: type === 'rent' ? true : !!formData.measurementUnit },
       { ok: type === 'rent' && rentMeasurementOptions.length > 0 ? !!formData.rentUnit : true },
-      { ok: type === 'goods' ? !!formData.quantity && parsePositive(formData.quantity) > 0 : true },
+      { ok: requiresQuantity ? !!formData.quantity && parsePositive(formData.quantity) > 0 : true },
       { ok: !!formData.pricePerUnit && parsePositive(formData.pricePerUnit) > 0 },
     ]
     if (type === 'goods' && formData.dailyMaxQuantity) {

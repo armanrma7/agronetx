@@ -176,7 +176,7 @@ export function NewAnnouncementFormFields({
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>
                 {type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')}
-                {type === 'goods' ? ' *' : ''}
+                 *
               </Text>
               <View style={styles.inputWithSuffixWrap}>
                 <TextInput

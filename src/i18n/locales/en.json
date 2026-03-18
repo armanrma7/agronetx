@@ -173,6 +173,7 @@
   "addAnnouncement": {
     "title": "New Announcement",
     "newAnnouncement": "New",
+    "totalArea": "Total area",
     "announcement": "announcement",
     "product": "Product",
     "service": "Service",
@@ -182,6 +183,8 @@
     "name": "Name",
     "unitOfMeasurement": "Unit of measurement",
     "rentUnit": "Rent",
+    "region": "Region",
+    "village": "Village",
     "price": "Unit Price",
     "transactionLocation": "Transaction Location",
     "fileSizeExceedsLimit": "File size exceeds 5MB limit.",
