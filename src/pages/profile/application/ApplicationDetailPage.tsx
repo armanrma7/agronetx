@@ -18,6 +18,7 @@ import { useAuth } from '../../../context/AuthContext'
 import { useApplicationsStore } from '../../../store/applications/useApplicationsStore'
 import { useAnnouncementsStore } from '../../../store/announcements/useAnnouncementsStore'
 import { formatDate, getStatusLabel, getStatusColor } from './utils'
+import { translateMeasureUnit } from '../../../utils/units'
 import {
   isAnnouncementOwner,
   canApproveApplication,
@@ -43,7 +44,7 @@ function getInitials(fullName?: string): string {
 }
 
 export function ApplicationDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
   const { user } = useAuth()
@@ -309,7 +310,7 @@ export function ApplicationDetailPage() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>{t('applications.requestedQuantity')}:</Text>
                 <Text style={styles.detailValue}>
-                  {app.count} {app.unit || quantityUnit}
+                  {app.count} {translateMeasureUnit(app.unit || quantityUnit, i18n.language)}
                 </Text>
               </View>
             ) : null}

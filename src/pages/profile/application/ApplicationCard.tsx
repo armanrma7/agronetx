@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { colors } from '../../../theme/colors'
 import type { ApplicationListItem } from '../../../lib/api/announcements.api'
 import { formatDate, getStatusLabel, getStatusColor } from './utils'
+import { translateMeasureUnit } from '../../../utils/units'
 import {
   canApproveApplication,
   canRejectApplication,
@@ -49,7 +50,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
   onView,
   onEdit,
 }: ApplicationCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const statusLabel = getStatusLabel(app.status, t)
   const statusColor = getStatusColor(app.status)
@@ -124,7 +125,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
           </Text>
           {app.count != null && (
             <Text style={styles.quantityValue}>
-              {app.count} {app.unit || quantityUnit || ''}
+              {app.count} {translateMeasureUnit(app.unit || quantityUnit || '', i18n.language)}
             </Text>
           )}
         </View>

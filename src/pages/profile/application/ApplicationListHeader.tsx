@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import Icon from '../../../components/Icon'
 import { colors } from '../../../theme/colors'
+import { translateMeasureUnit } from '../../../utils/units'
 
 export interface ApplicationListHeaderProps {
   title: string
@@ -21,14 +22,14 @@ export const ApplicationListHeader = React.memo(function ApplicationListHeader({
   priceUnit,
   applicantsCount,
 }: ApplicationListHeaderProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const metaParts: string[] = []
   if (quantity != null && quantityUnit) {
-    metaParts.push(`${Number(quantity).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${quantityUnit}`)
+    metaParts.push(`${Number(quantity).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${translateMeasureUnit(quantityUnit, i18n.language)}`)
   }
   if (price != null && priceUnit) {
-    metaParts.push(`${Number(price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/${priceUnit}`)
+    metaParts.push(`${Number(price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/${translateMeasureUnit(priceUnit, i18n.language)}`)
   }
   const meta = metaParts.join(' • ')
   return (
