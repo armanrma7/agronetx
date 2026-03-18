@@ -233,11 +233,16 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
       </View>
 
       {/* Details */}
-      {announcement.available_quantity ? (
-        <Text style={styles.detail}>
-          {t('announcements.availableQuantity')}: {Number(announcement.available_quantity).toLocaleString()} {announcement.unit ? translateUnit(announcement.unit) : '-'}
-        </Text>
-      ) : null}
+      {(() => {
+        const available = Number(announcement.available_quantity ?? 0) || 0
+        if (!(available > 0)) return null
+        return (
+          <Text style={styles.detail}>
+            {t('announcements.availableQuantity')}: {available.toLocaleString()}{' '}
+            {announcement.unit ? translateUnit(announcement.unit) : ''}
+          </Text>
+        )
+      })()}
 
       {(() => {
         const regions = announcement.regions || []

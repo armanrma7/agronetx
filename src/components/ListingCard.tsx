@@ -63,11 +63,15 @@ export function ListingCard({ listing, onApply, onView }: ListingCardProps) {
       </View>
 
       {/* Details */}
-      {listing.available_quantity ? (
-        <Text style={styles.detail}>
-          {t('listings.minQuantity')}: {Number(listing.available_quantity).toLocaleString()} {listing.unit}
-        </Text>
-      ) : null}
+      {(() => {
+        const available = Number(listing.available_quantity ?? 0) || 0
+        if (!(available > 0)) return null
+        return (
+          <Text style={styles.detail}>
+            {t('listings.minQuantity')}: {available.toLocaleString()} {listing.unit || ''}
+          </Text>
+        )
+      })()}
 
       {listing.description ? (
         <Text style={styles.detail}>{listing.description}</Text>
