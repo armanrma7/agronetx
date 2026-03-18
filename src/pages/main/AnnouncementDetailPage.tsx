@@ -494,14 +494,32 @@ export function AnnouncementDetailPage() {
             </View>
             <View style={styles.engagementMetrics}>
               <View style={styles.metricItem}>
-                <Icon name="visibility" size={16} color={colors.textSecondary} />
-                <Text style={styles.metricText}>{(announcement as any).views_count || 0}</Text>
+                {(() => {
+                  const views = Number((announcement as any).views_count ?? 0) || 0
+                  const active = views > 0
+                  const c = active ? colors.buttonPrimary : colors.textSecondary
+                  return (
+                    <>
+                      <Icon name="visibility" size={16} color={c} />
+                      <Text style={[styles.metricText, active && { color: colors.buttonPrimary }]}>{views}</Text>
+                    </>
+                  )
+                })()}
               </View>
               <View style={styles.metricItem}>
-                <Icon name="people" size={16} color={colors.textSecondary} />
-                <Text style={styles.metricText}>
-                  {announcement.applications_count ?? 0}
-                </Text>
+                {(() => {
+                  const apps = Number(announcement.applications_count ?? 0) || 0
+                  const active = apps > 0
+                  const c = active ? colors.buttonPrimary : colors.textSecondary
+                  return (
+                    <>
+                      <Icon name="people" size={16} color={c} />
+                      <Text style={[styles.metricText, active && { color: colors.buttonPrimary }]}>
+                        {apps}
+                      </Text>
+                    </>
+                  )
+                })()}
               </View>
             </View>
           </View>
