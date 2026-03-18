@@ -147,7 +147,7 @@
     "status": {
       "active": "Active",
       "completed": "Completed",
-      "cancelled": "Cancelled",
+      "cancelled": "Canceled",
       "published": "Published"
     },
     "deadline": "Deadline",
@@ -256,7 +256,7 @@
     "yesterday": "Yesterday",
     "monthAgo": "Month ago",
     "newApplication": "A new application has been received for your published {{type}} listing:",
-    "applicationClosed": "Your {{type}} listing has been closed due to a sufficient number of received applications.",
+    "applicationClosed": "Your {{type}} listing has been canceled due to a sufficient number of received applications.",
     "applicationRejected": "The application submitted for the {{type}} listing has been rejected.",
     "welcome": "Welcome to AgronetX platform, you have successfully registered:",
     "announcementRemoved": "Your announcement has been removed from the platform due to violation of the platform's Regulations and Terms.",
@@ -395,13 +395,14 @@
     "quantityExceedsLimit": "Quantity cannot exceed daily limit ({{limit}} {{unit}})",
     "selectUnit": "Please select unit",
     "loadError": "Failed to load announcement",
-    "closeTitle": "Close Application",
-    "closeConfirm": "Are you sure you want to close this application?",
+    "closeTitle": "Cancel Application",
+    "closeConfirm": "Are you sure you want to cancel this application?",
     "approveConfirm": "Are you sure you want to approve this application?",
     "rejectConfirm": "Are you sure you want to reject this application?",
-    "closed": "Application closed",
-    "closeError": "Failed to close application",
-    "statusClosed": "Closed",
+    "closed": "Application canceled",
+    "closeError": "Failed to cancel application",
+    "statusClosed": "Canceled",
+    "statusCanceled": "Canceled",
     "postSubmissionInfo": "After application approval, you can see each other's contact details",
     "transactionDate": "Transaction date",
     "location": "Location",
@@ -429,7 +430,7 @@
     "status": {
       "active": "Active",
       "completed": "Completed",
-      "cancelled": "Cancelled",
+      "cancelled": "Canceled",
       "published": "Published"
     },
     "deadline": "Deadline",
@@ -451,10 +452,10 @@
     "published": "Published",
     "applied": "Applied",
     "applyAgain": "Apply Again",
-    "closeAnnouncementTitle": "Close Announcement",
-    "closeAnnouncementConfirm": "Are you sure you want to close this announcement?",
-    "closedAnnouncement": "Announcement closed successfully",
-    "closeAnnouncementError": "Failed to close announcement"
+    "closeAnnouncementTitle": "Cancel Announcement",
+    "closeAnnouncementConfirm": "Are you sure you want to cancel this announcement?",
+    "closedAnnouncement": "Announcement canceled",
+    "closeAnnouncementError": "Failed to cancel announcement"
   },
   "units": {
     "daily": "Daily",
@@ -478,7 +479,7 @@
   },
   "announcementDetail": {
     "active": "Active",
-    "closed": "Closed",
+    "closed": "Canceled",
     "sell": "Sell",
     "buy": "Buy",
     "rent": "Rent",
@@ -496,7 +497,7 @@
     "defaultItemName": "Apricot",
     "call": "Call",
     "toBeVerified": "Pending Verification",
-    "canceled": "Cancelled",
+  "canceled": "Canceled",
     "blocked": "Blocked"
   }
 }

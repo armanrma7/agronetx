@@ -124,7 +124,7 @@
     "status": {
       "active": "Активно",
       "completed": "Завершено",
-      "cancelled": "Отменено",
+      "cancelled": "Отменённый",
       "published": "Опубликовано"
     },
     "deadline": "Срок",
@@ -147,10 +147,10 @@
     "applied": "Подано",
     "notFound": "Объявление не найдено",
     "applyAgain": "Подать заявку снова",
-    "closeAnnouncementTitle": "Закрыть объявление",
-    "closeAnnouncementConfirm": "Вы уверены, что хотите закрыть это объявление?",
-    "closedAnnouncement": "Объявление успешно закрыто",
-    "closeAnnouncementError": "Не удалось закрыть объявление"
+    "closeAnnouncementTitle": "Отменить объявление",
+    "closeAnnouncementConfirm": "Вы уверены, что хотите отменить это объявление?",
+    "closedAnnouncement": "Объявление отменено",
+    "closeAnnouncementError": "Не удалось отменить объявление"
   },
   "listings": {
     "offer": "Товар",
@@ -159,7 +159,7 @@
     "status": {
       "active": "Активно",
       "completed": "Завершено",
-      "cancelled": "Отменено"
+      "cancelled": "Отменённый"
     },
     "empty": "Список пуст"
   },
@@ -351,10 +351,10 @@
     "quantityExceedsLimit": "Количество не может превышать дневной лимит ({{limit}} {{unit}})",
     "selectUnit": "Пожалуйста, выберите единицу",
     "loadError": "Не удалось загрузить объявление",
-    "closeTitle": "Закрыть заявку",
-    "closeConfirm": "Вы уверены, что хотите закрыть эту заявку?",
-    "closed": "Заявка закрыта",
-    "closeError": "Не удалось закрыть заявку",
+    "closeTitle": "Отменить заявку",
+    "closeConfirm": "Вы уверены, что хотите отменить эту заявку?",
+    "closed": "Заявка отменена",
+    "closeError": "Не удалось отменить заявку",
     "postSubmissionInfo": "После одобрения заявки вы сможете видеть контактные данные друг друга",
     "applicantsCountLabel": "Заявители",
     "transactionDate": "Дата сделки",
@@ -365,7 +365,8 @@
     "statusInProgress": "В процессе",
     "statusApproved": "Одобрено",
     "statusRejected": "Отклонено",
-    "statusClosed": "Закрыто",
+    "statusCanceled": "Отменённый",
+    "statusClosed": "Отменённый",
     "approveConfirm": "Одобрить эту заявку?",
     "rejectConfirm": "Отклонить эту заявку?",
     "status": "Статус",
@@ -419,7 +420,7 @@
     "defaultItemName": "Абрикос",
     "call": "Позвонить",
     "toBeVerified": "На проверке",
-    "canceled": "Отменено",
+  "canceled": "Отменённый",
     "blocked": "Заблокировано"
   },
   "favorites": {

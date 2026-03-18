@@ -32,9 +32,10 @@ export function getStatusLabel(
     case 'blocked':
       return t('applications.statusBlocked')
     case 'closed':
+      return t('applications.statusClosed')
     case 'cancelled':
     case 'canceled':
-      return t('applications.statusClosed')
+      return t('applications.statusCanceled')
     default:
       return status || t('applications.statusInProgress')
   }
