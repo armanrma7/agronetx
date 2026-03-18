@@ -3,7 +3,7 @@
  * Lists applications for an announcement (from My Announcements). Do not remove this file.
  */
 
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -35,7 +35,7 @@ interface RouteParams {
 }
 
 export function AnnouncementApplicationsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
   const { user } = useAuth()
@@ -155,16 +155,22 @@ export function AnnouncementApplicationsPage() {
 
   const a = announcement as any
   const item = announcement?.item
-  const title =
-    item?.name_am ||
-    item?.name_en ||
-    item?.name_ru ||
-    a?.name_hy ||
-    a?.name_en ||
-    a?.name_ru ||
-    a?.title ||
-    a?.item_name ||
-    t('announcements.apply')
+  const title = useMemo(() => {
+    const lang = (i18n.language || 'hy').split('-')[0]
+    const pick = (obj: any) => {
+      if (!obj) return ''
+      if (lang === 'en') return obj.name_en || obj.name_am || obj.name_hy || obj.name_ru || ''
+      if (lang === 'ru') return obj.name_ru || obj.name_am || obj.name_hy || obj.name_en || ''
+      return obj.name_am || obj.name_hy || obj.name_en || obj.name_ru || ''
+    }
+    return (
+      pick(item) ||
+      pick(a) ||
+      a?.title ||
+      a?.item_name ||
+      t('announcements.apply')
+    )
+  }, [i18n.language, item, a, t])
 
   const handleEdit = useCallback(
     (app: ApplicationListItem) => {

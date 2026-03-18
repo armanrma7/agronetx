@@ -240,6 +240,8 @@
   "name": "Название",
   "unitOfMeasurement": "Единица измерения",
   "rentUnit": "Аренда",
+  "region": "Область",
+  "village": "Деревня",
   "price": "Цена за единицу",
   "transactionLocation": "Место сделки",
   "fileSizeExceedsLimit": "Размер файла превышает 5MB",

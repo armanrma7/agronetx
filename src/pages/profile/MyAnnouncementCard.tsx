@@ -21,6 +21,14 @@ interface MyAnnouncementCardProps {
 export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseApplication, onApplicationsPress, showMyApplications = false, cancelling = false, closingApplicationId = null }: MyAnnouncementCardProps) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+
+  const getRegionVillageLabel = (rv: any | undefined | null): string => {
+    if (!rv) return ''
+    const lang = (i18n.language || 'hy').toLowerCase()
+    if (lang.startsWith('en') && rv.name_en) return rv.name_en
+    if (lang.startsWith('ru') && rv.name_ru) return rv.name_ru
+    return rv.name_am || rv.name_hy || rv.name_en || rv.name_ru || ''
+  }
   
   // Get translated item name based on current language
   const getItemName = (): string => {
@@ -148,16 +156,34 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
       {(() => {
         const regions = announcement.regions || []
         const villages = announcement.villages || []
+        const regionsData = (announcement as any).regions_data || []
+        const villagesData = (announcement as any).villages_data || []
         const regionCount = regions.length
         const villageCount = villages.length
         
         if (regionCount > 0 || villageCount > 0) {
           const parts: string[] = []
           if (regionCount > 0) {
-            parts.push(`${t('addAnnouncement.region')}: ${regionCount}`)
+            const firstRegion =
+              getRegionVillageLabel(regionsData[0]) ||
+              ((announcement as any).region_names?.[0] ?? '') ||
+              (typeof regions[0] === 'string' ? regions[0] : '')
+            if (regionCount === 1) {
+              parts.push(`${t('addAnnouncement.region')}: ${firstRegion || '–'}`)
+            } else {
+              parts.push(`${t('addAnnouncement.region')}: ${firstRegion || '–'} +${regionCount - 1}`)
+            }
           }
           if (villageCount > 0) {
-            parts.push(`${t('addAnnouncement.village')}: ${villageCount}`)
+            const firstVillage =
+              getRegionVillageLabel(villagesData[0]) ||
+              ((announcement as any).village_names?.[0] ?? '') ||
+              (typeof villages[0] === 'string' ? villages[0] : '')
+            if (villageCount === 1) {
+              parts.push(`${t('addAnnouncement.village')}: ${firstVillage || '–'}`)
+            } else {
+              parts.push(`${t('addAnnouncement.village')}: ${firstVillage || '–'} +${villageCount - 1}`)
+            }
           }
           return (
             <Text style={styles.detail}>
