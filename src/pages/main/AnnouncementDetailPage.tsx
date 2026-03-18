@@ -239,32 +239,22 @@ export function AnnouncementDetailPage() {
   const getCategoryLabel = (announcement: Announcement) => {
     const announcementData = announcement as any
     const currentLang = (i18n.language || 'hy').split('-')[0]
-    
+    console.info (announcementData)
     // Try to get category name from API
-    if (currentLang === 'hy' && announcementData.category_name_hy) {
-      return announcementData.category_name_hy
+    if (currentLang === 'hy' && announcementData.group
+      .name_hy) {
+      return announcementData.group.name_hy
     }
-    if (currentLang === 'ru' && announcementData.category_name_ru) {
-      return announcementData.category_name_ru
+    if (currentLang === 'ru' && announcementData.group.name_ru) {
+      return announcementData.group.name_ru
     }
-    if (currentLang === 'en' && announcementData.category_name_en) {
-      return announcementData.category_name_en
+    if (currentLang === 'en' && announcementData.group.name_en) {
+      return announcementData.group.name_en
     }
-    if (announcementData.category_name) {
-      return announcementData.category_name
+    if (announcementData.group.name) {
+      return announcementData.group.name
     }
-    
-    // Fallback to category-based labels
-    switch (announcement.category) {
-      case 'goods':
-        return t('announcementDetail.categoryFruit')
-      case 'service':
-        return t('announcementDetail.categoryWork')
-      case 'rent':
-        return t('announcementDetail.categoryEquipment')
-      default:
-        return ''
-    }
+   return ''
   }
 
   const getItemLabel = (announcement: Announcement) => {
@@ -612,11 +602,9 @@ export function AnnouncementDetailPage() {
           <View style={styles.divider}/>
           {/* Availability and Price Row */}
           <View style={styles.priceAvailabilityRow}>
-        
-                
-                <View style={styles.priceAvailabilityItem}>
-                {
-            announcement.category !== 'service' && (
+          <View style={styles.priceAvailabilityItem}>
+          {
+            Number(announcement.available_quantity || 0) > 0 && (
               <>
                 <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
               <Text style={styles.priceAvailabilityValue}>
@@ -743,7 +731,30 @@ export function AnnouncementDetailPage() {
           // Announcer buttons: Edit (when pending), Close (Case 2c), Cancel (Cases 1, 2a, 2b, 2c)
           (showEdit || showClose || showCancel) && (
             <View style={styles.actionButtons}>
-              {showEdit && (
+            
+              {showClose && (
+                closing ? (
+                  <View style={styles.editButton}>
+                    <ActivityIndicator size="small" color={colors.white} />
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.editButton} onPress={handleClose}>
+                    <Text style={styles.editButtonText}>{t('common.close')}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+                {showCancel && (
+                cancelling ? (
+                  <View style={styles.cancelButton}>
+                    <ActivityIndicator size="small" color={colors.error} />
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                    <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                )
+              )}
+                {showEdit && (
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={() => {
@@ -759,28 +770,7 @@ export function AnnouncementDetailPage() {
                   <Text style={styles.editButtonText}>{t('common.edit')}</Text>
                 </TouchableOpacity>
               )}
-              {showClose && (
-                closing ? (
-                  <View style={styles.editButton}>
-                    <ActivityIndicator size="small" color={colors.white} />
-                  </View>
-                ) : (
-                  <TouchableOpacity style={styles.editButton} onPress={handleClose}>
-                    <Text style={styles.editButtonText}>{t('common.close')}</Text>
-                  </TouchableOpacity>
-                )
-              )}
-              {showCancel && (
-                cancelling ? (
-                  <View style={styles.cancelButton}>
-                    <ActivityIndicator size="small" color={colors.error} />
-                  </View>
-                ) : (
-                  <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                    <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                )
-              )}
+            
             </View>
           )
         ) : (
