@@ -29,6 +29,7 @@ interface ApplicationsState {
   byAnnouncementId: Record<string, ApplicationListItem[]>
   loadingByAnnouncementId: Record<string, boolean>
   actionLoadingId: string | null
+  actionLoadingType: 'approve' | 'reject' | 'cancel' | 'edit' | null
 
   // MyAnnouncementsPage list + pagination
   myList: Announcement[]
@@ -93,6 +94,7 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
   byAnnouncementId: {},
   loadingByAnnouncementId: {},
   actionLoadingId: null,
+  actionLoadingType: null,
 
   myList: [],
   myLoading: false,
@@ -164,11 +166,12 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
   },
 
   approveApplication: async (id: string, announcementId: string) => {
-    set({ actionLoadingId: id })
+    set({ actionLoadingId: id, actionLoadingType: 'approve' })
     try {
       await announcementsAPI.approveApplicationAPI(id)
       set(state => ({
         actionLoadingId: null,
+        actionLoadingType: null,
         byAnnouncementId: {
           ...state.byAnnouncementId,
           [announcementId]: (state.byAnnouncementId[announcementId] || []).map(app =>
@@ -177,17 +180,18 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
         },
       }))
     } catch (error) {
-      set({ actionLoadingId: null })
+      set({ actionLoadingId: null, actionLoadingType: null })
       throw error
     }
   },
 
   rejectApplication: async (id: string, announcementId: string) => {
-    set({ actionLoadingId: id })
+    set({ actionLoadingId: id, actionLoadingType: 'reject' })
     try {
       await announcementsAPI.rejectApplicationAPI(id)
       set(state => ({
         actionLoadingId: null,
+        actionLoadingType: null,
         byAnnouncementId: {
           ...state.byAnnouncementId,
           [announcementId]: (state.byAnnouncementId[announcementId] || []).map(app =>
@@ -196,13 +200,13 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
         },
       }))
     } catch (error) {
-      set({ actionLoadingId: null })
+      set({ actionLoadingId: null, actionLoadingType: null })
       throw error
     }
   },
 
   closeApplication: async (id: string, announcementId: string) => {
-    set({ actionLoadingId: id })
+    set({ actionLoadingId: id, actionLoadingType: 'cancel' })
     try {
       await announcementsAPI.cancelApplicationAPI(id)
       const currentUserId = useAuthStore.getState().user?.id
@@ -229,13 +233,14 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
 
         return {
           actionLoadingId: null,
+          actionLoadingType: null,
           byAnnouncementId: { ...state.byAnnouncementId, [announcementId]: updatedApps },
           appliedIds: newApplied,
           pendingIds: newPending,
         }
       })
     } catch (error) {
-      set({ actionLoadingId: null })
+      set({ actionLoadingId: null, actionLoadingType: null })
       throw error
     }
   },

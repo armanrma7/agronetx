@@ -27,6 +27,7 @@ export interface ApplicationCardProps {
   quantityUnit: string
   currentUserId: string | null
   actionLoadingId: string | null
+  actionLoadingType?: 'approve' | 'reject' | 'cancel' | 'edit' | null
   onApprove: (id: string) => void
   onReject: (id: string) => void
   onCloseApplication: (id: string) => void
@@ -41,6 +42,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
   quantityUnit,
   currentUserId,
   actionLoadingId,
+  actionLoadingType,
   onApprove,
   onReject,
   onCloseApplication,
@@ -57,6 +59,9 @@ export const ApplicationCard = React.memo(function ApplicationCard({
       .filter(Boolean)
       .join(', ') || t('common.notSpecified')
   const isActionLoading = actionLoadingId === app.id
+  const isApproveLoading = isActionLoading && actionLoadingType === 'approve'
+  const isRejectLoading = isActionLoading && actionLoadingType === 'reject'
+  const isCancelLoading = isActionLoading && actionLoadingType === 'cancel'
 
   // Role derived from ownership
   const isAnnouncerUser =
@@ -143,7 +148,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
                   disabled={isActionLoading}
                   onPress={() => onReject(app.id)}
                 >
-                  {isActionLoading ? (
+                  {isRejectLoading ? (
                     <ActivityIndicator size="small" color={colors.error} />
                   ) : (
                     <Text style={styles.rejectButtonText}>
@@ -160,7 +165,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
                   disabled={isActionLoading}
                   onPress={() => onApprove(app.id)}
                 >
-                  {isActionLoading ? (
+                  {isApproveLoading ? (
                     <ActivityIndicator size="small" color={colors.white} />
                   ) : (
                     <Text style={styles.approveButtonText}>
@@ -177,7 +182,7 @@ export const ApplicationCard = React.memo(function ApplicationCard({
                   disabled={isActionLoading}
                   onPress={() => onCloseApplication(app.id)}
                 >
-                  {isActionLoading ? (
+                  {isCancelLoading ? (
                     <ActivityIndicator size="small" color={colors.error} />
                   ) : (
                     <Text style={styles.cancelButtonText}>

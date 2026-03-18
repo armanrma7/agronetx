@@ -367,6 +367,7 @@
   },
   "applications": {
     "title": "Application",
+    "sendToAnnouncer": "Send your announcement to the announcer",
     "goodsApplication": "Goods Application",
     "serviceApplication": "Service Application",
     "rentApplication": "Rent Application",

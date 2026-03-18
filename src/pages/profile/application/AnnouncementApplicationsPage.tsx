@@ -47,6 +47,7 @@ export function AnnouncementApplicationsPage() {
     byAnnouncementId,
     loadingByAnnouncementId,
     actionLoadingId,
+    actionLoadingType,
     fetchApplicationsByAnnouncement,
     approveApplication,
     rejectApplication,
@@ -239,6 +240,7 @@ export function AnnouncementApplicationsPage() {
         quantityUnit={quantityUnit}
         currentUserId={user?.id ?? null}
         actionLoadingId={actionLoadingId}
+        actionLoadingType={actionLoadingType}
         onApprove={handleApprove}
         onReject={handleReject}
         onCloseApplication={handleCloseApplication}
@@ -253,6 +255,7 @@ export function AnnouncementApplicationsPage() {
       quantityUnit,
       user?.id,
       actionLoadingId,
+      actionLoadingType,
       handleApprove,
       handleReject,
       handleCloseApplication,

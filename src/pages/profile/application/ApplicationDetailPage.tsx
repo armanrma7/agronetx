@@ -53,6 +53,7 @@ export function ApplicationDetailPage() {
     byAnnouncementId,
     loadingByAnnouncementId,
     actionLoadingId,
+    actionLoadingType,
     approveApplication,
     rejectApplication,
     closeApplication,
@@ -79,6 +80,9 @@ export function ApplicationDetailPage() {
   const announcementStatus = announcement?.status ?? ''
 
   const isActionLoading = actionLoadingId === appId
+  const isApproveLoading = isActionLoading && actionLoadingType === 'approve'
+  const isRejectLoading = isActionLoading && actionLoadingType === 'reject'
+  const isCancelLoading = isActionLoading && actionLoadingType === 'cancel'
 
   const runAction = useCallback(
     async (action: () => Promise<void>, successKey: string, errorKey: string, goBack = false) => {
@@ -349,7 +353,7 @@ export function ApplicationDetailPage() {
                 disabled={isActionLoading}
                 onPress={handleReject}
               >
-                {isActionLoading ? (
+                {isRejectLoading ? (
                   <ActivityIndicator size="small" color={colors.error} />
                 ) : (
                   <Text style={styles.rejectButtonText}>{t('applications.reject')}</Text>
@@ -364,7 +368,7 @@ export function ApplicationDetailPage() {
                 disabled={isActionLoading}
                 onPress={handleApprove}
               >
-                {isActionLoading ? (
+                {isApproveLoading ? (
                   <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <Text style={styles.approveButtonText}>{t('applications.approve')}</Text>
@@ -379,7 +383,7 @@ export function ApplicationDetailPage() {
                 disabled={isActionLoading}
                 onPress={handleCancelApplication}
               >
-                {isActionLoading ? (
+                {isCancelLoading ? (
                   <ActivityIndicator size="small" color={colors.error} />
                 ) : (
                   <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>

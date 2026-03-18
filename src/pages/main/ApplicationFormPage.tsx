@@ -6,6 +6,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  KeyboardAvoidingView,
   Platform,
   Modal,
   Alert,
@@ -567,14 +568,22 @@ export function ApplicationFormPage() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
         <AppHeader
           showBack
           onSearchPress={handleSearchPress}
           onProfilePress={handleProfilePress}
         />
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Title */}
           <Text style={styles.title}>{getPageTitle()}</Text>
           
@@ -624,7 +633,7 @@ export function ApplicationFormPage() {
           {/* Delivery Dates - For goods and rent (rent uses calendar instead of unit dropdown) */}
           {(announcementType === 'goods' || announcementType === 'rent') && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>{t('applications.deliveryDate')}*</Text>
+              <Text style={styles.fieldLabel}>{t('addAnnouncement.availabilityPeriod')}*</Text>
               <TouchableOpacity 
                 style={styles.dateInput} 
                 onPress={handleOpenDatePicker}
@@ -681,13 +690,13 @@ export function ApplicationFormPage() {
 
           {/* Notes */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>{t('applications.notes')}</Text>
+            <Text style={styles.fieldLabel}>{t('common.comment')}</Text>
             <TextInput
               style={styles.textArea}
               value={notes}
               onChangeText={setNotes}
-              placeholder={t('applications.notesPlaceholder')}
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor="gray"
+              placeholder={t('applications.coommentNote')}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -700,27 +709,7 @@ export function ApplicationFormPage() {
           </Text>
         </ScrollView>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.cancelButton} 
-            onPress={handleCancel}
-            disabled={submitting}
-          >
-            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]} 
-            onPress={handleSubmit}
-            disabled={submitting || !canSubmit}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Text style={styles.submitButtonText}>{isEditMode ? t('common.save') : t('applications.submit')}</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+   
 
         {/* Calendar Modal - Normal month calendar for goods and rent */}
         {(announcementType === 'goods' || announcementType === 'rent') && showDatePicker && (
@@ -778,7 +767,28 @@ export function ApplicationFormPage() {
           </Modal>
         )}
 
-      </View>
+      </KeyboardAvoidingView>
+           {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.cancelButton} 
+            onPress={handleCancel}
+            disabled={submitting}
+          >
+            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]} 
+            onPress={handleSubmit}
+            disabled={submitting || !canSubmit}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.submitButtonText}>{isEditMode ? t('common.save') : t('applications.submit')}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
     </SafeAreaView>
   )
 }

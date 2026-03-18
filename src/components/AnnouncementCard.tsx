@@ -279,7 +279,7 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.participantsRow}>
-          <Icon name="people" size={16} color={colors.textTertiary} />
+          <Icon name="people" size={16} color={(announcement.applications_count ?? 0) > 0 ? colors.buttonPrimary : colors.textTertiary} />
           <Text
             style={[
               styles.participantsText,
