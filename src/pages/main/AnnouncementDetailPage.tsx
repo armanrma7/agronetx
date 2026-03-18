@@ -476,7 +476,6 @@ export function AnnouncementDetailPage() {
   const showApply = canApplyOrApplyAgain(announcement, user?.id, myApplication, hasAnyApprovedApplication)
   const showContact = canApplicantViewContacts(announcement, user?.id, myApplication)
   const applyButtonIsReapply = isReapply(myApplication)
-
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.buttonPrimary }}>
      <View style={styles.container}>
@@ -595,12 +594,21 @@ export function AnnouncementDetailPage() {
           <View style={styles.divider}/>
           {/* Availability and Price Row */}
           <View style={styles.priceAvailabilityRow}>
-            <View style={styles.priceAvailabilityItem}>
-              <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
+        
+                
+                <View style={styles.priceAvailabilityItem}>
+                {
+            announcement.category !== 'service' && (
+              <>
+                <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
               <Text style={styles.priceAvailabilityValue}>
-                {Number(announcement.available_quantity || 0).toLocaleString()} {announcement.unit}
-              </Text>
-            </View>
+              {Number(announcement.available_quantity || 0).toLocaleString()} {announcement.unit}
+            </Text>
+              </>
+            )
+           }
+              </View>
+         
             <View style={styles.priceAvailabilityItem}>
               <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.price')}</Text>
               <Text style={styles.priceAvailabilityValue}>
