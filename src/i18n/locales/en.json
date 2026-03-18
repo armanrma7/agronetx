@@ -424,8 +424,8 @@
     "statusBlocked": "Blocked"
   },
   "announcements": {
-    "offer": "Goods",
-    "service": "Services",
+    "offer": "Good",
+    "service": "Service",
     "rent": "Rent",
     "status": {
       "active": "Active",
