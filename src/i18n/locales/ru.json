@@ -331,6 +331,7 @@
     "selectDates": "Выбрать",
     "selectedDates": "Выбрано {{count}} дат",
     "quantity": "Количество",
+    "dailyOrderQuantityTitle": "Количество заказов в день / {{unit}}",
     "unit": "Единица",
     "rentUnit": "Единица аренды*",
     "serviceUnit": "Единица услуги*",

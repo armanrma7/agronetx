@@ -385,6 +385,7 @@
     "selectDates": "Ընտրել",
     "selectedDates": "Ընտրված է {{count}} ամսաթիվ",
     "quantity": "Քանակ",
+    "dailyOrderQuantityTitle": "Պատվերի օրական քանակ / {{unit}}",
     "unit": "Միավոր",
     "rentUnit": "Վարձակալության միավոր*",
     "serviceUnit": "Ծառայության միավոր*",

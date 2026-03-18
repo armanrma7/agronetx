@@ -375,6 +375,7 @@
     "selectDates": "Select",
     "selectedDates": "{{count}} dates selected",
     "quantity": "Quantity",
+    "dailyOrderQuantityTitle": "Daily order quantity / {{unit}}",
     "unit": "Unit",
     "rentUnit": "Rent Unit*",
     "serviceUnit": "Service Unit*",

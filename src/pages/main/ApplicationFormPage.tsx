@@ -69,6 +69,32 @@ export function ApplicationFormPage() {
   const [showUnitPicker, setShowUnitPicker] = useState(false)
   const skipUnsavedPromptRef = useRef(false)
 
+  const translateMeasureUnit = (unitRaw: string): string => {
+    const u = (unitRaw || '').toString().trim()
+    if (!u) return ''
+    const lang = (i18n.language || 'hy').split('-')[0]
+    const key = u
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/mÂ²/g, 'm²')
+      .replace(/m2/g, 'm²')
+    const map: Record<string, { hy: string; ru: string; en: string }> = {
+      kg: { hy: 'կգ', ru: 'кг', en: 'kg' },
+      g: { hy: 'գ', ru: 'г', en: 'g' },
+      t: { hy: 'տ', ru: 'т', en: 't' },
+      l: { hy: 'լ', ru: 'л', en: 'l' },
+      litr: { hy: 'լ', ru: 'л', en: 'l' },
+      m: { hy: 'մ', ru: 'м', en: 'm' },
+      'm²': { hy: 'մ²', ru: 'м²', en: 'm²' },
+      ha: { hy: 'հա', ru: 'га', en: 'ha' },
+    }
+    const entry = map[key]
+    if (!entry) return u
+    if (lang === 'ru') return entry.ru
+    if (lang === 'en') return entry.en
+    return entry.hy
+  }
+
   const isValidForSubmit = useMemo(() => {
     if (announcementType === 'goods') {
       if (deliveryDates.length === 0) return false
@@ -525,18 +551,6 @@ export function ApplicationFormPage() {
 
   const dailyLimitInfo = getDailyLimitInfo()
 
-  const getAnnouncementCategoryName = (): string => {
-    if (!announcement) return ''
-    const lang = (i18n.language || 'hy').toLowerCase()
-    const group = (announcement as any).group
-    if (group) {
-      if (lang.startsWith('en') && group.name_en) return group.name_en
-      if (lang.startsWith('ru') && group.name_ru) return group.name_ru
-      return group.name_am || group.name_hy || group.name_en || group.name_ru || ''
-    }
-    // Fallback: show category code if group is missing
-    return (announcement.category || '').toString()
-  }
 
   const getAnnouncementSubcategoryName = (): string => {
     if (!announcement) return ''
@@ -603,11 +617,11 @@ export function ApplicationFormPage() {
                 const { count, unit } = getAnnouncementCountAndUnit()
                 const showCount = count && count !== '0' && count !== '0.00' && count !== '0.0'
                 if (!showCount) return null
-                const unitLabel = unit || '-'
+                const unitLabel = translateMeasureUnit(unit) || '-'
                 const { price, unit: priceUnit } = getAnnouncementPriceAndUnit()
                 const n = parseFloat(price)
                 const formattedPrice = price ? (isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : price) : ''
-                const perUnit = priceUnit ? `/${priceUnit}.` : ''
+                const perUnit = priceUnit ? `/ ${unitLabel}.` : ''
 
                 return (
                   <View style={styles.summaryInlineRow}>
@@ -665,7 +679,9 @@ export function ApplicationFormPage() {
           {/* Quantity - Only for goods */}
           {announcementType === 'goods' && (
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>{t('applications.quantity')}*</Text>
+              <Text style={styles.fieldLabel}>
+                {t('applications.dailyOrderQuantityTitle', { unit: translateMeasureUnit(announcement?.unit || '') })}*
+              </Text>
               <TextInput
                 style={styles.quantityInput}
                 value={quantity}
