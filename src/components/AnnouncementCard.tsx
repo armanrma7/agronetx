@@ -299,14 +299,28 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
               style={styles.buttonPrimary}
               onPress={() => onApply?.(announcement)}
             >
-              <Text style={styles.buttonPrimaryText}>{t('announcements.apply')}</Text>
+              <Text
+                style={styles.buttonPrimaryText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+              >
+                {t('announcements.apply')}
+              </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             style={styles.buttonSecondary}
             onPress={() => onView?.(announcement)}
           >
-            <Text style={styles.buttonSecondaryText}>{t('announcements.view')}</Text>
+            <Text
+              style={styles.buttonSecondaryText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {t('announcements.view')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -409,12 +423,15 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: 8,
+    flexShrink: 1,
+    maxWidth: '60%',
   },
   buttonPrimary: {
     backgroundColor: colors.buttonPrimary,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 24,
+    flexShrink: 1,
   },
   buttonPrimaryText: {
     color: colors.white,
@@ -423,11 +440,12 @@ const styles = StyleSheet.create({
   },
   buttonSecondary: {
     backgroundColor: 'transparent',
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#E5E7EB', // Light gray border
+    flexShrink: 1,
   },
   buttonSecondaryText: {
     color: colors.textPrimary, // Dark text on light gray
