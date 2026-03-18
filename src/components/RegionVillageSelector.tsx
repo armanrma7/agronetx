@@ -778,12 +778,12 @@ const styles = StyleSheet.create({
   villageSectionHeader: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.borderLight,
   },
   villageSectionHeaderText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.buttonPrimary,
+    fontWeight: '500',
   },
   searchContainer: {
     flexDirection: 'row',
