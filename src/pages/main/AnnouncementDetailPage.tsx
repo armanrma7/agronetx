@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next'
@@ -69,6 +70,11 @@ export function AnnouncementDetailPage() {
   const [villageNames, setVillageNames] = useState<string[]>([])
   const [visibleRegionsCount, setVisibleRegionsCount] = useState(2)
   const [visibleVillagesCount, setVisibleVillagesCount] = useState(2)
+
+  // Image viewer state (must be declared before any early returns)
+  const [imageViewerVisible, setImageViewerVisible] = useState(false)
+  const [imageViewerIndex, setImageViewerIndex] = useState(0)
+  const imageListRef = useRef<FlatList<string> | null>(null)
 
   useEffect(() => {
     fetchAnnouncement()
@@ -522,15 +528,70 @@ export function AnnouncementDetailPage() {
             <View style={styles.imagesContainer}>
               {images.slice(0, 3).map((imageUrl: string, index: number) => (
                 <View key={index} style={styles.imageWrapper}>
-                  <Image 
-                    source={{ uri: imageUrl }} 
-                    style={styles.image}
-                    resizeMode="cover"
-                  />
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      setImageViewerIndex(index)
+                      setImageViewerVisible(true)
+                      // Defer scroll until modal/FlatList mounts
+                      setTimeout(() => {
+                        imageListRef.current?.scrollToIndex?.({ index, animated: false })
+                      }, 0)
+                    }}
+                  >
+                    <Image 
+                      source={{ uri: imageUrl }} 
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
                 </View>
               ))}
             </View>
           )}
+
+          {/* Image Viewer Modal */}
+          <Modal
+            visible={imageViewerVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setImageViewerVisible(false)}
+          >
+            <View style={styles.imageViewerOverlay}>
+              <TouchableOpacity
+                style={styles.imageViewerBackdrop}
+                activeOpacity={1}
+                onPress={() => setImageViewerVisible(false)}
+              />
+              <SafeAreaView edges={['top']} style={styles.imageViewerTopBar}>
+                <Text style={styles.imageViewerCounter}>
+                  {imageViewerIndex + 1}/{images.length}
+                </Text>
+                <TouchableOpacity onPress={() => setImageViewerVisible(false)} style={styles.imageViewerCloseBtn}>
+                  <Icon name="close" size={26} color={colors.white} />
+                </TouchableOpacity>
+              </SafeAreaView>
+              <FlatList
+                ref={(r) => { imageListRef.current = r }}
+                data={images}
+                keyExtractor={(u, i) => `${i}-${u}`}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                initialScrollIndex={imageViewerIndex}
+                getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+                onMomentumScrollEnd={(e) => {
+                  const next = Math.round(e.nativeEvent.contentOffset.x / width)
+                  if (next !== imageViewerIndex) setImageViewerIndex(next)
+                }}
+                renderItem={({ item }) => (
+                  <View style={styles.imageViewerPage}>
+                    <Image source={{ uri: item }} style={styles.imageViewerImage} resizeMode="contain" />
+                  </View>
+                )}
+              />
+            </View>
+          </Modal>
           <View style={styles.divider}/>
           {/* Availability and Price Row */}
           <View style={styles.priceAvailabilityRow}>
@@ -890,6 +951,50 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 11,
     backgroundColor: '#E5E7EB',
+  },
+  imageViewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+  },
+  imageViewerBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  imageViewerTopBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+  },
+  imageViewerCounter: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imageViewerCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  imageViewerPage: {
+    width,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  imageViewerImage: {
+    width: '100%',
+    height: '75%',
   },
   divider: {
     height: 1,

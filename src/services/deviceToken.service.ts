@@ -10,7 +10,9 @@ import { Platform } from 'react-native'
 let notifee: any | null = null
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  notifee = require('@notifee/react-native')
+  const mod = require('@notifee/react-native')
+  // Some bundlers expose Notifee under default export.
+  notifee = mod?.default ?? mod
 } catch {
   notifee = null
 }

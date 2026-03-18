@@ -44,7 +44,11 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite || false)
   const [togglingFavorite, setTogglingFavorite] = useState(false)
   const hasPendingApplication = hasPendingApplicationForCard(announcement, user?.id, pendingApplicationAnnouncementIds)
-  const canApply = !hasPendingApplication
+  const isMyAnnouncement =
+    user?.id != null &&
+    announcement?.owner_id != null &&
+    String(announcement.owner_id) === String(user.id)
+  const canApply = !isMyAnnouncement && !hasPendingApplication
 
   // Update favorite status when prop changes
   useEffect(() => {
@@ -200,18 +204,18 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
               : formatDate(announcement.created_at)
             }
           </Text>
-          <TouchableOpacity 
-            onPress={handleFavoritePress}
-            disabled={togglingFavorite}
+          <TouchableOpacity
+            onPress={isMyAnnouncement ? undefined : handleFavoritePress}
+            disabled={isMyAnnouncement || togglingFavorite}
             style={styles.favoriteButton}
           >
             {togglingFavorite ? (
               <ActivityIndicator size="small" color={colors.buttonPrimary} />
             ) : (
-              <Icon 
-                name={isFavorite ? "bookmark" : "bookmark-border"} 
-                size={20} 
-                color={isFavorite ? colors.buttonPrimary : colors.textTertiary} 
+              <Icon
+                name={isMyAnnouncement ? 'campaign' : (isFavorite ? 'bookmark' : 'bookmark-border')}
+                size={20}
+                color={isMyAnnouncement ? colors.textTertiary : (isFavorite ? colors.buttonPrimary : colors.textTertiary)}
               />
             )}
           </TouchableOpacity>
