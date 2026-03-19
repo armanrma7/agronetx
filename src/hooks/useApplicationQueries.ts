@@ -129,11 +129,24 @@ export function useSubmitApplication() {
       await qc.cancelQueries({ queryKey: queryKeys.applications.applied() })
       const previous = qc.getQueryData<AppliedRaw>(queryKeys.applications.applied())
       addToApplied(qc, id)
+      // Instantly mark isApplied on all cached announcement objects
+      updateInAllLists(qc, id, (a) => a.id === id ? { ...a, isApplied: true } : a)
+      qc.setQueryData<Announcement>(queryKeys.announcements.detail(id), (old) =>
+        old ? { ...old, isApplied: true } : old,
+      )
       return { previous, announcementId: id }
     },
 
     onError: (_, __, context) => {
       if (context?.previous !== undefined) qc.setQueryData(queryKeys.applications.applied(), context.previous)
+      // Roll back isApplied
+      if (context?.announcementId) {
+        const id = context.announcementId
+        updateInAllLists(qc, id, (a) => a.id === id ? { ...a, isApplied: false } : a)
+        qc.setQueryData<Announcement>(queryKeys.announcements.detail(id), (old) =>
+          old ? { ...old, isApplied: false } : old,
+        )
+      }
     },
 
     onSuccess: (_, data) => {
@@ -141,7 +154,7 @@ export function useSubmitApplication() {
       const detail = qc.getQueryData<Announcement>(queryKeys.announcements.detail(id))
 
       qc.setQueryData<Announcement>(queryKeys.announcements.detail(id), (old) =>
-        old ? { ...old, applications_count: (old.applications_count ?? 0) + 1 } : old,
+        old ? { ...old, isApplied: true, applications_count: (old.applications_count ?? 0) + 1 } : old,
       )
 
       if (detail) {
@@ -152,7 +165,7 @@ export function useSubmitApplication() {
           return {
             ...old,
             pages: [
-              { ...firstPage, announcements: [detail, ...(firstPage.announcements ?? [])], total: (firstPage.total ?? 0) + 1 },
+              { ...firstPage, announcements: [{ ...detail, isApplied: true }, ...(firstPage.announcements ?? [])], total: (firstPage.total ?? 0) + 1 },
               ...old.pages.slice(1),
             ],
           }
@@ -160,7 +173,7 @@ export function useSubmitApplication() {
       }
 
       updateInAllLists(qc, id, (a) =>
-        a.id === id ? { ...a, applications_count: (a.applications_count ?? 0) + 1 } : a,
+        a.id === id ? { ...a, isApplied: true, applications_count: (a.applications_count ?? 0) + 1 } : a,
       )
     },
 
@@ -264,16 +277,21 @@ export function useCancelApplication() {
       )
       qc.setQueryData<Announcement>(
         queryKeys.announcements.detail(announcementId),
-        (old) => old ? { ...old, applications: (old.applications ?? []).map((app: any) => app.id === id ? { ...app, status: 'cancelled' } : app) } : old,
+        (old) => old ? {
+          ...old,
+          ...(isOwnApplication ? { isApplied: false } : {}),
+          applications_count: Math.max(0, (old.applications_count ?? 1) - 1),
+          applications: (old.applications ?? []).map((app: any) => app.id === id ? { ...app, status: 'cancelled' } : app),
+        } : old,
       )
-      if (isOwnApplication) {
-        qc.setQueryData(queryKeys.announcements.myList('applied'), (old: any) => {
-          if (!old?.pages) return old
-          return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).filter((a: Announcement) => a.id !== announcementId), total: Math.max(0, (p.total ?? 1) - 1) })) }
-        })
-      }
+      // Keep the announcement in myList('applied') — the user can still see it
+      // with cancelled status and re-apply if needed.
       updateInAllLists(qc, announcementId, (a) =>
-        a.id === announcementId ? { ...a, applications_count: Math.max(0, (a.applications_count ?? 1) - 1) } : a,
+        a.id === announcementId ? {
+          ...a,
+          ...(isOwnApplication ? { isApplied: false } : {}),
+          applications_count: Math.max(0, (a.applications_count ?? 1) - 1),
+        } : a,
       )
     },
   })
@@ -300,14 +318,11 @@ export function useCloseMyApplication() {
 
     onSuccess: (_, { announcementId }) => {
       qc.setQueryData<Announcement>(queryKeys.announcements.detail(announcementId), (old) =>
-        old ? { ...old, applications_count: Math.max(0, (old.applications_count ?? 1) - 1) } : old,
+        old ? { ...old, isApplied: false, applications_count: Math.max(0, (old.applications_count ?? 1) - 1) } : old,
       )
-      qc.setQueryData(queryKeys.announcements.myList('applied'), (old: any) => {
-        if (!old?.pages) return old
-        return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).filter((a: Announcement) => a.id !== announcementId), total: Math.max(0, (p.total ?? 1) - 1) })) }
-      })
+      // Keep the announcement in myList('applied') — don't remove it.
       updateInAllLists(qc, announcementId, (a) =>
-        a.id === announcementId ? { ...a, applications_count: Math.max(0, (a.applications_count ?? 1) - 1) } : a,
+        a.id === announcementId ? { ...a, isApplied: false, applications_count: Math.max(0, (a.applications_count ?? 1) - 1) } : a,
       )
     },
   })
