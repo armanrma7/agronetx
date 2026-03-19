@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useNavigation, useNavigationState, useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
@@ -72,19 +72,11 @@ export function HomeTabs() {
   const [addAnnouncementModalVisible, setAddAnnouncementModalVisible] = useState(false)
   const [appliedFilters, setAppliedFilters] = useState<FilterValues | null>(null)
   const [appliedNotificationFilters, setAppliedNotificationFilters] = useState<NotificationFilterValues | null>(null)
-  const [currentRoute, setCurrentRoute] = useState<string>('Announcements')
   const routeState = useNavigationState((state) => state)
   const currentRouteName = routeState?.routes[routeState.index]?.name || 'Announcements'
 
-  // Update current route when navigation state changes
-  useEffect(() => {
-    if (currentRouteName) {
-      setCurrentRoute(currentRouteName)
-    }
-  }, [currentRouteName])
-  
   const handleFilterPress = (routeName?: string) => {
-    const route = routeName || currentRoute
+    const route = routeName || currentRouteName
     if (route === 'Notifications') {
       setNotificationFilterModalVisible(true)
     } else {
@@ -101,18 +93,8 @@ export function HomeTabs() {
   }
 
   const handleApplyFilters = (filters: FilterValues) => {
-    console.log('🎯 HomeTabs: Applying filters:', filters)
-    
-    // Check if filters object has any values
     const hasFilters = filters && Object.keys(filters).length > 0
-    
-    const filtersToApply = hasFilters ? filters : null
-    setAppliedFilters(filtersToApply)
-    
-    // Filters are passed via context, so AnnouncementsPage will automatically pick them up
-    // No need to navigate - if user is on Announcements tab, filters will apply immediately
-    // If user is on another tab, they can switch to Announcements tab to see filtered results
-    console.log('✅ Filters applied via context, AnnouncementsPage will update automatically')
+    setAppliedFilters(hasFilters ? filters : null)
   }
 
   const handleApplyNotificationFilters = (filters: NotificationFilterValues) => {
@@ -121,9 +103,8 @@ export function HomeTabs() {
     ;(navigation as any).navigate('Notifications', { filters })
   }
 
-  const handleSearch = (query: string) => {
-    // TODO: Apply search query to announcements
-    console.log('Search query:', query)
+  const handleSearch = (_query: string) => {
+    // TODO: connect to search
   }
 
   const handleSelectAnnouncementType = (type: AnnouncementType) => {
@@ -202,7 +183,7 @@ export function HomeTabs() {
             headerRight: () => (
               <HeaderRight
                 onSearchPress={handleSearchPress}
-                onFilterPress={() => handleFilterPress(currentRoute)}
+                onFilterPress={() => handleFilterPress(currentRouteName)}
                 onProfilePress={handleProfilePress}
                 initials={initials}
               />

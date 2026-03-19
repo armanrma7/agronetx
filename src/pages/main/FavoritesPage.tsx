@@ -1,12 +1,11 @@
 import React, { useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../../theme/colors'
 import { Announcement, AnnouncementType } from '../../types'
 import { AnnouncementCard } from '../../components/AnnouncementCard'
 import { useNavigation } from '@react-navigation/native'
-import { useFavoritesList, flattenFavoritePages, useAddFavorite, useRemoveFavorite } from '../../hooks/useFavoriteQueries'
-import { useAppliedIds } from '../../hooks/useApplicationQueries'
+import { useFavoritesList, flattenFavoritePages } from '../../hooks/useFavoriteQueries'
 import { useAuth } from '../../context/AuthContext'
 
 export function FavoritesPage() {
@@ -26,12 +25,6 @@ export function FavoritesPage() {
 
   const list = flattenFavoritePages(data)
 
-  const { data: appliedData } = useAppliedIds(user?.id, !!user)
-  const pendingIds = appliedData?.pendingIds ?? new Set<string>()
-
-  const addFavorite = useAddFavorite()
-  const removeFavorite = useRemoveFavorite()
-
   const handleView = useCallback((announcement: Announcement) => {
     ;(navigation as any).navigate('AnnouncementDetail', { announcementId: announcement.id })
   }, [navigation])
@@ -45,24 +38,14 @@ export function FavoritesPage() {
     })
   }, [navigation])
 
-  const handleFavoriteChange = useCallback((announcementId: string, isNowFavorite: boolean) => {
-    if (isNowFavorite) {
-      addFavorite.mutate(announcementId)
-    } else {
-      removeFavorite.mutate(announcementId)
-    }
-  }, [addFavorite, removeFavorite])
-
+  // Card reads isFavorite / appliedIds from the shared React Query cache — no prop drilling needed.
   const renderItem = useCallback(({ item }: { item: Announcement }) => (
     <AnnouncementCard
       announcement={item}
       onView={handleView}
       onApply={handleApply}
-      isFavorite={true}
-      onFavoriteChange={handleFavoriteChange}
-      pendingApplicationAnnouncementIds={pendingIds}
     />
-  ), [handleView, handleApply, handleFavoriteChange, pendingIds])
+  ), [handleView, handleApply])
 
   return (
     <View style={styles.container}>
@@ -71,16 +54,26 @@ export function FavoritesPage() {
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
-        refreshing={isRefetching && !isFetchingNextPage}
-        onRefresh={refetch}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching && !isFetchingNextPage}
+            onRefresh={refetch}
+            colors={[colors.buttonPrimary]}
+            tintColor={colors.buttonPrimary}
+          />
+        }
         onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          !isLoading ? (
+          isLoading ? (
+            <View style={styles.emptyContainer}>
+              <ActivityIndicator size="large" color={colors.buttonPrimary} />
+            </View>
+          ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{t('favorites.empty')}</Text>
             </View>
-          ) : null
+          )
         }
         ListFooterComponent={
           isFetchingNextPage && hasNextPage ? (

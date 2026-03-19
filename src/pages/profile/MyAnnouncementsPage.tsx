@@ -152,11 +152,15 @@ export function MyAnnouncementsPage() {
         onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          !isLoading ? (
+          isLoading ? (
+            <View style={styles.emptyContainer}>
+              <ActivityIndicator size="large" color={colors.buttonPrimary} />
+            </View>
+          ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{t('common.empty')}</Text>
             </View>
-          ) : null
+          )
         }
         ListFooterComponent={
           isFetchingNextPage && hasNextPage ? (

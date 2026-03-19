@@ -21,8 +21,6 @@ import {
   useAnnouncementsList,
   flattenAnnouncementPages,
 } from '../../hooks/useAnnouncementQueries'
-import { useFavoriteIds, useAddFavorite, useRemoveFavorite } from '../../hooks/useFavoriteQueries'
-import { useAppliedIds } from '../../hooks/useApplicationQueries'
 import { queryKeys } from '../../lib/queries/queryKeys'
 import type { AnnouncementsTab } from '../../lib/queries/queryKeys'
 import type { FilterValues } from '../../components/FilterModal'
@@ -71,14 +69,6 @@ export function AnnouncementsPage() {
 
   const list = flattenAnnouncementPages(data)
 
-  const { data: favoriteIds = new Set<string>() } = useFavoriteIds(!!user)
-  const { data: appliedData } = useAppliedIds(user?.id, !!user)
-  const appliedIds = appliedData?.appliedIds ?? new Set<string>()
-  const pendingIds = appliedData?.pendingIds ?? new Set<string>()
-
-  const addFavorite = useAddFavorite()
-  const removeFavorite = useRemoveFavorite()
-
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleTabPress = useCallback((tab: AnnouncementsTab) => {
@@ -116,25 +106,14 @@ export function AnnouncementsPage() {
     nav.navigate('AnnouncementDetail', { announcementId: announcement.id })
   }, [navigation])
 
-  const handleFavoriteChange = useCallback((announcementId: string, isNowFavorite: boolean) => {
-    if (isNowFavorite) {
-      addFavorite.mutate(announcementId)
-    } else {
-      removeFavorite.mutate(announcementId)
-    }
-  }, [addFavorite, removeFavorite])
-
+  // Card reads isFavorite / appliedIds from the shared React Query cache — no prop drilling needed.
   const renderAnnouncementItem = useCallback(({ item }: { item: Announcement }) => (
     <AnnouncementCard
       announcement={item}
       onApply={handleApply}
       onView={handleView}
-      isFavorite={favoriteIds.has(item.id)}
-      onFavoriteChange={handleFavoriteChange}
-      appliedAnnouncementIds={appliedIds}
-      pendingApplicationAnnouncementIds={pendingIds}
     />
-  ), [favoriteIds, appliedIds, pendingIds, handleApply, handleView, handleFavoriteChange])
+  ), [handleApply, handleView])
 
   const getTabLabel = (tab: AnnouncementsTab) => t(`announcements.${tab}`)
 
@@ -175,13 +154,6 @@ export function AnnouncementsPage() {
         }
         onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
         onEndReachedThreshold={0.5}
-        ListHeaderComponent={
-          isLoading && list.length > 0 ? (
-            <View style={styles.listLoader}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          ) : null
-        }
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.listLoader}>

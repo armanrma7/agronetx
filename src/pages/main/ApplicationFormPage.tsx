@@ -21,8 +21,9 @@ import { AppHeader } from '../../components/AppHeader'
 import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
 import { Announcement } from '../../types'
-import { useSubmitApplication, useUpdateApplication } from '../../hooks/useApplicationQueries'
+import { useSubmitApplication, useUpdateApplication, useApplicationsByAnnouncement } from '../../hooks/useApplicationQueries'
 import { useAnnouncementDetail } from '../../hooks/useAnnouncementQueries'
+import { translateMeasureUnit } from '../../utils/units'
 
 interface PrefillData {
   deliveryDates?: string[]
@@ -60,8 +61,7 @@ export function ApplicationFormPage() {
   const announcement: Announcement | null = paramAnnouncement ?? fetchedAnnouncement ?? null
   const loading = !paramAnnouncement && announcementLoading
 
-  const [applicationsWithDeliveryDates, setApplicationsWithDeliveryDates] = useState<any[]>([])
-  const [submitting, setSubmitting] = useState(false)
+  const submitting = submitApplicationMutation.isPending || updateApplicationMutation.isPending
   
   // Form fields
   const [deliveryDates, setDeliveryDates] = useState<Date[]>([]) // For goods: array of delivery dates
@@ -73,32 +73,6 @@ export function ApplicationFormPage() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
   const skipUnsavedPromptRef = useRef(false)
-
-  const translateMeasureUnit = (unitRaw: string): string => {
-    const u = (unitRaw || '').toString().trim()
-    if (!u) return ''
-    const lang = (i18n.language || 'hy').split('-')[0]
-    const key = u
-      .toLowerCase()
-      .replace(/\s+/g, '')
-      .replace(/mÂ²/g, 'm²')
-      .replace(/m2/g, 'm²')
-    const map: Record<string, { hy: string; ru: string; en: string }> = {
-      kg: { hy: 'կգ', ru: 'кг', en: 'kg' },
-      g: { hy: 'գ', ru: 'г', en: 'g' },
-      t: { hy: 'տ', ru: 'т', en: 't' },
-      l: { hy: 'լ', ru: 'л', en: 'l' },
-      litr: { hy: 'լ', ru: 'л', en: 'l' },
-      m: { hy: 'մ', ru: 'м', en: 'm' },
-      'm²': { hy: 'մ²', ru: 'м²', en: 'm²' },
-      ha: { hy: 'հա', ru: 'га', en: 'ha' },
-    }
-    const entry = map[key]
-    if (!entry) return u
-    if (lang === 'ru') return entry.ru
-    if (lang === 'en') return entry.en
-    return entry.hy
-  }
 
   const isValidForSubmit = useMemo(() => {
     if (announcementType === 'goods') {
@@ -180,18 +154,10 @@ export function ApplicationFormPage() {
   }, [])
 
   // Fetch applications for this announcement (for calendar: disable days already in applied applications)
-  useEffect(() => {
-    if (!announcementId || (announcementType !== 'goods' && announcementType !== 'rent')) return
-    let cancelled = false
-    announcementsAPI.getApplicationsByAnnouncementAPI(announcementId)
-      .then((list) => {
-        if (!cancelled) setApplicationsWithDeliveryDates(list)
-      })
-      .catch(() => {
-        if (!cancelled) setApplicationsWithDeliveryDates([])
-      })
-    return () => { cancelled = true }
-  }, [announcementId, announcementType])
+  const { data: applicationsWithDeliveryDates = [] } = useApplicationsByAnnouncement(
+    announcementId,
+    (announcementType === 'goods' || announcementType === 'rent') && !!announcementId,
+  )
 
   // Get page title based on type and mode
   const getPageTitle = () => {
@@ -434,8 +400,6 @@ export function ApplicationFormPage() {
     }
 
     try {
-      setSubmitting(true)
-      
       const applicationData: announcementsAPI.ApplicationFormData = {
         announcement_id: announcementId,
         notes: notes.trim() || undefined,
@@ -478,10 +442,7 @@ export function ApplicationFormPage() {
         },
       ])
     } catch (error: any) {
-      console.error('Error submitting application:', error)
       Alert.alert(t('common.error'), error?.response?.data?.message || t('applications.submitError'))
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -599,7 +560,7 @@ export function ApplicationFormPage() {
                 const { count, unit } = getAnnouncementCountAndUnit()
                 const showCount = count && count !== '0' && count !== '0.00' && count !== '0.0'
                 if (!showCount) return null
-                const unitLabel = translateMeasureUnit(unit) || '-'
+                const unitLabel = translateMeasureUnit(unit, i18n.language) || '-'
                 const { price, unit: priceUnit } = getAnnouncementPriceAndUnit()
                 const n = parseFloat(price)
                 const formattedPrice = price ? (isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : price) : ''
@@ -662,7 +623,7 @@ export function ApplicationFormPage() {
           {announcementType === 'goods' && (
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>
-                {t('applications.dailyOrderQuantityTitle', { unit: translateMeasureUnit(announcement?.unit || '') })}*
+                {t('applications.dailyOrderQuantityTitle', { unit: translateMeasureUnit(announcement?.unit || '', i18n.language) })}*
               </Text>
               <TextInput
                 style={styles.quantityInput}
@@ -896,7 +857,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '400',
-    color: "000#",
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   dateInput: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -24,8 +24,7 @@ import { useRegions, useVillagesByRegion } from '../../hooks/useProfileQueries'
 export function ProfilePage() {
   const { t } = useTranslation()
   const { user, updateUser } = useAuth()
-  console.log('User data:', user)
-  
+
   const [identityExpanded, setIdentityExpanded] = useState(false)
   const [organizationExpanded, setOrganizationExpanded] = useState(false)
   const [locationExpanded, setLocationExpanded] = useState(false)
@@ -46,22 +45,24 @@ export function ProfilePage() {
     regionChangedManually || !!user?.region_id ? region : undefined,
   )
 
-  // Initialize form data from user
+  // Initialize form fields from user exactly once (avoids overwriting in-progress edits
+  // if `user` reference changes after a successful save via updateUser).
+  const formInitializedRef = useRef(false)
   useEffect(() => {
-    if (user) {
-      setName(user.full_name || '')
-      setUserType(user.user_type || '')
-      if (user.phone) setPrimaryPhone(user.phone)
-      if (user.phones && Array.isArray(user.phones)) {
-        const others = user.phones.filter(p => p !== user.phone)
-        if (others.length > 0) setSecondaryPhone(others[0])
-      }
-      const userRegionId = user.region?.id || user.region_id
-      if (userRegionId) {
-        setRegion(userRegionId)
-        const userVillageId = user.village?.id || user.village_id
-        if (userVillageId) setVillage(userVillageId)
-      }
+    if (!user || formInitializedRef.current) return
+    formInitializedRef.current = true
+    setName(user.full_name || '')
+    setUserType(user.user_type || '')
+    if (user.phone) setPrimaryPhone(user.phone)
+    if (user.phones && Array.isArray(user.phones)) {
+      const others = user.phones.filter(p => p !== user.phone)
+      if (others.length > 0) setSecondaryPhone(others[0])
+    }
+    const userRegionId = user.region?.id || user.region_id
+    if (userRegionId) {
+      setRegion(userRegionId)
+      const userVillageId = user.village?.id || user.village_id
+      if (userVillageId) setVillage(userVillageId)
     }
   }, [user])
 
@@ -76,14 +77,6 @@ export function ProfilePage() {
   }
 
 
-  const handleSearchPress = () => {
-    console.log('Search pressed')
-  }
-
-  const handleProfilePress = () => {
-    console.log('Profile pressed')
-  }
-
   const handleAddSecondaryPhone = () => {
     // Show the secondary phone input field
     setSecondaryPhone('')
@@ -96,74 +89,56 @@ export function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (!user?.id) {
-      Alert.alert('Սխալ', 'Օգտագործողի ID-ն չի գտնվել')
+      Alert.alert(t('common.error'), t('profile.userNotFound'))
       return
     }
 
     try {
       setUpdating(true)
 
-      // Validate required fields
       if (!name || name.trim() === '') {
-        Alert.alert('Սխալ', 'Անուն Ազգանուն դաշտը պարտադիր է')
+        Alert.alert(t('common.error'), t('profile.nameRequired'))
         setUpdating(false)
         return
       }
 
       if (!primaryPhone || primaryPhone.trim() === '') {
-        Alert.alert('Սխալ', 'Հիմնական հեռախոսահամարը պարտադիր է')
+        Alert.alert(t('common.error'), t('profile.phoneRequired'))
         setUpdating(false)
         return
       }
 
-      // Prepare phones array
       const phones = [primaryPhone.trim()]
       if (secondaryPhone && secondaryPhone.trim() !== '') {
         phones.push(secondaryPhone.trim())
       }
 
-      // Prepare update data
       const updateData: profileAPI.UpdateUserRequest = {
         full_name: name.trim(),
-        phones: phones,
+        phones,
       }
 
-      // Add region and village if selected
-      if (region) {
-        updateData.region_id = region
-      }
-      if (village) {
-        updateData.village_id = village
-      }
+      if (region) updateData.region_id = region
+      if (village) updateData.village_id = village
 
-      console.log('Updating user with data:', updateData)
       const response = await profileAPI.updateUserAPI(user.id, updateData)
-      console.log('User updated successfully:', response)
 
-      // Update local state with returned data
       if (response.user) {
-        console.log('Updating local user state with:', response.user)
         updateUser(response.user)
       } else {
-        // If API doesn't return user, update with our data
         updateUser({
           full_name: name.trim(),
           phone: primaryPhone.trim(),
-          phones: phones,
+          phones,
           region_id: region || undefined,
           village_id: village || undefined,
         })
       }
 
-      Alert.alert(
-        'Հաջողություն',
-        'Անձնական տվյալները հաջողությամբ թարմացվել են',
-        [{ text: 'Լավ' }]
-      )
+      Alert.alert(t('common.success'), t('profile.updateSuccess'), [{ text: t('common.ok') }])
     } catch (error: any) {
-      console.error('Error updating profile:', error)
       const errorMessage = error.response?.data?.message || error.message || t('profile.updateError')
-      Alert.alert('Սխալ', errorMessage, [{ text: 'Լավ' }])
+      Alert.alert(t('common.error'), errorMessage, [{ text: t('common.ok') }])
     } finally {
       setUpdating(false)
     }
@@ -189,11 +164,7 @@ export function ProfilePage() {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
-        <AppHeader
-          showBack
-          onSearchPress={handleSearchPress}
-          onProfilePress={handleProfilePress}
-        />
+        <AppHeader showBack />
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           {/* Title */}
@@ -344,7 +315,7 @@ export function ProfilePage() {
                       value={region}
                       onValueChange={handleRegionChange}
                       options={regionOptions}
-                      placeholder="Մարզ"
+                      placeholder={t('addAnnouncement.region')}
                       label=""
                     />
                   )}
@@ -361,7 +332,7 @@ export function ProfilePage() {
                       value={village}
                       onValueChange={setVillage}
                       options={villageOptions}
-                      placeholder={region ? "Գյուղ" : "Նախ ընտրեք մարզը"}
+                      placeholder={t('addAnnouncement.village')}
                       disabled={!region || villageOptions.length === 0}
                       label=""
                     />

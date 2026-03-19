@@ -6,6 +6,7 @@ import { Announcement } from '../../types'
 import Icon from '../../components/Icon'
 import { announcementIs, applicationIs } from '../../utils/announcementActions'
 import { useAuth } from '../../context/AuthContext'
+import { translateMeasureUnit } from '../../utils/units'
 
 interface MyAnnouncementCardProps {
   announcement: Announcement
@@ -86,29 +87,6 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
     }
   }
 
-  const translateUnit = (unit: string | undefined): string => {
-    if (!unit) return ''
-    const unitLower = unit.toLowerCase()
-    const unitMap: { [key: string]: string } = {
-      'kg': 'կգ',
-      'կգ': 'կգ',
-      'կգ.': 'կգ',
-      'կգ․': 'կգ',
-      'գ': 'գ',
-      'տ': 'տ',
-      'լ': 'լ',
-      'լիտր': 'լ',
-      'մ': 'մ',
-      'մ²': 'մ²',
-      'հա': 'հա',
-      'օր': 'օր',
-      'ժամ': 'ժամ',
-      'ծառա': 'ծառա',
-    }
-    
-    return unitMap[unitLower] || unit
-  }
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -129,7 +107,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
         <View style={styles.dateRow}>
           <Text style={styles.dateText}>
             {announcement.date_to
-              ? `Վերջնաժամկետ։ ${formatDate(announcement.date_to)}`
+              ? `${t('announcements.deadline')}: ${formatDate(announcement.date_to)}`
               : formatDate(announcement.created_at)
             }
           </Text>
@@ -142,7 +120,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{getItemName()}</Text>
         </View>
         <Text style={styles.price}>
-          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')} \{translateUnit((announcement as any).price_unit ?? announcement.unit)}
+          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')} \{translateMeasureUnit((announcement as any).price_unit ?? announcement.unit, i18n.language)}
         </Text>
       </View>
 
@@ -153,7 +131,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
         return (
           <Text style={styles.detail}>
             {t('announcements.availableQuantity')}: {available.toLocaleString()}{' '}
-            {announcement.unit ? translateUnit(announcement.unit) : ''}
+            {announcement.unit ? translateMeasureUnit(announcement.unit, i18n.language) : ''}
           </Text>
         )
       })()}
@@ -201,43 +179,32 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
 
       {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.participantsRow}
-          onPress={() => {
-            if (!onApplicationsPress) return
-            if (showMyApplications) {
-              onApplicationsPress(announcement)
-              return
-            }
-            const count = announcement.applications_count ?? 0
-            if (count > 0) onApplicationsPress(announcement)
-          }}
-          activeOpacity={onApplicationsPress ? 0.7 : 1}
-          disabled={!onApplicationsPress || (!showMyApplications && (announcement.applications_count ?? 0) === 0)}
-        >
-          <Icon name={showMyApplications ? "document" : "people"} size={16} color={colors.buttonPrimary} />
-          {showMyApplications ? (
-            <Text style={styles.participantsText}>
-              {(() => {
-                const announcementData = announcement as any
-                const myApplicationsCount = announcementData.my_applications_count !== undefined 
-                  ? announcementData.my_applications_count
-                  : (announcementData.myApplicationsCount !== undefined 
-                    ? announcementData.myApplicationsCount
-                    : (Array.isArray(announcementData.applications) 
-                      ? announcementData.applications.length 
-                      : 1))
-                if (myApplicationsCount > 1) {
-                  return t('announcements.myApplicationsPlural', { count: myApplicationsCount })
-                } else {
-                  return t('announcements.myApplications')
-                }
-              })()}
-            </Text>
-          ) : (
-            <Text style={styles.participantsText}>{t('announcements.applicants')}: {announcement.applications_count ?? 0}</Text>
-          )}
-        </TouchableOpacity>
+        {(() => {
+          const appCount = announcement.applications_count ?? 0
+          const hasApps = appCount > 0
+          const active = showMyApplications || hasApps
+          const iconColor = active ? colors.buttonPrimary : colors.textTertiary
+          const textStyle = [styles.participantsText, { color: iconColor }]
+
+          const label = showMyApplications
+            ? t('announcements.myApplications')
+            : `${t('announcements.applicants')}: ${appCount}`
+
+          return (
+            <TouchableOpacity
+              style={styles.participantsRow}
+              onPress={() => {
+                if (!onApplicationsPress) return
+                if (showMyApplications || hasApps) onApplicationsPress(announcement)
+              }}
+              activeOpacity={active && onApplicationsPress ? 0.7 : 1}
+              disabled={!onApplicationsPress || (!showMyApplications && !hasApps)}
+            >
+              <Icon name={showMyApplications ? 'document' : 'people'} size={16} color={iconColor} />
+              <Text style={textStyle}>{label}</Text>
+            </TouchableOpacity>
+          )
+        })()}
 
         {user != null && (
           <View style={styles.actionButtons}>

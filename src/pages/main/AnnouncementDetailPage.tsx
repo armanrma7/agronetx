@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ import {
   canApplicantViewContacts,
   applicationIs,
 } from '../../utils/announcementActions'
+import { translateMeasureUnit } from '../../utils/units'
 
 const { width } = Dimensions.get('window')
 
@@ -56,8 +57,6 @@ export function AnnouncementDetailPage() {
   const cancelling = cancelMutation.isPending
   const closing = closeMutation.isPending
   const [contactModalVisible, setContactModalVisible] = useState(false)
-  const [regionNames, setRegionNames] = useState<string[]>([])
-  const [villageNames, setVillageNames] = useState<string[]>([])
   const [visibleRegionsCount, setVisibleRegionsCount] = useState(2)
   const [visibleVillagesCount, setVisibleVillagesCount] = useState(2)
 
@@ -72,74 +71,52 @@ export function AnnouncementDetailPage() {
     }
   }, [announcementId])
 
-  // Extract region and village names from announcement when loaded
-  useEffect(() => {
-      if (announcement) {
-        const announcementData = announcement as any
-        
-        // Get region names from regions_data array
-        let regionNamesList: string[] = []
-        if (announcementData.regions_data && Array.isArray(announcementData.regions_data)) {
-          regionNamesList = announcementData.regions_data
-            .map((region: any) => {
-              if (typeof region === 'string') return region
-              if (region?.name) return region.name
-              if (region?.name_hy) return region.name_hy
-              if (region?.name_ru) return region.name_ru
-              if (region?.name_en) return region.name_en
-              return null
-            })
-            .filter((name: string | null): name is string => name !== null)
-        }
-        
-        // Fallback to other field names
-        if (regionNamesList.length === 0) {
-          const regions = announcementData.region_names || announcementData.location_region_names || []
-          if (regions.length > 0) {
-            regionNamesList = regions
-          } else if (announcement.regions?.[0] && typeof announcement.regions[0] === 'string' && !announcement.regions[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            regionNamesList = [announcement.regions[0]]
-          }
-        }
-        
-        if (regionNamesList.length > 0) {
-          setRegionNames(regionNamesList)
-        }
-        
-        // Get village names from villages_data array
-        let villageNamesList: string[] = []
-        if (announcementData.villages_data && Array.isArray(announcementData.villages_data)) {
-          villageNamesList = announcementData.villages_data
-            .map((village: any) => {
-              if (typeof village === 'string') return village
-              if (village?.name) return village.name
-              if (village?.name_hy) return village.name_hy
-              if (village?.name_ru) return village.name_ru
-              if (village?.name_en) return village.name_en
-              return null
-            })
-            .filter((name: string | null): name is string => name !== null)
-        }
-        
-        // Fallback to other field names
-        if (villageNamesList.length === 0) {
-          const villages = announcementData.village_names || announcementData.location_village_names || []
-          if (villages.length > 0) {
-            villageNamesList = villages
-          } else if (announcement.villages?.[0] && typeof announcement.villages[0] === 'string' && !announcement.villages[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            villageNamesList = [announcement.villages[0]]
-          }
-        }
-        
-        if (villageNamesList.length > 0) {
-          setVillageNames(villageNamesList)
-        }
-        
-        // Reset visible counts when announcement changes
-        setVisibleRegionsCount(2)
-        setVisibleVillagesCount(2)
-      }
+  // Derive region/village names directly from announcement data (no state/effect needed)
+  const regionNames = useMemo((): string[] => {
+    if (!announcement) return []
+    const announcementData = announcement as any
+    if (announcementData.regions_data && Array.isArray(announcementData.regions_data)) {
+      const names = announcementData.regions_data
+        .map((r: any) => {
+          if (typeof r === 'string') return r
+          return r?.name || r?.name_hy || r?.name_ru || r?.name_en || null
+        })
+        .filter((n: string | null): n is string => n !== null)
+      if (names.length > 0) return names
+    }
+    const fallback = announcementData.region_names || announcementData.location_region_names || []
+    if (fallback.length > 0) return fallback
+    if (announcement.regions?.[0] && typeof announcement.regions[0] === 'string' && !announcement.regions[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return [announcement.regions[0]]
+    }
+    return []
   }, [announcement])
+
+  const villageNames = useMemo((): string[] => {
+    if (!announcement) return []
+    const announcementData = announcement as any
+    if (announcementData.villages_data && Array.isArray(announcementData.villages_data)) {
+      const names = announcementData.villages_data
+        .map((v: any) => {
+          if (typeof v === 'string') return v
+          return v?.name || v?.name_hy || v?.name_ru || v?.name_en || null
+        })
+        .filter((n: string | null): n is string => n !== null)
+      if (names.length > 0) return names
+    }
+    const fallback = announcementData.village_names || announcementData.location_village_names || []
+    if (fallback.length > 0) return fallback
+    if (announcement.villages?.[0] && typeof announcement.villages[0] === 'string' && !announcement.villages[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return [announcement.villages[0]]
+    }
+    return []
+  }, [announcement])
+
+  // Reset visible counts when the announcement changes
+  useEffect(() => {
+    setVisibleRegionsCount(2)
+    setVisibleVillagesCount(2)
+  }, [announcement?.id])
 
 
   const formatDateRange = (startDate: string, endDate?: string) => {
@@ -206,22 +183,12 @@ export function AnnouncementDetailPage() {
   const getCategoryLabel = (announcement: Announcement) => {
     const announcementData = announcement as any
     const currentLang = (i18n.language || 'hy').split('-')[0]
-    console.info (announcementData)
-    // Try to get category name from API
-    if (currentLang === 'hy' && announcementData.group
-      .name_hy) {
-      return announcementData.group.name_hy
-    }
-    if (currentLang === 'ru' && announcementData.group.name_ru) {
-      return announcementData.group.name_ru
-    }
-    if (currentLang === 'en' && announcementData.group.name_en) {
-      return announcementData.group.name_en
-    }
-    if (announcementData.group.name) {
-      return announcementData.group.name
-    }
-   return ''
+    const group = announcementData.group
+    if (!group) return ''
+    if (currentLang === 'hy' && group.name_hy) return group.name_hy
+    if (currentLang === 'ru' && group.name_ru) return group.name_ru
+    if (currentLang === 'en' && group.name_en) return group.name_en
+    return group.name || ''
   }
 
   const getItemLabel = (announcement: Announcement) => {
@@ -351,7 +318,7 @@ export function AnnouncementDetailPage() {
           />
           
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>{t('common.loading')}</Text>
+            <ActivityIndicator size="large" color={colors.buttonPrimary} />
           </View>
         </View>
       </SafeAreaView>
@@ -547,7 +514,7 @@ export function AnnouncementDetailPage() {
               <>
                 <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
               <Text style={styles.priceAvailabilityValue}>
-              {Number(announcement.available_quantity || 0).toLocaleString()} {announcement.unit}
+              {Number(announcement.available_quantity || 0).toLocaleString()} {translateMeasureUnit(announcement.unit, i18n.language)}
             </Text>
               </>
             )
@@ -557,7 +524,7 @@ export function AnnouncementDetailPage() {
             <View style={styles.priceAvailabilityItem}>
               <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.price')}</Text>
               <Text style={styles.priceAvailabilityValue}>
-                {Number(announcement.price || 0).toLocaleString()} {t('common.currency')}/{(announcement as any).price_unit ?? announcement.unit}
+                {Number(announcement.price || 0).toLocaleString()} {t('common.currency')}/{translateMeasureUnit((announcement as any).price_unit ?? announcement.unit, i18n.language)}
               </Text>
             </View>
           </View>
@@ -569,7 +536,7 @@ export function AnnouncementDetailPage() {
                 <Text style={styles.limitLabel}>{t('announcementDetail.limit')}</Text>
                 <Icon name="info" size={16} color={colors.primary} />
               </View>
-              <Text style={styles.limitValue}>{dailyLimit.toLocaleString()} {announcement.unit}/{t('common.perDay')}</Text>
+              <Text style={styles.limitValue}>{dailyLimit.toLocaleString()} {translateMeasureUnit(announcement.unit, i18n.language)}/{t('common.perDay')}</Text>
             </View>
           )}
 

@@ -1,104 +1,76 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+/**
+ * AnnouncementCard
+ *
+ * Cache-driven architecture
+ * ─────────────────────────
+ * Favorite state is read DIRECTLY from the React Query cache via useFavoriteIds().
+ * React Query deduplicates this query across every mounted card instance — only ONE
+ * network request is made regardless of how many cards are on screen.
+ * Mutations fire from inside the card so that cache updates instantly propagate to
+ * every other screen that subscribes to the same query key — no prop drilling needed.
+ */
+import React from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../theme/colors'
 import { Announcement } from '../types'
 import Icon from './Icon'
-import * as announcementsAPI from '../lib/api/announcements.api'
 import { useAuth } from '../context/AuthContext'
+import { useFavoriteIds, useAddFavorite, useRemoveFavorite } from '../hooks/useFavoriteQueries'
+import { translateMeasureUnit } from '../utils/units'
 
 interface AnnouncementCardProps {
   announcement: Announcement
   onApply?: (announcement: Announcement) => void
   onView?: (announcement: Announcement) => void
-  isFavorite?: boolean
-  onFavoriteChange?: (announcementId: string, isNowFavorite: boolean) => void
-  /** When list API doesn't include applications, parent can pass IDs the user has already applied to. */
-  appliedAnnouncementIds?: Set<string>
-  /** Announcement IDs where the current user has a *pending* application (hide Apply only for these). */
-  pendingApplicationAnnouncementIds?: Set<string>
 }
 
-/** True if the current user has a *pending* application for this announcement (hide Apply button). */
-function hasPendingApplicationForCard(
-  announcement: Announcement,
-  userId: string | undefined,
-  pendingApplicationAnnouncementIds?: Set<string>
-): boolean {
-  if (!userId) return false
-  if (pendingApplicationAnnouncementIds?.has(announcement.id)) return true
-  const a = announcement as any
-  const apps = a.applications
-  if (!Array.isArray(apps) || apps.length === 0) return false
-  const myId = String(userId)
-  const isPending = (s: string | undefined) => /^pending$/i.test((s || '').trim())
-  return apps.some((app: any) => {
-    const applicantId = app.applicant_id ?? app.user_id ?? app.userId
-    return applicantId && String(applicantId) === myId && isPending(app.status)
-  })
-}
-
-export function AnnouncementCard({ announcement, onApply, onView, isFavorite: initialIsFavorite, onFavoriteChange, appliedAnnouncementIds, pendingApplicationAnnouncementIds }: AnnouncementCardProps) {
+export function AnnouncementCard({ announcement, onApply, onView }: AnnouncementCardProps) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const [isFavorite, setIsFavorite] = useState(initialIsFavorite || false)
-  const [togglingFavorite, setTogglingFavorite] = useState(false)
-  const hasPendingApplication = hasPendingApplicationForCard(announcement, user?.id, pendingApplicationAnnouncementIds)
+
+  // ── Cache reads (shared across ALL card instances via React Query dedup) ──
+  const { data: favoriteIds = new Set<string>() } = useFavoriteIds(!!user)
+
+  const isFavorite = favoriteIds.has(announcement.id)
   const isMyAnnouncement =
     user?.id != null &&
     announcement?.owner_id != null &&
     String(announcement.owner_id) === String(user.id)
-  const canApply = !isMyAnnouncement && !hasPendingApplication
 
-  // Update favorite status when prop changes
-  useEffect(() => {
-    if (initialIsFavorite !== undefined) {
-      setIsFavorite(initialIsFavorite)
-    }
-  }, [initialIsFavorite])
+  // All users (except the owner) can apply — pending status no longer blocks re-applying
+  const canApply = !isMyAnnouncement
 
-  const handleFavoritePress = async () => {
-    if (togglingFavorite) return // Prevent double taps
-    
-    try {
-      setTogglingFavorite(true)
-      if (isFavorite) {
-        await announcementsAPI.removeFavoriteAPI(announcement.id)
-        setIsFavorite(false)
-        onFavoriteChange?.(announcement.id, false)
-      } else {
-        await announcementsAPI.addFavoriteAPI(announcement.id)
-        setIsFavorite(true)
-        onFavoriteChange?.(announcement.id, true)
-      }
-    } catch (error: any) {
-      console.error('Error toggling favorite:', error)
-      Alert.alert(
-        t('common.error'),
-        error?.response?.data?.message || t('favorites.toggleError')
-      )
-    } finally {
-      setTogglingFavorite(false)
+  // ── Mutations ─────────────────────────────────────────────────────────────
+  const addFavorite = useAddFavorite()
+  const removeFavorite = useRemoveFavorite()
+
+  // Only show spinner on the EXACT card being toggled
+  const isTogglingFavorite =
+    (addFavorite.isPending && addFavorite.variables === announcement.id) ||
+    (removeFavorite.isPending && removeFavorite.variables === announcement.id)
+
+  const handleFavoritePress = () => {
+    if (isTogglingFavorite) return
+    if (isFavorite) {
+      removeFavorite.mutate(announcement.id)
+    } else {
+      addFavorite.mutate(announcement.id)
     }
   }
-  
-  // Get translated item name based on current language
+
+  // ── Display helpers ───────────────────────────────────────────────────────
+
   const getItemName = (): string => {
     const currentLang = i18n.language || 'hy'
     const announcementData = announcement as any
-    
-    // Try to get translated name based on current language
-    if (currentLang === 'en' && announcementData.name_en) {
-      return announcementData.name_en
-    }
-    if (currentLang === 'ru' && announcementData.name_ru) {
-      return announcementData.name_ru
-    }
+
+    if (currentLang === 'en' && announcementData.name_en) return announcementData.name_en
+    if (currentLang === 'ru' && announcementData.name_ru) return announcementData.name_ru
     if ((currentLang === 'hy' || currentLang === 'am') && (announcementData.name_hy || announcementData.name_am)) {
       return announcementData.name_hy || announcementData.name_am || ''
     }
-    
-    // Fallback to item names or legacy
+
     const item = announcement.item
     return (item?.name_am || item?.name_en || item?.name_ru) || announcementData.title || announcementData.item_name || 'No title'
   }
@@ -125,59 +97,22 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
     return rv.name_am || rv.name_hy || rv.name_en || rv.name_ru || ''
   }
 
-  const getTypeLabel = (announcement: Announcement) => {
-    const subtype = (announcement as any).subtype || (announcement as any).sub_type
-    const category = announcement.category || announcement.type
-    const apiType = announcement.type || (announcement as any).apiType || subtype
-    
-    if (apiType === 'sell' || subtype === 'sell' || subtype === 'offer') {
-      return t('announcementDetail.sell')
-    }
-    if (apiType === 'buy' || subtype === 'buy' || subtype === 'requirement') {
-      return t('announcementDetail.buy')
-    }
-    if (apiType === 'rent' || category === 'rent') {
-      return t('announcementDetail.rent')
-    }
-    
+  const getTypeLabel = (ann: Announcement) => {
+    const subtype = (ann as any).subtype || (ann as any).sub_type
+    const category = ann.category || ann.type
+    const apiType = ann.type || (ann as any).apiType || subtype
+
+    if (apiType === 'sell' || subtype === 'sell' || subtype === 'offer') return t('announcementDetail.sell')
+    if (apiType === 'buy' || subtype === 'buy' || subtype === 'requirement') return t('announcementDetail.buy')
+    if (apiType === 'rent' || category === 'rent') return t('announcementDetail.rent')
+
     const categoryType = category as 'goods' | 'service' | 'rent'
     switch (categoryType) {
-      case 'goods':
-        // Default to buy for goods if no subtype
-        return t('announcementDetail.buy')
-      case 'service':
-        // Default to sell for service if no subtype
-        return t('announcementDetail.sell')
-      case 'rent':
-        return t('announcementDetail.rent')
-      default:
-        return t('announcementDetail.buy')
+      case 'goods': return t('announcementDetail.buy')
+      case 'service': return t('announcementDetail.sell')
+      case 'rent': return t('announcementDetail.rent')
+      default: return t('announcementDetail.buy')
     }
-  }
-
-  const translateUnit = (unit: string | undefined): string => {
-    if (!unit) return ''
-    const unitLower = unit.toLowerCase()
-    
-    // Common unit translations
-    const unitMap: { [key: string]: string } = {
-      'kg': 'կգ',
-      'կգ': 'կգ',
-      'կգ.': 'կգ',
-      'կգ․': 'կգ',
-      'գ': 'գ',
-      'տ': 'տ',
-      'լ': 'լ',
-      'լիտր': 'լ',
-      'մ': 'մ',
-      'մ²': 'մ²',
-      'հա': 'հա',
-      'օր': 'օր',
-      'ժամ': 'ժամ',
-      'ծառա': 'ծառա',
-    }
-    
-    return unitMap[unitLower] || unit
   }
 
   const formatDate = (dateString: string) => {
@@ -206,10 +141,10 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
           </Text>
           <TouchableOpacity
             onPress={isMyAnnouncement ? undefined : handleFavoritePress}
-            disabled={isMyAnnouncement || togglingFavorite}
+            disabled={isMyAnnouncement || isTogglingFavorite}
             style={styles.favoriteButton}
           >
-            {togglingFavorite ? (
+            {isTogglingFavorite ? (
               <ActivityIndicator size="small" color={colors.buttonPrimary} />
             ) : (
               <Icon
@@ -228,7 +163,7 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{getItemName()}</Text>
         </View>
         <Text style={styles.price}>
-          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')}\{translateUnit((announcement as any).price_unit ?? announcement.unit)}
+          {Number(announcement.price || 0).toLocaleString()} {t('common.currency')}\{translateMeasureUnit((announcement as any).price_unit ?? announcement.unit, i18n.language)}
         </Text>
       </View>
 
@@ -239,7 +174,7 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
         return (
           <Text style={styles.detail}>
             {t('announcements.availableQuantity')}: {available.toLocaleString()}{' '}
-            {announcement.unit ? translateUnit(announcement.unit) : ''}
+            {announcement.unit ? translateMeasureUnit(announcement.unit, i18n.language) : ''}
           </Text>
         )
       })()}
@@ -251,7 +186,7 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
         const villagesData = (announcement as any).villages_data || []
         const regionCount = regions.length
         const villageCount = villages.length
-        
+
         if (regionCount > 0 || villageCount > 0) {
           const parts: string[] = []
           if (regionCount > 0) {
@@ -259,28 +194,20 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
               getRegionVillageLabel(regionsData[0]) ||
               ((announcement as any).region_names?.[0] ?? '') ||
               (typeof regions[0] === 'string' ? regions[0] : '')
-            if (regionCount === 1) {
-              parts.push(`${t('addAnnouncement.region')}: ${firstRegion || '–'}`)
-            } else {
-              parts.push(`${t('addAnnouncement.region')}: ${firstRegion || '–'} +${regionCount - 1}`)
-            }
+            parts.push(regionCount === 1
+              ? `${t('addAnnouncement.region')}: ${firstRegion || '–'}`
+              : `${t('addAnnouncement.region')}: ${firstRegion || '–'} +${regionCount - 1}`)
           }
           if (villageCount > 0) {
             const firstVillage =
               getRegionVillageLabel(villagesData[0]) ||
               ((announcement as any).village_names?.[0] ?? '') ||
               (typeof villages[0] === 'string' ? villages[0] : '')
-            if (villageCount === 1) {
-              parts.push(`${t('addAnnouncement.village')}: ${firstVillage || '–'}`)
-            } else {
-              parts.push(`${t('addAnnouncement.village')}: ${firstVillage || '–'} +${villageCount - 1}`)
-            }
+            parts.push(villageCount === 1
+              ? `${t('addAnnouncement.village')}: ${firstVillage || '–'}`
+              : `${t('addAnnouncement.village')}: ${firstVillage || '–'} +${villageCount - 1}`)
           }
-          return (
-            <Text style={styles.detail}>
-              {parts.join(', ')}
-            </Text>
-          )
+          return <Text style={styles.detail}>{parts.join(', ')}</Text>
         }
         return null
       })()}
@@ -288,11 +215,10 @@ export function AnnouncementCard({ announcement, onApply, onView, isFavorite: in
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.participantsRow}>
-          <Icon name="people" size={16} color={(announcement.applications_count ?? 0) > 0 ? colors.buttonPrimary : colors.textTertiary} />
+          <Icon name="people" size={16} color={colors.textTertiary} />
           <Text
             style={[
-              styles.participantsText,
-              (announcement.applications_count ?? 0) > 0 ? { color: colors.buttonPrimary } : null,
+              styles.participantsText
             ]}
           >
             {t('announcements.applicants')}: {announcement.applications_count ?? 0}
@@ -362,14 +288,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   typeBadge: {
-    backgroundColor: '#E3F2FD', // Light blue background
+    backgroundColor: '#E3F2FD',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   typeText: {
     fontSize: 12,
-    color: '#1976D2', // Light blue text
+    color: '#1976D2',
     fontWeight: '500',
   },
   dateRow: {
@@ -449,11 +375,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB', // Light gray border
+    borderColor: '#E5E7EB',
     flexShrink: 1,
   },
   buttonSecondaryText: {
-    color: colors.textPrimary, // Dark text on light gray
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -461,4 +387,3 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 })
-
