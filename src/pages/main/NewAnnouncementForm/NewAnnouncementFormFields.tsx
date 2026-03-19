@@ -44,6 +44,7 @@ interface NewAnnouncementFormFieldsProps {
   setSelectedVillages: (v: string[]) => void
   currentLang: SupportedLang
   openDatePicker: (field: 'start' | 'end') => void
+  formatPeriodDate?: (dateStr: string) => string
   showImagePickerOptions: () => void
   removeImage: (index: number) => void
   handlePublish: () => Promise<void>
@@ -75,6 +76,7 @@ export function NewAnnouncementFormFields({
   setSelectedVillages,
   currentLang,
   openDatePicker,
+  formatPeriodDate,
   showImagePickerOptions,
   removeImage,
   handlePublish,
@@ -293,7 +295,7 @@ export function NewAnnouncementFormFields({
                     <Text style={styles.dateLabel}>{t('addAnnouncement.from')}</Text>
                     <TouchableOpacity style={styles.dateInput} onPress={() => openDatePicker('start')}>
                       <Text style={[styles.dateInputText, !formData.periodStart && styles.placeholder]}>
-                        {formData.periodStart || t('addAnnouncement.fillIn')}
+                        {formData.periodStart ? (formatPeriodDate ? formatPeriodDate(formData.periodStart) : formData.periodStart) : t('addAnnouncement.fillIn')}
                       </Text>
                       <Icon name="calendar" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -302,7 +304,7 @@ export function NewAnnouncementFormFields({
                     <Text style={styles.dateLabel}>{t('addAnnouncement.until')}</Text>
                     <TouchableOpacity style={styles.dateInput} onPress={() => openDatePicker('end')}>
                       <Text style={[styles.dateInputText, !formData.salesPeriod && styles.placeholder]}>
-                        {formData.salesPeriod || t('addAnnouncement.fillIn')}
+                        {formData.salesPeriod ? (formatPeriodDate ? formatPeriodDate(formData.salesPeriod) : formData.salesPeriod) : t('addAnnouncement.fillIn')}
                       </Text>
                       <Icon name="calendar" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>

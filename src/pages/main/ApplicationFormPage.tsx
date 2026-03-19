@@ -72,6 +72,7 @@ export function ApplicationFormPage() {
   // UI state
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
+  const [pickerDisplayYear, setPickerDisplayYear] = useState(new Date().getFullYear())
   const skipUnsavedPromptRef = useRef(false)
 
   const isValidForSubmit = useMemo(() => {
@@ -353,7 +354,37 @@ export function ApplicationFormPage() {
 
   // Open calendar modal
   const handleOpenDatePicker = () => {
+    const minKey = getCalendarMinDate()
+    const minYear = parseInt(minKey.split('-')[0], 10) || new Date().getFullYear()
+    setPickerDisplayYear(minYear)
     setShowDatePicker(true)
+  }
+
+  const handleMonthPress = (month: number) => {
+    const monthKey = `${pickerDisplayYear}-${String(month).padStart(2, '0')}`
+    const minMonthKey = getCalendarMinDate().substring(0, 7)
+    const maxMonthKey = getCalendarMaxDate().substring(0, 7)
+    if (monthKey < minMonthKey || monthKey > maxMonthKey) return
+    const selectedDate = new Date(pickerDisplayYear, month - 1, 1)
+    const isSelected = deliveryDates.some(d => d.getFullYear() === pickerDisplayYear && d.getMonth() + 1 === month)
+    if (isSelected) {
+      setDeliveryDates(deliveryDates.filter(d => !(d.getFullYear() === pickerDisplayYear && d.getMonth() + 1 === month)))
+    } else {
+      setDeliveryDates([...deliveryDates, selectedDate].sort((a, b) => a.getTime() - b.getTime()))
+    }
+  }
+
+  const handleYearPress = (year: number) => {
+    const minYear = parseInt(getCalendarMinDate().split('-')[0], 10) || new Date().getFullYear()
+    const maxYear = parseInt(getCalendarMaxDate().split('-')[0], 10) || new Date().getFullYear() + 3
+    if (year < minYear || year > maxYear) return
+    const selectedDate = new Date(year, 0, 1)
+    const isSelected = deliveryDates.some(d => d.getFullYear() === year)
+    if (isSelected) {
+      setDeliveryDates(deliveryDates.filter(d => d.getFullYear() !== year))
+    } else {
+      setDeliveryDates([...deliveryDates, selectedDate].sort((a, b) => a.getTime() - b.getTime()))
+    }
   }
 
   // Validate form
@@ -671,60 +702,131 @@ export function ApplicationFormPage() {
    
 
         {/* Calendar Modal - Normal month calendar for goods and rent */}
-        {(announcementType === 'goods' || announcementType === 'rent') && showDatePicker && (
-          <Modal
-            transparent
-            animationType="fade"
-            visible={showDatePicker}
-            onRequestClose={() => setShowDatePicker(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <TouchableOpacity 
-                style={{ flex: 1 }}
-                activeOpacity={1}
-                onPress={() => setShowDatePicker(false)}
-              />
-              <View style={styles.calendarSheet}>
-                <View style={styles.pickerHeader}>
-                  <View style={styles.pickerHeaderBack} />
-                  <Text style={styles.pickerTitle}>{t('applications.deliveryDates')}</Text>
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <Text style={styles.doneButton}>{t('common.done')}</Text>
-                  </TouchableOpacity>
-                </View>
-                <Calendar
-                  onDayPress={handleCalendarDayPress}
-                  markedDates={getMarkedDates()}
-                  minDate={getCalendarMinDate()}
-                  maxDate={getCalendarMaxDate()}
-                  current={getCalendarMinDate()}
-                  enableSwipeMonths={true}
-                  theme={{
-                    backgroundColor: colors.white,
-                    calendarBackground: colors.white,
-                    textSectionTitleColor: colors.textSecondary,
-                    selectedDayBackgroundColor: colors.buttonPrimary,
-                    selectedDayTextColor: colors.white,
-                    todayTextColor: colors.buttonPrimary,
-                    dayTextColor: colors.textPrimary,
-                    textDisabledColor: colors.textTertiary,
-                    dotColor: colors.buttonPrimary,
-                    selectedDotColor: colors.white,
-                    arrowColor: colors.buttonPrimary,
-                    monthTextColor: colors.textPrimary,
-                    textDayFontWeight: '700',
-                    textMonthFontWeight: '600',
-                    textDayHeaderFontWeight: '600',
-                    textDayFontSize: 16,
-                    textMonthFontSize: 18,
-                    textDayHeaderFontSize: 14,
-                  }}
-                  style={styles.calendar}
+        {(announcementType === 'goods' || announcementType === 'rent') && showDatePicker && (() => {
+          const viewMode = getCalendarViewMode()
+          const minKey = getCalendarMinDate()
+          const maxKey = getCalendarMaxDate()
+          const minYear = parseInt(minKey.split('-')[0], 10) || new Date().getFullYear()
+          const maxYear = parseInt(maxKey.split('-')[0], 10) || new Date().getFullYear() + 3
+          const monthKeys = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+          return (
+            <Modal
+              transparent
+              animationType="fade"
+              visible={showDatePicker}
+              onRequestClose={() => setShowDatePicker(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <TouchableOpacity 
+                  style={{ flex: 1 }}
+                  activeOpacity={1}
+                  onPress={() => setShowDatePicker(false)}
                 />
+                <View style={styles.calendarSheet}>
+                  <View style={styles.pickerHeader}>
+                    <View style={styles.pickerHeaderBack} />
+                    <Text style={styles.pickerTitle}>{t('applications.deliveryDates')}</Text>
+                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                      <Text style={styles.doneButton}>{t('common.done')}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {viewMode === 'daily' && (
+                    <Calendar
+                      onDayPress={handleCalendarDayPress}
+                      markedDates={getMarkedDates()}
+                      minDate={minKey}
+                      maxDate={maxKey}
+                      current={minKey}
+                      enableSwipeMonths={true}
+                      theme={{
+                        backgroundColor: colors.white,
+                        calendarBackground: colors.white,
+                        textSectionTitleColor: colors.textSecondary,
+                        selectedDayBackgroundColor: colors.buttonPrimary,
+                        selectedDayTextColor: colors.white,
+                        todayTextColor: colors.buttonPrimary,
+                        dayTextColor: colors.textPrimary,
+                        textDisabledColor: colors.textTertiary,
+                        dotColor: colors.buttonPrimary,
+                        selectedDotColor: colors.white,
+                        arrowColor: colors.buttonPrimary,
+                        monthTextColor: colors.textPrimary,
+                        textDayFontWeight: '700',
+                        textMonthFontWeight: '600',
+                        textDayHeaderFontWeight: '600',
+                        textDayFontSize: 16,
+                        textMonthFontSize: 18,
+                        textDayHeaderFontSize: 14,
+                      }}
+                      style={styles.calendar}
+                    />
+                  )}
+
+                  {viewMode === 'monthly' && (
+                    <>
+                      <View style={appPickerStyles.yearNavRow}>
+                        <TouchableOpacity
+                          style={appPickerStyles.yearNavBtn}
+                          onPress={() => setPickerDisplayYear(y => Math.max(y - 1, minYear))}
+                          disabled={pickerDisplayYear <= minYear}
+                        >
+                          <Text style={[appPickerStyles.yearNavArrow, pickerDisplayYear <= minYear && appPickerStyles.yearNavArrowDisabled]}>{'‹'}</Text>
+                        </TouchableOpacity>
+                        <Text style={appPickerStyles.yearNavText}>{pickerDisplayYear}</Text>
+                        <TouchableOpacity
+                          style={appPickerStyles.yearNavBtn}
+                          onPress={() => setPickerDisplayYear(y => Math.min(y + 1, maxYear))}
+                          disabled={pickerDisplayYear >= maxYear}
+                        >
+                          <Text style={[appPickerStyles.yearNavArrow, pickerDisplayYear >= maxYear && appPickerStyles.yearNavArrowDisabled]}>{'›'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={appPickerStyles.monthGrid}>
+                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(month => {
+                          const mk = `${pickerDisplayYear}-${String(month).padStart(2, '0')}`
+                          const isSelected = deliveryDates.some(d => d.getFullYear() === pickerDisplayYear && d.getMonth() + 1 === month)
+                          const isDisabled = mk < minKey.substring(0, 7) || mk > maxKey.substring(0, 7)
+                          return (
+                            <TouchableOpacity
+                              key={month}
+                              style={[appPickerStyles.monthItem, isSelected && appPickerStyles.monthItemSelected, isDisabled && appPickerStyles.monthItemDisabled]}
+                              onPress={() => handleMonthPress(month)}
+                              disabled={isDisabled}
+                            >
+                              <Text style={[appPickerStyles.monthItemText, isSelected && appPickerStyles.monthItemTextSelected, isDisabled && appPickerStyles.monthItemTextDisabled]}>
+                                {t(`months.${monthKeys[month - 1]}`)}
+                              </Text>
+                            </TouchableOpacity>
+                          )
+                        })}
+                      </View>
+                    </>
+                  )}
+
+                  {viewMode === 'yearly' && (
+                    <ScrollView contentContainerStyle={appPickerStyles.yearGrid}>
+                      {Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i).map(year => {
+                        const isSelected = deliveryDates.some(d => d.getFullYear() === year)
+                        return (
+                          <TouchableOpacity
+                            key={year}
+                            style={[appPickerStyles.yearGridItem, isSelected && appPickerStyles.yearGridItemSelected]}
+                            onPress={() => handleYearPress(year)}
+                          >
+                            <Text style={[appPickerStyles.yearGridItemText, isSelected && appPickerStyles.yearGridItemTextSelected]}>
+                              {year}
+                            </Text>
+                          </TouchableOpacity>
+                        )
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
               </View>
-            </View>
-          </Modal>
-        )}
+            </Modal>
+          )
+        })()}
 
       </KeyboardAvoidingView>
            {/* Action Buttons */}
@@ -1096,5 +1198,87 @@ const styles = StyleSheet.create({
   unitPickerItemTextSelected: {
     fontWeight: '600',
     color: colors.buttonPrimary,
+  },
+})
+
+const appPickerStyles = StyleSheet.create({
+  yearNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  yearNavBtn: {
+    padding: 8,
+  },
+  yearNavArrow: {
+    fontSize: 28,
+    color: colors.buttonPrimary,
+    lineHeight: 32,
+  },
+  yearNavArrowDisabled: {
+    color: '#D1D5DB',
+  },
+  yearNavText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 12,
+  },
+  monthItem: {
+    width: '25%',
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  monthItemSelected: {
+    backgroundColor: colors.buttonPrimary,
+  },
+  monthItemDisabled: {
+    opacity: 0.35,
+  },
+  monthItemText: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  monthItemTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  monthItemTextDisabled: {
+    color: '#9CA3AF',
+  },
+  yearGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 12,
+  },
+  yearGridItem: {
+    width: '33.33%',
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  yearGridItemSelected: {
+    backgroundColor: colors.buttonPrimary,
+  },
+  yearGridItemText: {
+    fontSize: 17,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  yearGridItemTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 })

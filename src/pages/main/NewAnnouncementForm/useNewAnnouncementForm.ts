@@ -43,6 +43,7 @@ export function useNewAnnouncementForm() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [currentDateField, setCurrentDateField] = useState<'start' | 'end'>('start')
   const [tempDate, setTempDate] = useState(new Date())
+  const [pickerDisplayYear, setPickerDisplayYear] = useState(new Date().getFullYear())
 
   const [selectedImages, setSelectedImages] = useState<Asset[]>([])
   const [selectedRegions, setSelectedRegions] = useState<string[]>([])
@@ -595,11 +596,49 @@ export function useNewAnnouncementForm() {
     return `${y}-${m}-${day}`
   }
 
+  const pickerMode: 'daily' | 'monthly' | 'yearly' = (() => {
+    const unit = (formData.rentUnit || formData.measurementUnit || '').toLowerCase()
+    if (unit === 'year' || unit.includes('year')) return 'yearly'
+    if (unit === 'month' || unit.includes('month')) return 'monthly'
+    return 'daily'
+  })()
+  
   const openDatePicker = (field: 'start' | 'end') => {
     setCurrentDateField(field)
     const existing = field === 'start' ? formData.periodStart : formData.salesPeriod
-    setTempDate(existing ? new Date(existing) : new Date())
+    const d = existing ? new Date(existing) : new Date()
+    setTempDate(d)
+    setPickerDisplayYear(d.getFullYear())
     setShowDatePicker(true)
+  }
+
+  const handlePickerMonthSelect = (month: number) => {
+    const d = new Date(pickerDisplayYear, month - 1, 1)
+    const str = formatDate(d)
+    if (currentDateField === 'start') setFormData(prev => ({ ...prev, periodStart: str }))
+    else setFormData(prev => ({ ...prev, salesPeriod: str }))
+    setShowDatePicker(false)
+  }
+
+  const handlePickerYearSelect = (year: number) => {
+    const d = new Date(year, 0, 1)
+    const str = formatDate(d)
+    if (currentDateField === 'start') setFormData(prev => ({ ...prev, periodStart: str }))
+    else setFormData(prev => ({ ...prev, salesPeriod: str }))
+    setShowDatePicker(false)
+  }
+
+  const formatPeriodDate = (dateStr: string): string => {
+    if (!dateStr) return ''
+    const parts = dateStr.split('-')
+    if (pickerMode === 'yearly') return parts[0] || dateStr
+    if (pickerMode === 'monthly') {
+      const monthIndex = parseInt(parts[1] || '1', 10) - 1
+      const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+      const monthLabel = t(`months.${monthKeys[monthIndex] || 'jan'}`)
+      return `${monthLabel} ${parts[0]}`
+    }
+    return dateStr
   }
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -706,6 +745,12 @@ export function useNewAnnouncementForm() {
     handleDateChange,
     confirmDate,
     cancelDatePicker: () => setShowDatePicker(false),
+    pickerMode,
+    pickerDisplayYear,
+    setPickerDisplayYear,
+    handlePickerMonthSelect,
+    handlePickerYearSelect,
+    formatPeriodDate,
     showImagePickerOptions,
     removeImage,
     handlePublish,
