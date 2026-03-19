@@ -2,11 +2,13 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Alert, Platform } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
+import { useQueryClient } from '@tanstack/react-query'
 import type { SupportedLang } from '../../../types/items'
 import { AnnouncementType, Announcement } from '../../../types'
 import * as announcementsAPI from '../../../lib/api/announcements.api'
 import { launchImageLibrary, launchCamera, Asset } from 'react-native-image-picker'
 import { API_CONFIG } from '../../../config/api.config'
+import { queryKeys } from '../../../lib/queries/queryKeys'
 import type { RouteParams, FormData, SelectOption } from './types'
 import { INITIAL_FORM_DATA } from './types'
 
@@ -23,6 +25,7 @@ export function useNewAnnouncementForm() {
   const { t, i18n } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
+  const queryClient = useQueryClient()
   const { type, announcementId, announcement: routeAnnouncement } = (route.params as RouteParams) || { type: 'goods' }
   const isEditMode = !!announcementId
   const currentLang = getCurrentLang(i18n)
@@ -537,7 +540,20 @@ export function useNewAnnouncementForm() {
         await announcementsAPI.updateAnnouncementAPI(announcementId, payload, newFiles.length ? newFiles : undefined)
         Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() } }])
       } else {
-        await announcementsAPI.createAnnouncementAPI(payload, validImages.length ? validImages : undefined)
+        const created = await announcementsAPI.createAnnouncementAPI(payload, validImages.length ? validImages : undefined)
+        // Prepend the new announcement to the cached "published" tab immediately
+        // so it appears in My Announcements without waiting for a refetch.
+        queryClient.setQueryData(queryKeys.announcements.myList('published'), (old: any) => {
+          if (!old?.pages?.length) return old
+          const firstPage = old.pages[0]
+          return {
+            ...old,
+            pages: [
+              { ...firstPage, announcements: [created, ...(firstPage.announcements ?? [])], total: (firstPage.total ?? 0) + 1 },
+              ...old.pages.slice(1),
+            ],
+          }
+        })
         Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() } }])
       }
     } catch (error: any) {

@@ -578,16 +578,16 @@ export async function createAnnouncementAPI(
         } as any)
       })
 
-    const response = await apiClient.post<Announcement>('/announcements', formData, {
+    const response = await apiClient.post<{ announcement: Announcement }>('/announcements', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     })
-    return response.data
+    return response.data.announcement
   } else {
     // No images, send as JSON
-    const response = await apiClient.post<Announcement>('/announcements', data)
-    return response.data
+    const response = await apiClient.post<{ announcement: Announcement }>('/announcements', data)
+    return response.data.announcement
   }
 }
 
