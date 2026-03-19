@@ -1,12 +1,12 @@
-import React, { useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList } from 'react-native'
+import React, { useCallback } from 'react'
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../../theme/colors'
-import { Announcement } from '../../types'
+import { Announcement, AnnouncementType } from '../../types'
 import { AnnouncementCard } from '../../components/AnnouncementCard'
 import { useNavigation } from '@react-navigation/native'
-import { useFavoritesStore } from '../../store/favorites/useFavoritesStore'
-import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
+import { useFavoritesList, flattenFavoritePages, useAddFavorite, useRemoveFavorite } from '../../hooks/useFavoriteQueries'
+import { useAppliedIds } from '../../hooks/useApplicationQueries'
 import { useAuth } from '../../context/AuthContext'
 
 export function FavoritesPage() {
@@ -15,57 +15,54 @@ export function FavoritesPage() {
   const { user } = useAuth()
 
   const {
-    list,
-    loading,
-    loadingMore,
-    hasMore,
-    refresh,
-    loadMore,
-  } = useFavoritesStore()
+    data,
+    isLoading,
+    isRefetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useFavoritesList(!!user)
 
-  const { pendingIds, fetchAppliedIds } = useApplicationsStore()
+  const list = flattenFavoritePages(data)
 
-  // Fetch once on mount
-  useEffect(() => {
-    refresh()
-  }, [])
+  const { data: appliedData } = useAppliedIds(user?.id, !!user)
+  const pendingIds = appliedData?.pendingIds ?? new Set<string>()
 
-  // Fetch pending applications for current user (so Apply button can be hidden like main page)
-  useEffect(() => {
-    if (user) fetchAppliedIds(String(user.id))
-  }, [user, fetchAppliedIds])
+  const addFavorite = useAddFavorite()
+  const removeFavorite = useRemoveFavorite()
 
   const handleView = useCallback((announcement: Announcement) => {
     ;(navigation as any).navigate('AnnouncementDetail', { announcementId: announcement.id })
   }, [navigation])
 
-  const handleFavoriteChange = useCallback((announcementId: string, isNowFavorite: boolean) => {
-    useFavoritesStore.setState(state => {
-      const newIds = new Set(state.favoriteIds)
-      if (isNowFavorite) {
-        newIds.add(announcementId)
-        return { favoriteIds: newIds }
-      } else {
-        newIds.delete(announcementId)
-        return {
-          favoriteIds: newIds,
-          list: state.list.filter(a => a.id !== announcementId),
-          total: Math.max(0, state.total - 1),
-        }
-      }
+  const handleApply = useCallback((announcement: Announcement) => {
+    const parent = navigation.getParent()
+    const nav = (parent ?? navigation) as any
+    nav.navigate('ApplicationForm', {
+      announcementId: announcement.id,
+      announcementType: announcement.category as AnnouncementType,
     })
-  }, [])
-  const renderItem = useCallback(({ item }: { item: Announcement }) => {
-    return (
-      <AnnouncementCard
-        announcement={item}
-        onView={handleView}
-        isFavorite={true}
-        onFavoriteChange={handleFavoriteChange}
-        pendingApplicationAnnouncementIds={pendingIds}
-      />
-    )
-   }, [handleView, handleFavoriteChange, pendingIds])
+  }, [navigation])
+
+  const handleFavoriteChange = useCallback((announcementId: string, isNowFavorite: boolean) => {
+    if (isNowFavorite) {
+      addFavorite.mutate(announcementId)
+    } else {
+      removeFavorite.mutate(announcementId)
+    }
+  }, [addFavorite, removeFavorite])
+
+  const renderItem = useCallback(({ item }: { item: Announcement }) => (
+    <AnnouncementCard
+      announcement={item}
+      onView={handleView}
+      onApply={handleApply}
+      isFavorite={true}
+      onFavoriteChange={handleFavoriteChange}
+      pendingApplicationAnnouncementIds={pendingIds}
+    />
+  ), [handleView, handleApply, handleFavoriteChange, pendingIds])
 
   return (
     <View style={styles.container}>
@@ -74,21 +71,21 @@ export function FavoritesPage() {
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
-        refreshing={loading}
-        onRefresh={refresh}
-        onEndReached={loadMore}
+        refreshing={isRefetching && !isFetchingNextPage}
+        onRefresh={refetch}
+        onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          !loading && list.length === 0 ? (
+          !isLoading ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{t('favorites.empty')}</Text>
             </View>
           ) : null
         }
         ListFooterComponent={
-          loadingMore && hasMore ? (
+          isFetchingNextPage && hasNextPage ? (
             <View style={styles.footerLoader}>
-              <Text style={styles.footerText}>{t('common.loading')}</Text>
+              <ActivityIndicator size="small" color={colors.buttonPrimary} />
             </View>
           ) : null
         }
@@ -98,30 +95,9 @@ export function FavoritesPage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  footerLoader: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  listContainer: { padding: 16 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyText: { fontSize: 16, color: colors.textSecondary, textAlign: 'center' },
+  footerLoader: { padding: 20, alignItems: 'center' },
 })

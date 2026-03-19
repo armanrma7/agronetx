@@ -21,8 +21,8 @@ import { colors } from '../../../theme/colors'
 import { Announcement } from '../../../types'
 import { AppHeader } from '../../../components/AppHeader'
 import { useAuth } from '../../../context/AuthContext'
-import { useApplicationsStore } from '../../../store/applications/useApplicationsStore'
-import { useAnnouncementsStore } from '../../../store/announcements/useAnnouncementsStore'
+import { useApplicationsByAnnouncement, useApproveApplication, useRejectApplication, useCancelApplication } from '../../../hooks/useApplicationQueries'
+import { useAnnouncementDetail } from '../../../hooks/useAnnouncementQueries'
 import type { ApplicationListItem } from '../../../lib/api/announcements.api'
 import {
   ApplicationListHeader,
@@ -44,113 +44,82 @@ export function AnnouncementApplicationsPage() {
   const { announcementId, announcement: paramAnnouncement } = params
 
   const {
-    byAnnouncementId,
-    loadingByAnnouncementId,
-    actionLoadingId,
-    actionLoadingType,
-    fetchApplicationsByAnnouncement,
-    approveApplication,
-    rejectApplication,
-    closeApplication,
-  } = useApplicationsStore()
+    data: applications = [],
+    isLoading: loading,
+    isRefetching,
+    refetch,
+  } = useApplicationsByAnnouncement(announcementId)
 
-  const { cache, setInCache } = useAnnouncementsStore()
+  const { data: fetchedAnnouncement } = useAnnouncementDetail(announcementId)
+  const announcement: Announcement | null = fetchedAnnouncement ?? paramAnnouncement ?? null
 
-  // Seed the announcement cache from route param if available
-  useEffect(() => {
-    if (paramAnnouncement && !cache[announcementId]) {
-      setInCache(paramAnnouncement)
-    }
-  }, [announcementId])
+  const approveApp = useApproveApplication()
+  const rejectApp = useRejectApplication()
+  const cancelApp = useCancelApplication()
 
-  const announcement: Announcement | null = cache[announcementId] ?? paramAnnouncement ?? null
-  const applications: ApplicationListItem[] = byAnnouncementId[announcementId] ?? []
-  const loading = loadingByAnnouncementId[announcementId] ?? false
-  const refreshing = false // pull-to-refresh uses the same flag in this context
-
-  const fetchData = useCallback((refresh = false) => {
-    fetchApplicationsByAnnouncement(announcementId, refresh)
-  }, [announcementId, fetchApplicationsByAnnouncement])
-
-  useEffect(() => {
-    fetchData(false)
-  }, [announcementId])
-
-  const runAction = useCallback(
-    async (action: () => Promise<void>, successKey: string, errorKey: string) => {
-      try {
-        await action()
-        Alert.alert(t('common.success'), t(successKey))
-      } catch (error: any) {
-        Alert.alert(t('common.error'), error?.response?.data?.message || t(errorKey))
-      }
-    },
-    [t],
-  )
+  // Derive per-button loading state from mutation variables (React Query pattern)
+  const actionLoadingId =
+    (approveApp.isPending ? (approveApp.variables as any)?.id : null) ??
+    (rejectApp.isPending ? (rejectApp.variables as any)?.id : null) ??
+    (cancelApp.isPending ? (cancelApp.variables as any)?.id : null) ??
+    null
+  const actionLoadingType =
+    approveApp.isPending ? 'approve' :
+    rejectApp.isPending ? 'reject' :
+    cancelApp.isPending ? 'cancel' :
+    null
 
   const handleApprove = useCallback(
     (id: string) =>
-      Alert.alert(
-        t('applications.approve'),
-        t('applications.approveConfirm'),
-        [
-          { text: t('common.no'), style: 'cancel' },
-          {
-            text: t('common.yes'),
-            onPress: () =>
-              runAction(
-                () => approveApplication(id, announcementId),
-                'applications.approveSuccess',
-                'applications.approveError',
-              ),
-          },
-        ],
-      ),
-    [announcementId, approveApplication, runAction, t],
+      Alert.alert(t('applications.approve'), t('applications.approveConfirm'), [
+        { text: t('common.no'), style: 'cancel' },
+        {
+          text: t('common.yes'),
+          onPress: () =>
+            approveApp.mutate({ id, announcementId }, {
+              onSuccess: () => Alert.alert(t('common.success'), t('applications.approveSuccess')),
+              onError: (e: any) => Alert.alert(t('common.error'), e?.response?.data?.message || t('applications.approveError')),
+            }),
+        },
+      ]),
+    [announcementId, approveApp, t],
   )
 
   const handleReject = useCallback(
     (id: string) =>
-      Alert.alert(
-        t('applications.reject'),
-        t('applications.rejectConfirm'),
-        [
-          { text: t('common.no'), style: 'cancel' },
-          {
-            text: t('common.yes'),
-            style: 'destructive',
-            onPress: () =>
-              runAction(
-                () => rejectApplication(id, announcementId),
-                'applications.rejectSuccess',
-                'applications.rejectError',
-              ),
-          },
-        ],
-      ),
-    [announcementId, rejectApplication, runAction, t],
+      Alert.alert(t('applications.reject'), t('applications.rejectConfirm'), [
+        { text: t('common.no'), style: 'cancel' },
+        {
+          text: t('common.yes'),
+          style: 'destructive',
+          onPress: () =>
+            rejectApp.mutate({ id, announcementId }, {
+              onSuccess: () => Alert.alert(t('common.success'), t('applications.rejectSuccess')),
+              onError: (e: any) => Alert.alert(t('common.error'), e?.response?.data?.message || t('applications.rejectError')),
+            }),
+        },
+      ]),
+    [announcementId, rejectApp, t],
   )
 
   const handleCloseApplication = useCallback(
-    (id: string) =>
-      Alert.alert(
-        t('applications.closeTitle'),
-        t('applications.closeConfirm'),
-        [
-          { text: t('common.no'), style: 'cancel' },
-          {
-            text: t('common.yes'),
-            style: 'destructive',
-            onPress: () =>
-              runAction(
-                () => closeApplication(id, announcementId),
-                'applications.closed',
-                'applications.closeError',
-              ),
-          },
-        ],
-      ),
-    [t, runAction, closeApplication, announcementId],
+    (id: string) => {
+      const app = applications.find(a => a.id === id)
+      const isOwn = user?.id != null && app != null && String(app.user_id) === String(user.id)
+      Alert.alert(t('applications.closeTitle'), t('applications.closeConfirm'), [
+        { text: t('common.no'), style: 'cancel' },
+        {
+          text: t('common.yes'),
+          style: 'destructive',
+          onPress: () =>
+            cancelApp.mutate({ id, announcementId, isOwnApplication: isOwn }, {
+              onSuccess: () => Alert.alert(t('common.success'), t('applications.closed')),
+              onError: (e: any) => Alert.alert(t('common.error'), e?.response?.data?.message || t('applications.closeError')),
+            }),
+        },
+      ])
+    },
+    [t, cancelApp, announcementId, applications, user?.id],
   )
 
   const a = announcement as any
@@ -295,8 +264,10 @@ export function AnnouncementApplicationsPage() {
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => fetchData(true)}
+              refreshing={isRefetching}
+              onRefresh={() => refetch()}
+              colors={[colors.buttonPrimary]}
+              tintColor={colors.buttonPrimary}
             />
           }
         />

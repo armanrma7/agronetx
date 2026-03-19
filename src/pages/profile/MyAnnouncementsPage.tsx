@@ -1,34 +1,43 @@
-import React, { useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native'
+import React, { useState, useCallback } from 'react'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
+import { useQueryClient } from '@tanstack/react-query'
 import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
 import { MyAnnouncementCard } from './MyAnnouncementCard'
-import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
+import { useMyAnnouncements, flattenAnnouncementPages, useCancelAnnouncement } from '../../hooks/useAnnouncementQueries'
+import { useCloseMyApplication } from '../../hooks/useApplicationQueries'
+import { queryKeys } from '../../lib/queries/queryKeys'
+import type { MyAnnouncementsTab } from '../../lib/queries/queryKeys'
 
 export function MyAnnouncementsPage() {
   const { t } = useTranslation()
   const navigation = useNavigation()
+  const qc = useQueryClient()
+
+  const [activeTab, setActiveTab] = useState<MyAnnouncementsTab>('published')
 
   const {
-    myList,
-    myLoading,
-    myLoadingMore,
-    myHasMore,
-    myActiveTab,
-    cancellingId,
-    closingApplicationId,
-    fetchMyAnnouncements,
-    setMyActiveTab,
-    loadMoreMyAnnouncements,
-    cancelMyAnnouncement,
-    closeMyApplication,
-  } = useApplicationsStore()
+    data,
+    isLoading,
+    isRefetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useMyAnnouncements(activeTab)
 
-  useEffect(() => {
-    fetchMyAnnouncements(true)
-  }, [myActiveTab])
+  const myList = flattenAnnouncementPages(data)
+
+  const cancelAnnouncement = useCancelAnnouncement()
+  const closeMyApplication = useCloseMyApplication()
+
+  // Track which IDs are currently in a loading action
+  const cancellingId = cancelAnnouncement.isPending ? (cancelAnnouncement.variables as string) : null
+  const closingApplicationId = closeMyApplication.isPending
+    ? (closeMyApplication.variables as any)?.applicationId
+    : null
 
   const handleCancel = useCallback(async (announcement: Announcement) => {
     Alert.alert(
@@ -39,21 +48,19 @@ export function MyAnnouncementsPage() {
         {
           text: t('common.yes'),
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelMyAnnouncement(announcement.id)
-              Alert.alert(t('common.success'), t('announcements.cancelled'))
-            } catch (error: any) {
-              Alert.alert(t('common.error'), error.response?.data?.message || t('announcements.cancelError'))
-            }
+          onPress: () => {
+            cancelAnnouncement.mutate(announcement.id, {
+              onSuccess: () => Alert.alert(t('common.success'), t('announcements.cancelled')),
+              onError: (error: any) =>
+                Alert.alert(t('common.error'), error.response?.data?.message || t('announcements.cancelError')),
+            })
           },
         },
       ],
     )
-  }, [cancelMyAnnouncement, t])
+  }, [cancelAnnouncement, t])
 
   const handleCloseApplication = useCallback(async (applicationId: string) => {
-    // Find which announcement owns this application so we can clean up the applied/pending sets
     const ownerAnnouncement = myList.find(a =>
       ((a as any).applications || []).some((app: any) => app.id === applicationId),
     )
@@ -67,13 +74,12 @@ export function MyAnnouncementsPage() {
         {
           text: t('common.yes'),
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await closeMyApplication(applicationId, announcementId)
-              Alert.alert(t('common.success'), t('applications.closed'))
-            } catch (error: any) {
-              Alert.alert(t('common.error'), error.response?.data?.message || t('applications.closeError'))
-            }
+          onPress: () => {
+            closeMyApplication.mutate({ applicationId, announcementId }, {
+              onSuccess: () => Alert.alert(t('common.success'), t('applications.closed')),
+              onError: (error: any) =>
+                Alert.alert(t('common.error'), error.response?.data?.message || t('applications.closeError')),
+            })
           },
         },
       ],
@@ -92,6 +98,11 @@ export function MyAnnouncementsPage() {
     nav.navigate('AnnouncementApplications', { announcementId: announcement.id, announcement })
   }, [navigation])
 
+  const handleTabSwitch = useCallback((tab: MyAnnouncementsTab) => {
+    setActiveTab(tab)
+    qc.invalidateQueries({ queryKey: queryKeys.announcements.myList(tab) })
+  }, [qc])
+
   const renderAnnouncementCard = useCallback(({ item }: { item: Announcement }) => {
     const announcementData = item as any
     const applications = Array.isArray(announcementData.applications) ? announcementData.applications : []
@@ -105,34 +116,28 @@ export function MyAnnouncementsPage() {
         onView={handleView}
         onCloseApplication={handleCloseApplication}
         onApplicationsPress={handleApplicationsPress}
-        showMyApplications={myActiveTab === 'applied'}
+        showMyApplications={activeTab === 'applied'}
         cancelling={cancellingId === item.id}
         closingApplicationId={isClosingApplication ? closingApplicationId : null}
       />
     )
-  }, [myActiveTab, cancellingId, closingApplicationId, handleCancel, handleView, handleCloseApplication, handleApplicationsPress])
+  }, [activeTab, cancellingId, closingApplicationId, handleCancel, handleView, handleCloseApplication, handleApplicationsPress])
 
   return (
     <View style={styles.container}>
       {/* Top Tabs */}
       <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, myActiveTab === 'published' && styles.tabActive]}
-          onPress={() => setMyActiveTab('published')}
-        >
-          <Text style={[styles.tabText, myActiveTab === 'published' && styles.tabTextActive]}>
-            {t('announcements.published')}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, myActiveTab === 'applied' && styles.tabActive]}
-          onPress={() => setMyActiveTab('applied')}
-        >
-          <Text style={[styles.tabText, myActiveTab === 'applied' && styles.tabTextActive]}>
-            {t('announcements.applied')}
-          </Text>
-        </TouchableOpacity>
+        {(['published', 'applied'] as const).map(tab => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            onPress={() => handleTabSwitch(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              {t(`announcements.${tab}`)}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <FlatList
@@ -140,25 +145,23 @@ export function MyAnnouncementsPage() {
         renderItem={renderAnnouncementCard}
         keyExtractor={item => item.id}
         contentContainerStyle={
-          myList.length === 0 && !myLoading
-            ? [styles.listContainer, { flexGrow: 1 }]
-            : styles.listContainer
+          myList.length === 0 && !isLoading ? [styles.listContainer, { flexGrow: 1 }] : styles.listContainer
         }
-        refreshing={myLoading}
-        onRefresh={() => fetchMyAnnouncements(true)}
-        onEndReached={loadMoreMyAnnouncements}
+        refreshing={isRefetching && !isFetchingNextPage}
+        onRefresh={refetch}
+        onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          !myLoading && !myLoadingMore && myList.length === 0 ? (
+          !isLoading ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{t('common.empty')}</Text>
             </View>
           ) : null
         }
         ListFooterComponent={
-          myLoadingMore && myHasMore ? (
+          isFetchingNextPage && hasNextPage ? (
             <View style={styles.footerLoader}>
-              <Text style={styles.footerText}>{t('common.loading')}</Text>
+              <ActivityIndicator size="small" color={colors.buttonPrimary} />
             </View>
           ) : null
         }
@@ -168,10 +171,7 @@ export function MyAnnouncementsPage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundSecondary,
-  },
+  container: { flex: 1, backgroundColor: colors.backgroundSecondary },
   tabs: {
     flexDirection: 'row',
     backgroundColor: colors.white,
@@ -179,42 +179,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: colors.buttonPrimary,
-  },
-  tabText: {
-    fontSize: 16,
-    color: colors.textTertiary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: colors.buttonPrimary,
-    fontWeight: '600',
-  },
-  listContainer: {
-    padding: 16,
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textTertiary,
-  },
-  footerLoader: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: colors.textTertiary,
-  },
+  tab: { flex: 1, paddingVertical: 16, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: colors.buttonPrimary },
+  tabText: { fontSize: 16, color: colors.textTertiary, fontWeight: '500' },
+  tabTextActive: { color: colors.buttonPrimary, fontWeight: '600' },
+  listContainer: { padding: 16 },
+  emptyContainer: { padding: 40, alignItems: 'center' },
+  emptyText: { fontSize: 16, color: colors.textTertiary },
+  footerLoader: { padding: 20, alignItems: 'center' },
 })

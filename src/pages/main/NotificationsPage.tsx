@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useState } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -12,29 +12,26 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 import { colors } from '../../theme/colors'
-import { useNotificationsStore } from '../../store/notifications/useNotificationsStore'
+import {
+  useNotificationsList,
+  flattenNotificationPages,
+  useMarkNotificationSeen,
+} from '../../hooks/useNotificationQueries'
+import type { NotificationsTab } from '../../lib/queries/queryKeys'
 import type { NotificationItem } from '../../lib/api/notifications.api'
 
-// Notification types that support deep link navigation
+// ─── Navigation helpers ───────────────────────────────────────────────────────
+
 const APPLICATION_TYPES = [
-  'application_created',
-  'application_approved',
-  'application_rejected',
-  'application_closed',
-  'application_canceled',
-] as const
-const ANNOUNCEMENT_TYPES = [
-  'announcement_published',
-  'announcement_closed',
-  'announcement_blocked',
-  'announcement_canceled',
-  'announcement_created',
-  'announcement_edited',
-  'announcement_expiring_soon',
-  'announcement_auto_closed',
+  'application_created', 'application_approved', 'application_rejected',
+  'application_closed', 'application_canceled',
 ] as const
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+const ANNOUNCEMENT_TYPES = [
+  'announcement_published', 'announcement_closed', 'announcement_blocked',
+  'announcement_canceled', 'announcement_created', 'announcement_edited',
+  'announcement_expiring_soon', 'announcement_auto_closed',
+] as const
 
 function getTimeAgo(dateStr: string, t: (key: string, opts?: any) => string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -58,16 +55,15 @@ function getApplicationId(n: NotificationItem): string | undefined {
   return n.data?.application_id || n.data?.applicationId
 }
 
-function getQuantityUnit(n: NotificationItem): string | undefined {
+function getQuantityUnit(n: NotificationItem): string {
   return n.data?.quantity_unit || n.data?.quantityUnit || ''
 }
 
-/** Resolve navigation target from notification type and data. Returns screen name + params or null. */
 function getNotificationNavigationTarget(n: NotificationItem): { screen: string; params: object } | null {
   const type = (n.type || '').toLowerCase().trim()
   const announcementId = getAnnouncementId(n)
   const applicationId = getApplicationId(n)
-  const quantityUnit = getQuantityUnit(n) || ''
+  const quantityUnit = getQuantityUnit(n)
 
   if (APPLICATION_TYPES.includes(type as any) && announcementId && applicationId) {
     return { screen: 'ApplicationDetail', params: { announcementId, appId: applicationId, quantityUnit } }
@@ -81,36 +77,24 @@ function getNotificationNavigationTarget(n: NotificationItem): { screen: string;
   return null
 }
 
-type Period = 'today' | 'yesterday' | 'earlier'
+// ─── Bottom Sheet ─────────────────────────────────────────────────────────────
 
-interface GroupedNotifications {
-  period: Period
-  label: string
-  notifications: NotificationItem[]
-}
-
-// ─── Bottom Sheet ────────────────────────────────────────────────────────────
-
-interface NotificationBottomSheetProps {
+function NotificationBottomSheet({
+  notification,
+  onClose,
+  onOpenAnnouncement,
+}: {
   notification: NotificationItem | null
   onClose: () => void
-  onOpenAnnouncement?: (announcementId: string) => void
-}
-
-function NotificationBottomSheet({ notification, onClose, onOpenAnnouncement }: NotificationBottomSheetProps) {
+  onOpenAnnouncement?: (id: string) => void
+}) {
   const { t } = useTranslation()
   if (!notification) return null
-
   const message = getNotificationMessage(notification)
   const announcementId = getAnnouncementId(notification)
 
   return (
-    <Modal
-      visible={!!notification}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={!!notification} transparent animationType="fade" onRequestClose={onClose}>
       <View style={sheetStyles.overlay}>
         <TouchableOpacity style={sheetStyles.backdrop} activeOpacity={1} onPress={onClose} />
         <View style={sheetStyles.sheet}>
@@ -121,45 +105,31 @@ function NotificationBottomSheet({ notification, onClose, onOpenAnnouncement }: 
               <Text style={sheetStyles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
-
           <ScrollView contentContainerStyle={sheetStyles.body} showsVerticalScrollIndicator={false}>
-            {/* Status dot + type */}
             <View style={sheetStyles.statusRow}>
               <View style={[sheetStyles.dot, notification.is_seen ? sheetStyles.dotRead : sheetStyles.dotUnread]} />
-              {notification.type ? (
-                <Text style={sheetStyles.typeLabel}>{notification.type}</Text>
-              ) : null}
+              {notification.type ? <Text style={sheetStyles.typeLabel}>{notification.type}</Text> : null}
             </View>
-
-            {/* Message */}
             <Text style={sheetStyles.message}>{message}</Text>
-
-            {/* Announcement link — show as link for all types that have announcement */}
             {announcementId && (
               <TouchableOpacity
                 style={sheetStyles.announcementLinkRow}
-                onPress={() => {
-                  onOpenAnnouncement?.(announcementId)
-                  onClose()
-                }}
+                onPress={() => { onOpenAnnouncement?.(announcementId); onClose() }}
                 activeOpacity={0.7}
               >
                 <Text style={sheetStyles.announcementLinkText}>{t('notifications.viewAnnouncement')}</Text>
               </TouchableOpacity>
             )}
-
-            {/* Extra data fields */}
-            {notification.data && Object.keys(notification.data).filter(k => k !== 'announcement_id' && k !== 'announcementId').map(key => (
-              <View key={key} style={sheetStyles.dataRow}>
-                <Text style={sheetStyles.dataKey}>{key}</Text>
-                <Text style={sheetStyles.dataValue}>{String(notification.data![key])}</Text>
-              </View>
-            ))}
-
-            {/* Created at */}
-            <Text style={sheetStyles.createdAt}>
-              {new Date(notification.created_at).toLocaleString()}
-            </Text>
+            {notification.data &&
+              Object.keys(notification.data)
+                .filter(k => k !== 'announcement_id' && k !== 'announcementId')
+                .map(key => (
+                  <View key={key} style={sheetStyles.dataRow}>
+                    <Text style={sheetStyles.dataKey}>{key}</Text>
+                    <Text style={sheetStyles.dataValue}>{String(notification.data![key])}</Text>
+                  </View>
+                ))}
+            <Text style={sheetStyles.createdAt}>{new Date(notification.created_at).toLocaleString()}</Text>
           </ScrollView>
         </View>
       </View>
@@ -167,79 +137,64 @@ function NotificationBottomSheet({ notification, onClose, onOpenAnnouncement }: 
   )
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Period = 'today' | 'yesterday' | 'earlier'
+type FlatItem =
+  | { type: 'header'; label: string; key: string }
+  | { type: 'item'; notification: NotificationItem; key: string }
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function NotificationsPage() {
   const { t } = useTranslation()
-
-  const {
-    list,
-    loading,
-    loadingMore,
-    hasMore,
-    activeTab,
-    setActiveTab,
-    fetchNotifications,
-    fetchUnreadCount,
-    loadMore,
-    refresh,
-    markSeen,
-  } = useNotificationsStore()
-
   const navigation = useNavigation()
+
+  const [activeTab, setActiveTab] = useState<NotificationsTab>('all')
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null)
 
-  useEffect(() => {
-    fetchNotifications(true, true)
-    fetchUnreadCount()
-  }, [])
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useNotificationsList(activeTab)
+
+  const list = flattenNotificationPages(data)
+  const markSeen = useMarkNotificationSeen()
 
   const handleNotificationPress = useCallback((notification: NotificationItem) => {
-    markSeen(notification.id)
+    if (!notification.is_seen) markSeen.mutate(notification.id)
     const target = getNotificationNavigationTarget(notification)
     if (target) {
       const nav = (navigation.getParent?.() ?? navigation) as any
-      if (nav?.navigate) {
-        nav.navigate(target.screen, target.params)
-      }
-      setSelectedNotification(null)
+      nav?.navigate?.(target.screen, target.params)
       return
     }
-    // No redirect for this type (e.g. general, or missing ids) — open bottom sheet with notification details
     setSelectedNotification(notification)
   }, [markSeen, navigation])
 
-  const handleCloseSheet = useCallback(() => {
-    setSelectedNotification(null)
-  }, [])
-
-  // Group notifications by date period
-  const groupedNotifications = useMemo((): GroupedNotifications[] => {
+  // Group by date period
+  const groupedNotifications = useMemo(() => {
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const yesterdayStart = new Date(todayStart.getTime() - 86400000)
-
     const groups: Record<Period, NotificationItem[]> = { today: [], yesterday: [], earlier: [] }
-
     list.forEach(n => {
       const d = new Date(n.created_at)
       if (d >= todayStart) groups.today.push(n)
       else if (d >= yesterdayStart) groups.yesterday.push(n)
       else groups.earlier.push(n)
     })
-
-    const result: GroupedNotifications[] = []
-    if (groups.today.length)     result.push({ period: 'today',     label: t('notifications.today'),     notifications: groups.today })
+    const result: Array<{ period: Period; label: string; notifications: NotificationItem[] }> = []
+    if (groups.today.length) result.push({ period: 'today', label: t('notifications.today'), notifications: groups.today })
     if (groups.yesterday.length) result.push({ period: 'yesterday', label: t('notifications.yesterday'), notifications: groups.yesterday })
-    if (groups.earlier.length)   result.push({ period: 'earlier',   label: t('notifications.earlier'),   notifications: groups.earlier })
-
+    if (groups.earlier.length) result.push({ period: 'earlier', label: t('notifications.earlier'), notifications: groups.earlier })
     return result
   }, [list, t])
-
-  // Flatten for FlatList: section headers + items
-  type FlatItem =
-    | { type: 'header'; label: string; key: string }
-    | { type: 'item'; notification: NotificationItem; key: string }
 
   const flatData = useMemo((): FlatItem[] => {
     const items: FlatItem[] = []
@@ -251,12 +206,8 @@ export function NotificationsPage() {
   }, [groupedNotifications])
 
   const renderItem = useCallback(({ item }: { item: FlatItem }) => {
-    if (item.type === 'header') {
-      return <Text style={styles.groupTitle}>{item.label}</Text>
-    }
+    if (item.type === 'header') return <Text style={styles.groupTitle}>{item.label}</Text>
     const n = item.notification
-    const message = getNotificationMessage(n)
-
     return (
       <TouchableOpacity
         style={[styles.notificationCard, !n.is_seen && styles.notificationCardUnread]}
@@ -268,7 +219,7 @@ export function NotificationsPage() {
             <View style={[styles.dot, n.is_seen ? styles.dotRead : styles.dotUnread]} />
             <View style={styles.notificationTextContainer}>
               <Text style={[styles.notificationText, !n.is_seen && styles.notificationTextUnread]}>
-                {message}
+                {getNotificationMessage(n)}
               </Text>
             </View>
           </View>
@@ -280,47 +231,42 @@ export function NotificationsPage() {
 
   return (
     <View style={styles.container}>
-      {/* Tabs */}
       <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-          onPress={() => setActiveTab('all')}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-            {t('notifications.all')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'unread' && styles.tabActive]}
-          onPress={() => setActiveTab('unread')}
-        >
-          <Text style={[styles.tabText, activeTab === 'unread' && styles.tabTextActive]}>
-            {t('notifications.unread')}
-          </Text>
-        </TouchableOpacity>
+        {(['all', 'unread'] as const).map(tab => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              {t(`notifications.${tab}`)}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <FlatList
         data={flatData}
         keyExtractor={item => item.key}
         renderItem={renderItem}
-        contentContainerStyle={flatData.length === 0 && !loading
-          ? [styles.listContainer, { flexGrow: 1 }]
-          : styles.listContainer
+        contentContainerStyle={
+          flatData.length === 0 && !isLoading
+            ? [styles.listContainer, { flexGrow: 1 }]
+            : styles.listContainer
         }
-        refreshing={loading}
-        onRefresh={refresh}
-        onEndReached={loadMore}
+        refreshing={isRefetching && !isFetchingNextPage}
+        onRefresh={refetch}
+        onEndReached={() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          !loading ? (
+          !isLoading ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
             </View>
           ) : null
         }
         ListFooterComponent={
-          loadingMore && hasMore ? (
+          isFetchingNextPage && hasNextPage ? (
             <View style={styles.footerLoader}>
               <ActivityIndicator size="small" color={colors.buttonPrimary} />
             </View>
@@ -330,24 +276,19 @@ export function NotificationsPage() {
 
       <NotificationBottomSheet
         notification={selectedNotification}
-        onClose={handleCloseSheet}
+        onClose={() => setSelectedNotification(null)}
         onOpenAnnouncement={(id) => {
-          handleCloseSheet()
+          setSelectedNotification(null)
           const nav = (navigation.getParent?.() ?? navigation) as any
-          if (nav?.navigate) nav.navigate('AnnouncementDetail', { announcementId: id })
+          nav?.navigate?.('AnnouncementDetail', { announcementId: id })
         }}
       />
     </View>
   )
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundSecondary,
-  },
+  container: { flex: 1, backgroundColor: colors.backgroundSecondary },
   tabs: {
     flexDirection: 'row',
     backgroundColor: colors.white,
@@ -355,222 +296,48 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: colors.buttonPrimary,
-  },
-  tabText: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  listContainer: {
-    padding: 16,
-  },
-  groupTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 8,
-    marginLeft: 4,
-  },
-  notificationCard: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 8,
-  },
-  notificationCardUnread: {
-    backgroundColor: colors.borderLight,
-    // borderLeftWidth: 3,
-    // borderLeftColor: colors.buttonPrimary,
-  },
-  notificationRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  notificationLeft: {
-    flexDirection: 'row',
-    flex: 1,
-    marginRight: 12,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 10,
-    marginTop: 6,
-    flexShrink: 0,
-  },
-  dotUnread: {
-    backgroundColor: colors.success,
-  },
-  dotRead: {
-    backgroundColor: colors.textTertiary,
-  },
-  notificationTextContainer: {
-    flex: 1,
-  },
-  notificationText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 6,
-  },
-  notificationTextUnread: {
-    color: colors.textPrimary,
-    fontWeight: '500',
-  },
-  announcementId: {
-    fontSize: 13,
-    color: colors.buttonPrimary,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: colors.textTertiary,
-    marginTop: 4,
-    flexShrink: 0,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textTertiary,
-  },
-  footerLoader: {
-    padding: 20,
-    alignItems: 'center',
-  },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: colors.buttonPrimary },
+  tabText: { fontSize: 15, color: colors.textSecondary, fontWeight: '500' },
+  tabTextActive: { color: colors.textPrimary, fontWeight: '600' },
+  listContainer: { padding: 16 },
+  groupTitle: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, marginTop: 8, marginLeft: 4 },
+  notificationCard: { backgroundColor: colors.white, borderRadius: 8, padding: 14, marginBottom: 8 },
+  notificationCardUnread: { backgroundColor: colors.borderLight },
+  notificationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  notificationLeft: { flexDirection: 'row', flex: 1, marginRight: 12 },
+  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 10, marginTop: 6, flexShrink: 0 },
+  dotUnread: { backgroundColor: colors.success },
+  dotRead: { backgroundColor: colors.textTertiary },
+  notificationTextContainer: { flex: 1 },
+  notificationText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginBottom: 6 },
+  notificationTextUnread: { color: colors.textPrimary, fontWeight: '500' },
+  timestamp: { fontSize: 12, color: colors.textTertiary, marginTop: 4, flexShrink: 0 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyText: { fontSize: 16, color: colors.textTertiary },
+  footerLoader: { padding: 20, alignItems: 'center' },
 })
 
 const sheetStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  sheet: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    maxHeight: '80%',
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.borderLight,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  closeBtnText: {
-    fontSize: 18,
-    color: colors.textSecondary,
-  },
-  body: {
-    paddingBottom: 20,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  dotUnread: {
-    backgroundColor: colors.success,
-  },
-  dotRead: {
-    backgroundColor: colors.textTertiary,
-  },
-  typeLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textTransform: 'capitalize',
-  },
-  message: {
-    fontSize: 16,
-    color: colors.textPrimary,
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  announcementLinkRow: {
-    marginBottom: 12,
-    paddingVertical: 8,
-  },
-  announcementLinkText: {
-    fontSize: 16,
-    color: colors.buttonPrimary,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  dataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  dataKey: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  dataValue: {
-    fontSize: 13,
-    color: colors.textPrimary,
-    fontWeight: '500',
-    maxWidth: '60%',
-    textAlign: 'right',
-  },
-  createdAt: {
-    fontSize: 12,
-    color: colors.textTertiary,
-    marginTop: 16,
-    textAlign: 'right',
-  },
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingBottom: 40, maxHeight: '80%' },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderLight, alignSelf: 'center', marginTop: 12, marginBottom: 8 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight, marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  closeBtn: { padding: 4 },
+  closeBtnText: { fontSize: 18, color: colors.textSecondary },
+  body: { paddingBottom: 20 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  dotUnread: { backgroundColor: colors.success },
+  dotRead: { backgroundColor: colors.textTertiary },
+  typeLabel: { fontSize: 13, color: colors.textSecondary, textTransform: 'capitalize' },
+  message: { fontSize: 16, color: colors.textPrimary, lineHeight: 24, marginBottom: 16 },
+  announcementLinkRow: { marginBottom: 12, paddingVertical: 8 },
+  announcementLinkText: { fontSize: 16, color: colors.buttonPrimary, fontWeight: '600', textDecorationLine: 'underline' },
+  dataRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  dataKey: { fontSize: 13, color: colors.textSecondary },
+  dataValue: { fontSize: 13, color: colors.textPrimary, fontWeight: '500', maxWidth: '60%', textAlign: 'right' },
+  createdAt: { fontSize: 12, color: colors.textTertiary, marginTop: 16, textAlign: 'right' },
 })

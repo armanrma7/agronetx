@@ -14,7 +14,7 @@ import { colors } from '../theme/colors'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { useAuth } from '../context/AuthContext'
 import { AnnouncementType } from '../types'
-import { useNotificationsStore } from '../store/notifications/useNotificationsStore'
+import { useUnreadCount } from '../hooks/useNotificationQueries'
 
 const Tab = createBottomTabNavigator()
 
@@ -63,12 +63,8 @@ export function HomeTabs() {
   const { t } = useTranslation()
   const navigation = useNavigation()
   const { user } = useAuth()
-  const { unreadCount, fetchUnreadCount } = useNotificationsStore()
+  const { data: unreadCount = 0 } = useUnreadCount(!!user)
   const initials = getUserInitials(user?.full_name)
-
-  useEffect(() => {
-    fetchUnreadCount()
-  }, [])
   const [filterModalVisible, setFilterModalVisible] = useState(false)
   const [notificationFilterModalVisible, setNotificationFilterModalVisible] = useState(false)
   const [searchModalVisible, setSearchModalVisible] = useState(false)

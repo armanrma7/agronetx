@@ -19,13 +19,11 @@ import Icon from '../../components/Icon'
 import { Button } from '../../components/Button'
 import * as profileAPI from '../../lib/api/profile.api'
 
-import { useAuthStore } from '../../store/auth/useAuthStore'
-import { useProfileStore } from '../../store/profile/useProfileStore'
+import { useRegions, useVillagesByRegion } from '../../hooks/useProfileQueries'
 
 export function ProfilePage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const updateUser = useAuthStore(state => state.updateUser)
+  const { user, updateUser } = useAuth()
   console.log('User data:', user)
   
   const [identityExpanded, setIdentityExpanded] = useState(false)
@@ -38,86 +36,39 @@ export function ProfilePage() {
   const [secondaryPhone, setSecondaryPhone] = useState<string | null>(null)
   const [region, setRegion] = useState('')
   const [village, setVillage] = useState('')
-
-  // Regions from store (cached), villages remain local (depend on selected region)
-  const { regions, loadingRegions, fetchRegions, fetchVillagesByRegion } = useProfileStore()
-  const [villages, setVillages] = useState<profileAPI.Village[]>([])
-  const [loadingVillages, setLoadingVillages] = useState(false)
+  const [regionChangedManually, setRegionChangedManually] = React.useState(false)
   const [updating, setUpdating] = useState(false)
+
+  // Regions via React Query (cached, staleTime: Infinity)
+  const { data: regions = [], isLoading: loadingRegions } = useRegions()
+  // Villages via React Query (keyed by region, cached)
+  const { data: villages = [], isLoading: loadingVillages } = useVillagesByRegion(
+    regionChangedManually || !!user?.region_id ? region : undefined,
+  )
 
   // Initialize form data from user
   useEffect(() => {
     if (user) {
-      console.log('Loading user data:', user)
       setName(user.full_name || '')
       setUserType(user.user_type || '')
-      
-      // Set primary phone
-      if (user.phone) {
-        setPrimaryPhone(user.phone)
+      if (user.phone) setPrimaryPhone(user.phone)
+      if (user.phones && Array.isArray(user.phones)) {
+        const others = user.phones.filter(p => p !== user.phone)
+        if (others.length > 0) setSecondaryPhone(others[0])
       }
-      
-      // Load secondary phone if it exists
-      if (user.phones && Array.isArray(user.phones) && user.phones.length > 0) {
-        console.log('User phones:', user.phones)
-        // Filter out the primary phone from the phones array
-        const otherPhones = user.phones.filter(p => p !== user.phone)
-        if (otherPhones.length > 0) {
-          setSecondaryPhone(otherPhones[0]) // Only take first additional phone
-        }
-      }
-
-      // Load region - check both region object and region_id
       const userRegionId = user.region?.id || user.region_id
       if (userRegionId) {
-        console.log('User has region:', userRegionId, user.region)
         setRegion(userRegionId)
-        
-        // Load village after region is set - check both village object and village_id
         const userVillageId = user.village?.id || user.village_id
-        if (userVillageId) {
-          console.log('User has village:', userVillageId, user.village)
-          // Fetch villages for this region first, then set the village
-          fetchVillages(userRegionId).then(() => {
-            console.log('Setting village after fetch:', userVillageId)
-            setVillage(userVillageId)
-          })
-        } else {
-          // No village, just fetch the villages list for the region
-          fetchVillages(userRegionId)
-        }
+        if (userVillageId) setVillage(userVillageId)
       }
     }
   }, [user])
 
-  // Fetch regions once on mount (store caches after first load)
+  // Clear village when user manually changes region
   useEffect(() => {
-    fetchRegions()
-  }, [])
-
-  // Track if this is a manual region change (not initial load)
-  const [regionChangedManually, setRegionChangedManually] = React.useState(false)
-  
-  // Fetch villages when region changes manually
-  useEffect(() => {
-    if (region && regionChangedManually) {
-      fetchVillages(region)
-      setVillage('') // Clear village selection when region changes manually
-    }
+    if (regionChangedManually) setVillage('')
   }, [region, regionChangedManually])
-
-  const fetchVillages = async (regionId: string): Promise<void> => {
-    try {
-      setLoadingVillages(true)
-      const data = await fetchVillagesByRegion(regionId)
-      setVillages(data)
-    } catch (error) {
-      console.error('Error fetching villages:', error)
-      setVillages([])
-    } finally {
-      setLoadingVillages(false)
-    }
-  }
 
   const handleRegionChange = (value: string) => {
     setRegionChangedManually(true)

@@ -21,8 +21,8 @@ import { AppHeader } from '../../components/AppHeader'
 import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
 import { Announcement } from '../../types'
-import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
-import { useAnnouncementsStore } from '../../store/announcements/useAnnouncementsStore'
+import { useSubmitApplication, useUpdateApplication } from '../../hooks/useApplicationQueries'
+import { useAnnouncementDetail } from '../../hooks/useAnnouncementQueries'
 
 interface PrefillData {
   deliveryDates?: string[]
@@ -49,13 +49,18 @@ export function ApplicationFormPage() {
   const { announcementId, announcementType, announcement: paramAnnouncement, applicationId, prefill } = (route.params as RouteParams) || {}
   const isEditMode = !!applicationId
 
-  const { submitApplication, updateApplication } = useApplicationsStore()
-  const { fetchById: fetchAnnouncementById, setInCache } = useAnnouncementsStore()
+  const submitApplicationMutation = useSubmitApplication()
+  const updateApplicationMutation = useUpdateApplication()
 
-  // State
-  const [announcement, setAnnouncement] = useState<Announcement | null>(paramAnnouncement ?? null)
+  // Fetch announcement via React Query (uses cache if already loaded, or fetches from server)
+  const { data: fetchedAnnouncement, isLoading: announcementLoading } = useAnnouncementDetail(
+    announcementId,
+    !paramAnnouncement && !!announcementId,
+  )
+  const announcement: Announcement | null = paramAnnouncement ?? fetchedAnnouncement ?? null
+  const loading = !paramAnnouncement && announcementLoading
+
   const [applicationsWithDeliveryDates, setApplicationsWithDeliveryDates] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   
   // Form fields
@@ -173,29 +178,6 @@ export function ApplicationFormPage() {
     }
     prefillAppliedRef.current = true
   }, [])
-
-  // Fetch announcement details only when not already provided via params
-  useEffect(() => {
-    if (paramAnnouncement) {
-      setLoading(false)
-      return
-    }
-    fetchAnnouncement()
-  }, [announcementId])
-
-  const fetchAnnouncement = async () => {
-    try {
-      setLoading(true)
-      const data = await fetchAnnouncementById(announcementId)
-      setAnnouncement(data)
-    } catch (error) {
-      console.error('Error fetching announcement:', error)
-      Alert.alert(t('common.error'), t('applications.loadError'))
-      navigation.goBack()
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // Fetch applications for this announcement (for calendar: disable days already in applied applications)
   useEffect(() => {
@@ -484,9 +466,9 @@ export function ApplicationFormPage() {
           count: applicationData.count,
           unit: applicationData.unit,
         }
-        await updateApplication(applicationId, updateData, announcementId)
+        await updateApplicationMutation.mutateAsync({ id: applicationId, data: updateData })
       } else {
-        await submitApplication(applicationData)
+        await submitApplicationMutation.mutateAsync(applicationData)
       }
 
       Alert.alert(t('common.success'), isEditMode ? t('applications.updateSuccess') : t('applications.submitSuccess'), [

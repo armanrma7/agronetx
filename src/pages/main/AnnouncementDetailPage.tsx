@@ -23,8 +23,8 @@ import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
 import type { ApplicationListItem } from '../../lib/api/announcements.api'
 import { AppHeader } from '../../components/AppHeader'
-import { useAnnouncementsStore } from '../../store/announcements/useAnnouncementsStore'
-import { useApplicationsStore } from '../../store/applications/useApplicationsStore'
+import { useAnnouncementDetail, useCancelAnnouncement, useCloseAnnouncement } from '../../hooks/useAnnouncementQueries'
+import { useApplicationsByAnnouncement } from '../../hooks/useApplicationQueries'
 import {
   isAnnouncementOwner,
   canCancelAnnouncement,
@@ -49,22 +49,12 @@ export function AnnouncementDetailPage() {
   const { user } = useAuth()
   const { announcementId } = (route.params as RouteParams) || { announcementId: '' }
 
-  const {
-    cache,
-    cancelAnnouncement: cancelAnnouncementInStore,
-    closeAnnouncement: closeAnnouncementInStore,
-    setInCache,
-  } = useAnnouncementsStore()
-
-  const {
-    byAnnouncementId,
-    fetchApplicationsByAnnouncement,
-  } = useApplicationsStore()
-
-  const [announcement, setAnnouncement] = useState<Announcement | null>(cache[announcementId] ?? null)
-  const [loading, setLoading] = useState(!cache[announcementId])
-  const [cancelling, setCancelling] = useState(false)
-  const [closing, setClosing] = useState(false)
+  const { data: announcement, isLoading: loading } = useAnnouncementDetail(announcementId, !!announcementId)
+  const { data: allApplicationsData = [] } = useApplicationsByAnnouncement(announcementId, !!announcementId)
+  const cancelMutation = useCancelAnnouncement()
+  const closeMutation = useCloseAnnouncement()
+  const cancelling = cancelMutation.isPending
+  const closing = closeMutation.isPending
   const [contactModalVisible, setContactModalVisible] = useState(false)
   const [regionNames, setRegionNames] = useState<string[]>([])
   const [villageNames, setVillageNames] = useState<string[]>([])
@@ -77,16 +67,8 @@ export function AnnouncementDetailPage() {
   const imageListRef = useRef<FlatList<string> | null>(null)
 
   useEffect(() => {
-    fetchAnnouncement()
     if (announcementId) {
       announcementsAPI.trackAnnouncementViewAPI(announcementId)
-    }
-  }, [announcementId])
-
-  // Always fetch applications fresh so action buttons reflect real-time status
-  useEffect(() => {
-    if (announcementId) {
-      fetchApplicationsByAnnouncement(announcementId, true)
     }
   }, [announcementId])
 
@@ -158,21 +140,6 @@ export function AnnouncementDetailPage() {
         setVisibleVillagesCount(2)
       }
   }, [announcement])
-
-
-  const fetchAnnouncement = useCallback(async () => {
-    setLoading(true)
-    try {
-      // Always fetch fresh from server — status may have changed since last visit
-      const data = await announcementsAPI.getAnnouncementByIdAPI(announcementId)
-      setAnnouncement(data)
-      setInCache(data)
-    } catch (err) {
-      setAnnouncement(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [announcementId, setInCache])
 
 
   const formatDateRange = (startDate: string, endDate?: string) => {
@@ -326,70 +293,42 @@ export function AnnouncementDetailPage() {
 
   const handleCancel = () => {
     if (!announcement) return
-    Alert.alert(
-      t('announcements.cancelTitle'),
-      t('announcements.cancelConfirm'),
-      [
-        { text: t('common.no'), style: 'cancel' },
-        {
-          text: t('common.yes'),
-          style: 'destructive',
-          onPress: async () => {
-            setCancelling(true)
-            try {
-              await cancelAnnouncementInStore(announcement.id)
-              setAnnouncement(prev => prev ? { ...prev, status: 'CANCELED' } : prev)
-              Alert.alert(
-                t('common.success'),
-                t('announcements.cancelled'),
-                [{ text: t('common.ok'), onPress: () => navigation.goBack() }],
-              )
-            } catch (error: any) {
-              Alert.alert(
-                t('common.error'),
-                error.response?.data?.message || t('announcements.cancelError'),
-              )
-            } finally {
-              setCancelling(false)
-            }
-          },
-        },
-      ],
-    )
+    Alert.alert(t('announcements.cancelTitle'), t('announcements.cancelConfirm'), [
+      { text: t('common.no'), style: 'cancel' },
+      {
+        text: t('common.yes'),
+        style: 'destructive',
+        onPress: () =>
+          cancelMutation.mutate(announcement.id, {
+            onSuccess: () =>
+              Alert.alert(t('common.success'), t('announcements.cancelled'), [
+                { text: t('common.ok'), onPress: () => navigation.goBack() },
+              ]),
+            onError: (error: any) =>
+              Alert.alert(t('common.error'), error.response?.data?.message || t('announcements.cancelError')),
+          }),
+      },
+    ])
   }
 
   const handleClose = () => {
     if (!announcement) return
-    Alert.alert(
-      t('announcements.closeAnnouncementTitle'),
-      t('announcements.closeAnnouncementConfirm'),
-      [
-        { text: t('common.no'), style: 'cancel' },
-        {
-          text: t('common.yes'),
-          style: 'destructive',
-          onPress: async () => {
-            setClosing(true)
-            try {
-              await closeAnnouncementInStore(announcement.id)
-              setAnnouncement(prev => prev ? { ...prev, status: 'CLOSED' } : prev)
-              Alert.alert(
-                t('common.success'),
-                t('announcements.closedAnnouncement'),
-                [{ text: t('common.ok'), onPress: () => navigation.goBack() }],
-              )
-            } catch (error: any) {
-              Alert.alert(
-                t('common.error'),
-                error.response?.data?.message || t('announcements.closeAnnouncementError'),
-              )
-            } finally {
-              setClosing(false)
-            }
-          },
-        },
-      ],
-    )
+    Alert.alert(t('announcements.closeAnnouncementTitle'), t('announcements.closeAnnouncementConfirm'), [
+      { text: t('common.no'), style: 'cancel' },
+      {
+        text: t('common.yes'),
+        style: 'destructive',
+        onPress: () =>
+          closeMutation.mutate(announcement.id, {
+            onSuccess: () =>
+              Alert.alert(t('common.success'), t('announcements.closedAnnouncement'), [
+                { text: t('common.ok'), onPress: () => navigation.goBack() },
+              ]),
+            onError: (error: any) =>
+              Alert.alert(t('common.error'), error.response?.data?.message || t('announcements.closeAnnouncementError')),
+          }),
+      },
+    ])
   }
 
   const handleSearchPress = () => {
@@ -444,7 +383,7 @@ export function AnnouncementDetailPage() {
   const dailyLimit = announcement.daily_limit ? Number(announcement.daily_limit) : 0
 
   // ── Derive action state from fetched applications ─────────────────────────
-  const allApplications: ApplicationListItem[] = byAnnouncementId[announcementId] ?? []
+  const allApplications: ApplicationListItem[] = allApplicationsData
 
   const myApplications = user?.id
     ? allApplications.filter(a => String(a.user_id) === String(user.id))
