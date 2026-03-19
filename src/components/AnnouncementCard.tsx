@@ -160,7 +160,7 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
 
       {/* Details */}
       {(() => {
-        const available = Number(announcement.available_quantity ?? 0) || 0
+        const available = Number(announcement.count ?? 0) || 0
         if (!(available > 0)) return null
         return (
           <Text style={styles.detail}>

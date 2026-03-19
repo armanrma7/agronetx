@@ -189,11 +189,13 @@ function mapAnnouncementResponse(data: any): Announcement {
   }
 
   const groupData = data.group || {}
+  const groupNameAm = groupData.name_am ?? groupData.name_hy ?? groupData.name ?? ''
   const mappedGroup: Group = {
     id: groupData.id ?? data.group_id ?? '',
-    name_am: groupData.name_am ?? groupData.name_hy ?? groupData.name ?? '',
+    name_am: groupNameAm,
     name_en: groupData.name_en ?? groupData.name ?? '',
     name_ru: groupData.name_ru ?? groupData.name ?? '',
+    ...({ name_hy: groupNameAm, name: groupNameAm } as any),
   }
 
   const measurements = Array.isArray(item.measurements) ? item.measurements.map((m: any) => ({
@@ -232,9 +234,8 @@ function mapAnnouncementResponse(data: any): Announcement {
     owner_id: ownerId,
     status: data.status || 'published',
     closed_by: data.closed_by ?? null,
-    count: toStr(data.count ?? data.quantity),
+    count: toStr(data.count ?? data.available_quantity ?? data.quantity),
     daily_limit: toStr(data.daily_limit),
-    available_quantity: toStr(data.available_quantity ?? data.quantity ?? data.count),
     unit: toStr(data.quantity_unit ?? data.quantityUnit ?? data.unit),
     rent_unit: data.rent_unit != null ? toStr(data.rent_unit) : undefined,
     images: Array.isArray(data.images) ? data.images : data.images ? [data.images] : [],

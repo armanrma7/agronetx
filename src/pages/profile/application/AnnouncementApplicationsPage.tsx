@@ -170,7 +170,7 @@ export function AnnouncementApplicationsPage() {
     [navigation, announcement, announcementId, title],
   )
 
-  const quantity = announcement?.available_quantity ?? a?.quantity
+  const quantity = announcement?.count ?? a?.quantity
   const price = announcement?.price
   const priceUnit = (announcement as any)?.price_unit ?? announcement?.unit ?? ''
   const quantityUnit = announcement?.unit ?? a?.quantity_unit ?? ''

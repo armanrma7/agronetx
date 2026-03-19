@@ -152,32 +152,17 @@ export function AnnouncementDetailPage() {
 
   const getTypeLabel = (announcement: Announcement) => {
     const announcementData = announcement as any
-    const subtype = announcementData.subtype || announcementData.apiType
-    const category = announcement.type
-    
-    // Check API type first (sell/buy/rent)
-    if (subtype === 'sell' || subtype === 'offer') {
-      return t('announcementDetail.sell')
-    }
-    if (subtype === 'buy' || subtype === 'requirement') {
-      return t('announcementDetail.buy')
-    }
-    if (subtype === 'rent') {
-      return t('announcementDetail.rent')
-    }
-    
-    // Fallback to category (type is sell/buy, category is goods/service/rent)
-    const cat = announcement.category || category
-    switch (cat) {
-      case 'goods':
-        return t('announcementDetail.sell')
-      case 'service':
-        return t('announcementDetail.serviceOffer')
-      case 'rent':
-        return t('announcementDetail.rent')
-      default:
-        return t('announcementDetail.sell')
-    }
+    const subtype = announcementData.subtype || announcementData.apiType || announcement.type
+
+    if (subtype === 'sell' || subtype === 'offer') return t('announcementDetail.sell')
+    if (subtype === 'buy' || subtype === 'requirement') return t('announcementDetail.buy')
+    if (subtype === 'rent' || announcement.category === 'rent') return t('announcementDetail.rent')
+
+    // Fallback: derive from announcement.type (sell/buy) directly
+    if (announcement.type === 'buy') return t('announcementDetail.buy')
+    if (announcement.type === 'sell') return t('announcementDetail.sell')
+
+    return t('announcementDetail.sell')
   }
 
   const getCategoryLabel = (announcement: Announcement) => {
@@ -185,10 +170,10 @@ export function AnnouncementDetailPage() {
     const currentLang = (i18n.language || 'hy').split('-')[0]
     const group = announcementData.group
     if (!group) return ''
-    if (currentLang === 'hy' && group.name_hy) return group.name_hy
-    if (currentLang === 'ru' && group.name_ru) return group.name_ru
-    if (currentLang === 'en' && group.name_en) return group.name_en
-    return group.name || ''
+    if (currentLang === 'hy') return group.name_hy || group.name_am || group.name || ''
+    if (currentLang === 'ru') return group.name_ru || group.name_am || group.name || ''
+    if (currentLang === 'en') return group.name_en || group.name_am || group.name || ''
+    return group.name_am || group.name || ''
   }
 
   const getItemLabel = (announcement: Announcement) => {
@@ -510,11 +495,11 @@ export function AnnouncementDetailPage() {
           <View style={styles.priceAvailabilityRow}>
           <View style={styles.priceAvailabilityItem}>
           {
-            Number(announcement.available_quantity || 0) > 0 && (
+            Number(announcement.count || 0) > 0 && (
               <>
                 <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
               <Text style={styles.priceAvailabilityValue}>
-              {Number(announcement.available_quantity || 0).toLocaleString()} {translateMeasureUnit(announcement.unit, i18n.language)}
+              {Number(announcement.count || 0).toLocaleString()} {translateMeasureUnit(announcement.unit, i18n.language)}
             </Text>
               </>
             )

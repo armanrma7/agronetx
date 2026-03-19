@@ -180,7 +180,6 @@ export interface Announcement {
 
   count: string;
   daily_limit: string;
-  available_quantity: string;
   unit: string;
   /** Rent billing period (e.g. day, month, year). Present when category is rent. */
   rent_unit?: string;

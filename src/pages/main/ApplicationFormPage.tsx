@@ -430,7 +430,7 @@ export function ApplicationFormPage() {
           count: applicationData.count,
           unit: applicationData.unit,
         }
-        await updateApplicationMutation.mutateAsync({ id: applicationId, data: updateData })
+        await updateApplicationMutation.mutateAsync({ id: applicationId, announcementId, data: updateData })
       } else {
         await submitApplicationMutation.mutateAsync(applicationData)
       }
@@ -510,7 +510,7 @@ export function ApplicationFormPage() {
   const getAnnouncementCountAndUnit = (): { count: string; unit: string } => {
     if (!announcement) return { count: '', unit: '' }
     const a = announcement as any
-    const countStr = (announcement.count ?? a.count ?? a.available_quantity ?? announcement.available_quantity ?? '').toString()
+    const countStr = (announcement.count ?? a.count ?? '').toString()
     const unitStr = (announcement.unit ?? a.quantity_unit ?? a.unit ?? '').toString()
     return { count: countStr, unit: unitStr }
   }

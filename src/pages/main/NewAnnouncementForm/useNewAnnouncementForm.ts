@@ -88,9 +88,9 @@ export function useNewAnnouncementForm() {
         group: String(a.group_id ?? ''),
         name: itemIdStr || prev.name,
         quantity:
-          typeof (a.count ?? a.available_quantity) === 'string'
-            ? (a.count ?? a.available_quantity)
-            : String(a.count ?? a.available_quantity ?? ''),
+          typeof a.count === 'string'
+            ? a.count
+            : String(a.count ?? ''),
         pricePerUnit: typeof a.price === 'string' ? a.price : String(a.price ?? ''),
         dailyMaxQuantity: typeof a.daily_limit === 'string' ? a.daily_limit : String(a.daily_limit ?? ''),
         salesPeriod: a.date_to || '',
@@ -518,17 +518,19 @@ export function useNewAnnouncementForm() {
         unit: type === 'rent' ? (formData.measurementUnit || formData.rentUnit || '') : formData.measurementUnit,
       }
       if (type === 'rent' && formData.rentUnit) payload.rent_unit = formData.rentUnit
-      if (formData.description) payload.description = formData.description
+      formData.description ? payload.description = formData.description : payload.description = ''
       if ((type === 'goods' || type === 'rent') && formData.quantity) {
         payload.count = parseFloat(formData.quantity)
       }
       if (type === 'goods' && formData.dailyMaxQuantity) {
         payload.daily_limit = parseFloat(formData.dailyMaxQuantity)
+      }else{
+        payload.daily_limit = null
       }
-      if (formData.periodStart) payload.date_from = formData.periodStart
-      if (formData.salesPeriod) payload.date_to = formData.salesPeriod
-      if (selectedRegions.length) payload.regions = selectedRegions
-      if (selectedVillages.length) payload.villages = selectedVillages
+      formData.periodStart ? payload.date_from = formData.periodStart : payload.date_from = null
+      formData.salesPeriod ? payload.date_to = formData.salesPeriod : payload.date_to = null
+      selectedRegions.length ? payload.regions = selectedRegions : payload.regions = []
+      selectedVillages.length ? payload.villages = selectedVillages : payload.villages = []
 
       const validImages = selectedImages.filter(img => img.uri)
       if (isEditMode && announcementId) {
@@ -537,7 +539,27 @@ export function useNewAnnouncementForm() {
           .map(img => img.uri!)
         const newFiles = validImages.filter(img => img.uri?.startsWith('file://') || img.uri?.startsWith('content://'))
         payload.images = existingUrls as any
-        await announcementsAPI.updateAnnouncementAPI(announcementId, payload, newFiles.length ? newFiles : undefined)
+        const updated = await announcementsAPI.updateAnnouncementAPI(announcementId, payload, newFiles.length ? newFiles : undefined)
+
+        // Update every place in cache where this announcement can appear
+        queryClient.setQueryData(queryKeys.announcements.detail(announcementId), updated)
+
+        const pagesUpdater = (old: any) => {
+          if (!old?.pages) return old
+          return {
+            ...old,
+            pages: old.pages.map((p: any) => ({
+              ...p,
+              announcements: (p.announcements ?? []).map((a: any) =>
+                a.id === announcementId ? { ...updated } : a,
+              ),
+            })),
+          }
+        }
+        queryClient.setQueriesData({ queryKey: queryKeys.announcements.lists() }, pagesUpdater)
+        queryClient.setQueriesData({ queryKey: queryKeys.announcements.myLists() }, pagesUpdater)
+        // Also update the favorites list if this announcement was favorited
+        queryClient.setQueriesData({ queryKey: queryKeys.favorites.list() }, pagesUpdater)
         Alert.alert("", t('addAnnouncement.updateSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() } }])
       } else {
         const created = await announcementsAPI.createAnnouncementAPI(payload, validImages.length ? validImages : undefined)

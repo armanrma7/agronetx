@@ -23,6 +23,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
 
+
   const getRegionVillageLabel = (rv: any | undefined | null): string => {
     if (!rv) return ''
     const lang = (i18n.language || 'hy').toLowerCase()
@@ -126,7 +127,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
 
       {/* Details */}
       {(() => {
-        const available = Number(announcement.available_quantity ?? 0) || 0
+        const available = Number(announcement.count ?? 0) || 0
         if (!(available > 0)) return null
         return (
           <Text style={styles.detail}>

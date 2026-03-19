@@ -64,7 +64,7 @@ export function ListingCard({ listing, onApply, onView }: ListingCardProps) {
 
       {/* Details */}
       {(() => {
-        const available = Number(listing.available_quantity ?? 0) || 0
+        const available = Number(listing.count ?? 0) || 0
         if (!(available > 0)) return null
         return (
           <Text style={styles.detail}>

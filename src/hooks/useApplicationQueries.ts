@@ -190,12 +190,18 @@ export function useSubmitApplication() {
 export function useUpdateApplication() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: announcementsAPI.ApplicationUpdateData }) =>
+    mutationFn: ({ id, announcementId, data }: { id: string; announcementId: string; data: announcementsAPI.ApplicationUpdateData }) =>
       announcementsAPI.updateApplicationAPI(id, data),
-    onSuccess: (_, { id, data }) => {
-      qc.setQueriesData<ApplicationListItem[]>(
-        { queryKey: queryKeys.applications.all },
+    onSuccess: (_, { id, announcementId, data }) => {
+      // Update in the byAnnouncement list (what AnnouncementApplicationsPage reads)
+      qc.setQueryData<ApplicationListItem[]>(
+        queryKeys.applications.byAnnouncement(announcementId),
         (old) => old?.map(app => app.id === id ? { ...app, ...data } : app),
+      )
+      // Update inside the announcement detail's applications[]
+      qc.setQueryData<Announcement>(
+        queryKeys.announcements.detail(announcementId),
+        (old) => old ? { ...old, applications: (old.applications ?? []).map((app: any) => app.id === id ? { ...app, ...data } : app) } : old,
       )
     },
   })
