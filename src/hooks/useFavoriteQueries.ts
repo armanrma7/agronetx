@@ -7,10 +7,10 @@
  * sharing works correctly and detects changes).  Each subscriber receives a `Set<string>`
  * derived via `select:` so callers always get O(1) lookup without any manual conversion.
  *
- * Optimistic updates
- * ──────────────────
- * `onMutate` updates the cache instantly; `onError` rolls back; `onSettled` refetches
- * to confirm the server state.
+ * Cache update strategy
+ * ─────────────────────
+ * All mutations use setQueryData for instant updates. No invalidateQueries needed
+ * because we know exactly what changed — onError rolls back on failure.
  */
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../lib/queries/queryKeys'
@@ -60,32 +60,64 @@ export function flattenFavoritePages(
 }
 
 // ─── Add favorite ─────────────────────────────────────────────────────────────
+// Accepts { announcementId, announcement? } — pass announcement for instant list update
 
 export function useAddFavorite() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (announcementId: string) => announcementsAPI.addFavoriteAPI(announcementId),
+    mutationFn: (payload: string | { announcementId: string; announcement?: Announcement }) => {
+      const id = typeof payload === 'string' ? payload : payload.announcementId
+      return announcementsAPI.addFavoriteAPI(id)
+    },
 
-    // Instant UI: update ids array before network call
-    onMutate: async (announcementId) => {
+    onMutate: async (payload) => {
+      const announcementId = typeof payload === 'string' ? payload : payload.announcementId
+      const announcement = typeof payload === 'object' ? payload.announcement : undefined
+
       await qc.cancelQueries({ queryKey: queryKeys.favorites.ids() })
-      const previous = qc.getQueryData<string[]>(queryKeys.favorites.ids())
+      await qc.cancelQueries({ queryKey: queryKeys.favorites.list() })
+
+      const previousIds = qc.getQueryData<string[]>(queryKeys.favorites.ids())
+      const previousList = qc.getQueryData(queryKeys.favorites.list())
+
       qc.setQueryData<string[]>(queryKeys.favorites.ids(), (old = []) =>
         old.includes(announcementId) ? old : [...old, announcementId],
       )
-      return { previous }
-    },
 
-    // Rollback on error
-    onError: (_, __, context) => {
-      if (context?.previous !== undefined) {
-        qc.setQueryData(queryKeys.favorites.ids(), context.previous)
+      // Flip isFavorite on the announcement object in every list cache so the
+      // bookmark icon updates immediately without waiting for any refetch.
+      const flipFavorite = (old: any) => {
+        if (!old?.pages) return old
+        return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map((a: Announcement) => a.id === announcementId ? { ...a, isFavorite: true } : a) })) }
       }
+      qc.setQueriesData({ queryKey: queryKeys.announcements.lists() }, flipFavorite)
+      qc.setQueriesData({ queryKey: queryKeys.announcements.myLists() }, flipFavorite)
+
+      if (announcement) {
+        qc.setQueryData(queryKeys.favorites.list(), (old: any) => {
+          if (!old?.pages?.length) return old
+          const firstPage = old.pages[0]
+          if ((firstPage.announcements ?? []).some((a: Announcement) => a.id === announcementId)) return old
+          return {
+            ...old,
+            pages: [
+              {
+                ...firstPage,
+                announcements: [{ ...announcement, isFavorite: true }, ...(firstPage.announcements ?? [])],
+                total: (firstPage.total ?? 0) + 1,
+              },
+              ...old.pages.slice(1),
+            ],
+          }
+        })
+      }
+
+      return { previousIds, previousList }
     },
 
-    // Always sync with server after mutation settles
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.favorites.ids() })
+    onError: (_, __, context) => {
+      if (context?.previousIds !== undefined) qc.setQueryData(queryKeys.favorites.ids(), context.previousIds)
+      if (context?.previousList !== undefined) qc.setQueryData(queryKeys.favorites.list(), context.previousList)
     },
   })
 }
@@ -97,7 +129,6 @@ export function useRemoveFavorite() {
   return useMutation({
     mutationFn: (announcementId: string) => announcementsAPI.removeFavoriteAPI(announcementId),
 
-    // Instant UI: remove from ids array and from list pages
     onMutate: async (announcementId) => {
       await qc.cancelQueries({ queryKey: queryKeys.favorites.ids() })
       await qc.cancelQueries({ queryKey: queryKeys.favorites.list() })
@@ -108,15 +139,22 @@ export function useRemoveFavorite() {
       qc.setQueryData<string[]>(queryKeys.favorites.ids(), (old = []) =>
         old.filter(id => id !== announcementId),
       )
+
+      // Flip isFavorite=false on the announcement in every list cache
+      const unfavorite = (old: any) => {
+        if (!old?.pages) return old
+        return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map((a: Announcement) => a.id === announcementId ? { ...a, isFavorite: false } : a) })) }
+      }
+      qc.setQueriesData({ queryKey: queryKeys.announcements.lists() }, unfavorite)
+      qc.setQueriesData({ queryKey: queryKeys.announcements.myLists() }, unfavorite)
+
       qc.setQueryData(queryKeys.favorites.list(), (old: any) => {
         if (!old) return old
         return {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            announcements: (page.announcements ?? []).filter(
-              (a: Announcement) => a.id !== announcementId,
-            ),
+            announcements: (page.announcements ?? []).filter((a: Announcement) => a.id !== announcementId),
             total: Math.max(0, (page.total ?? 1) - 1),
           })),
         }
@@ -125,19 +163,9 @@ export function useRemoveFavorite() {
       return { previousIds, previousList }
     },
 
-    // Rollback on error
     onError: (_, __, context) => {
-      if (context?.previousIds !== undefined) {
-        qc.setQueryData(queryKeys.favorites.ids(), context.previousIds)
-      }
-      if (context?.previousList !== undefined) {
-        qc.setQueryData(queryKeys.favorites.list(), context.previousList)
-      }
-    },
-
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.favorites.ids() })
-      qc.invalidateQueries({ queryKey: queryKeys.favorites.list() })
+      if (context?.previousIds !== undefined) qc.setQueryData(queryKeys.favorites.ids(), context.previousIds)
+      if (context?.previousList !== undefined) qc.setQueryData(queryKeys.favorites.list(), context.previousList)
     },
   })
 }

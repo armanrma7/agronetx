@@ -210,6 +210,11 @@ export interface Announcement {
 
   applications_count: number;
   applications: AnnouncementApplication[];
+
+  /** Server-provided flag: current user has favorited this announcement */
+  isFavorite?: boolean;
+  /** Server-provided flag: current user has an active (non-cancelled) application */
+  isApplied?: boolean;
 }
 
 

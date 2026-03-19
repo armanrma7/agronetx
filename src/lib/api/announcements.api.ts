@@ -254,6 +254,8 @@ function mapAnnouncementResponse(data: any): Announcement {
     villages_data: villagesData,
     applications_count: applicationsCount,
     applications: applications as AnnouncementApplication[],
+    isFavorite: data.isFavorite ?? data.is_favorite ?? false,
+    isApplied: data.isApplied ?? data.is_applied ?? false,
     // Legacy/extra for UI (cast where needed)
     ...({
       title: data.title ?? itemNameAm ?? itemNameEn ?? itemNameRu ?? item.name ?? '',

@@ -109,19 +109,28 @@ export function useMyAnnouncements(tab: MyAnnouncementsTab) {
 
 // ─── Cancel announcement ─────────────────────────────────────────────────────
 
+function updateAnnouncementStatusInLists(qc: ReturnType<typeof useQueryClient>, id: string, status: string) {
+  const updater = (a: Announcement) => a.id === id ? { ...a, status } : a
+  qc.setQueriesData(
+    { queryKey: queryKeys.announcements.lists() },
+    (old: any) => old?.pages ? { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map(updater) })) } : old,
+  )
+  qc.setQueriesData(
+    { queryKey: queryKeys.announcements.myLists() },
+    (old: any) => old?.pages ? { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map(updater) })) } : old,
+  )
+}
+
 export function useCancelAnnouncement() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => announcementsAPI.cancelAnnouncementAPI(id),
     onSuccess: (_, id) => {
-      // Optimistically update cached detail
       qc.setQueryData<Announcement>(
         queryKeys.announcements.detail(id),
         (old) => old ? { ...old, status: 'CANCELED' } : old,
       )
-      // Invalidate all list queries so they refetch fresh data
-      qc.invalidateQueries({ queryKey: queryKeys.announcements.lists() })
-      qc.invalidateQueries({ queryKey: queryKeys.announcements.myLists() })
+      updateAnnouncementStatusInLists(qc, id, 'CANCELED')
     },
   })
 }
@@ -137,8 +146,7 @@ export function useCloseAnnouncement() {
         queryKeys.announcements.detail(id),
         (old) => old ? { ...old, status: 'CLOSED' } : old,
       )
-      qc.invalidateQueries({ queryKey: queryKeys.announcements.lists() })
-      qc.invalidateQueries({ queryKey: queryKeys.announcements.myLists() })
+      updateAnnouncementStatusInLists(qc, id, 'CLOSED')
     },
   })
 }

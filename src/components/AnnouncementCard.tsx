@@ -1,14 +1,3 @@
-/**
- * AnnouncementCard
- *
- * Cache-driven architecture
- * ─────────────────────────
- * Favorite state is read DIRECTLY from the React Query cache via useFavoriteIds().
- * React Query deduplicates this query across every mounted card instance — only ONE
- * network request is made regardless of how many cards are on screen.
- * Mutations fire from inside the card so that cache updates instantly propagate to
- * every other screen that subscribes to the same query key — no prop drilling needed.
- */
 import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
@@ -16,7 +5,7 @@ import { colors } from '../theme/colors'
 import { Announcement } from '../types'
 import Icon from './Icon'
 import { useAuth } from '../context/AuthContext'
-import { useFavoriteIds, useAddFavorite, useRemoveFavorite } from '../hooks/useFavoriteQueries'
+import { useAddFavorite, useRemoveFavorite } from '../hooks/useFavoriteQueries'
 import { translateMeasureUnit } from '../utils/units'
 
 interface AnnouncementCardProps {
@@ -29,30 +18,27 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
 
-  // ── Cache reads (shared across ALL card instances via React Query dedup) ──
-  const { data: favoriteIds = new Set<string>() } = useFavoriteIds(!!user)
-
-  const isFavorite = favoriteIds.has(announcement.id)
+  // ── Derived from announcement object directly — no separate queries needed ──
+  const isFavorite = announcement.isFavorite ?? false
+  const isApplied  = announcement.isApplied ?? false
 
   const isMyAnnouncement =
     user?.id != null &&
     announcement?.owner_id != null &&
     String(announcement.owner_id) === String(user.id)
 
-  const hasPending = !!user && (announcement.applications ?? []).some((app: any) => {
-    const appUserId = String(app.user_id ?? app.userId ?? app.applicant_id ?? '')
-    return appUserId && appUserId === String(user.id) && /^pending$/i.test((app.status || '').trim())
-  })
-
-  const canApply = !isMyAnnouncement && !hasPending
+  // Show Apply only when: not owner AND user has no active application
+  const canApply = !isMyAnnouncement && !isApplied
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const addFavorite = useAddFavorite()
   const removeFavorite = useRemoveFavorite()
 
-  // Only show spinner on the EXACT card being toggled
+  const addVarId = addFavorite.variables != null
+    ? (typeof addFavorite.variables === 'string' ? addFavorite.variables : addFavorite.variables.announcementId)
+    : null
   const isTogglingFavorite =
-    (addFavorite.isPending && addFavorite.variables === announcement.id) ||
+    (addFavorite.isPending && addVarId === announcement.id) ||
     (removeFavorite.isPending && removeFavorite.variables === announcement.id)
 
   const handleFavoritePress = () => {
@@ -60,7 +46,7 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
     if (isFavorite) {
       removeFavorite.mutate(announcement.id)
     } else {
-      addFavorite.mutate(announcement.id)
+      addFavorite.mutate({ announcementId: announcement.id, announcement })
     }
   }
 

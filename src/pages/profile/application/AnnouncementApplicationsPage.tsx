@@ -3,7 +3,7 @@
  * Lists applications for an announcement (from My Announcements). Do not remove this file.
  */
 
-import React, { useEffect, useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -43,12 +43,19 @@ export function AnnouncementApplicationsPage() {
   const params = (route.params as RouteParams) || {}
   const { announcementId, announcement: paramAnnouncement } = params
 
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false)
+
   const {
     data: applications = [],
     isLoading: loading,
-    isRefetching,
     refetch,
   } = useApplicationsByAnnouncement(announcementId)
+
+  const handleManualRefresh = useCallback(async () => {
+    setIsManualRefreshing(true)
+    await refetch()
+    setIsManualRefreshing(false)
+  }, [refetch])
 
   const { data: fetchedAnnouncement } = useAnnouncementDetail(announcementId)
   const announcement: Announcement | null = fetchedAnnouncement ?? paramAnnouncement ?? null
@@ -264,8 +271,8 @@ export function AnnouncementApplicationsPage() {
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={() => refetch()}
+              refreshing={isManualRefreshing}
+              onRefresh={handleManualRefresh}
               colors={[colors.buttonPrimary]}
               tintColor={colors.buttonPrimary}
             />

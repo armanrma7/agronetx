@@ -7,10 +7,11 @@
  * sharing serialises them correctly.  Callers receive `Set<string>` via `select:`
  * for O(1) membership checks without any manual conversion.
  *
- * Optimistic updates
- * ──────────────────
- * Every mutation that affects applied/pending state updates the cache immediately
- * in `onMutate` and rolls back in `onError`.
+ * Cache update strategy
+ * ─────────────────────
+ * All mutations use setQueryData for instant in-memory updates. invalidateQueries
+ * is used ONLY after useSubmitApplication, because the server creates a new
+ * application object with a server-assigned ID that we cannot predict locally.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../lib/queries/queryKeys'
@@ -40,21 +41,24 @@ export function useAppliedIds(userId: string | undefined, enabled = true) {
       const res = await announcementsAPI.getAppliedAnnouncementsAPI({ page: 1, limit: 200 })
       const announcements: Announcement[] = res.announcements ?? []
 
-      const appliedIds = announcements.map(a => a.id)
+      const myId = String(userId)
+      const appliedIds: string[] = []
       const pendingIds: string[] = []
 
-      const myId = String(userId)
       announcements.forEach(a => {
-        const apps = (a as any).applications
-        if (Array.isArray(apps)) {
-          const hasMyPending = apps.some((app: any) => {
-            const applicantId = app.applicant_id ?? app.user_id ?? app.userId
-            return applicantId && String(applicantId) === myId && /^pending$/i.test((app.status || '').trim())
-          })
-          if (hasMyPending) pendingIds.push(a.id)
+        appliedIds.push(a.id)
+        const apps: any[] = (a as any).applications ?? []
+        const myApp = apps.find((app: any) => {
+          const appUserId = String(app.user_id ?? app.userId ?? app.applicant_id ?? '')
+          return appUserId && appUserId === myId
+        })
+        if (myApp) {
+          if (/^pending$/i.test((myApp.status || '').trim())) pendingIds.push(a.id)
+        } else if (apps.length === 0) {
+          pendingIds.push(a.id)
         }
       })
-      console.info('appliedIds', appliedIds)
+
       return { appliedIds, pendingIds }
     },
     enabled: enabled && !!userId,
@@ -99,6 +103,19 @@ function removeFromApplied(qc: ReturnType<typeof useQueryClient>, announcementId
   })
 }
 
+function updateInAllLists(
+  qc: ReturnType<typeof useQueryClient>,
+  announcementId: string,
+  updater: (a: Announcement) => Announcement,
+) {
+  const pagesUpdater = (old: any) => {
+    if (!old?.pages) return old
+    return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map(updater) })) }
+  }
+  qc.setQueriesData({ queryKey: queryKeys.announcements.lists() }, pagesUpdater)
+  qc.setQueriesData({ queryKey: queryKeys.announcements.myLists() }, pagesUpdater)
+}
+
 // ─── Submit new application ──────────────────────────────────────────────────
 
 export function useSubmitApplication() {
@@ -116,23 +133,41 @@ export function useSubmitApplication() {
     },
 
     onError: (_, __, context) => {
-      if (context?.previous !== undefined) {
-        qc.setQueryData(queryKeys.applications.applied(), context.previous)
-      }
+      if (context?.previous !== undefined) qc.setQueryData(queryKeys.applications.applied(), context.previous)
     },
 
     onSuccess: (_, data) => {
       const id = data.announcement_id
-      // Increment applications_count on the detail cache
+      const detail = qc.getQueryData<Announcement>(queryKeys.announcements.detail(id))
+
       qc.setQueryData<Announcement>(queryKeys.announcements.detail(id), (old) =>
         old ? { ...old, applications_count: (old.applications_count ?? 0) + 1 } : old,
       )
-      // Invalidate lists so the count propagates to all list cards
-      qc.invalidateQueries({ queryKey: queryKeys.announcements.lists() })
+
+      if (detail) {
+        qc.setQueryData(queryKeys.announcements.myList('applied'), (old: any) => {
+          if (!old?.pages?.length) return old
+          const firstPage = old.pages[0]
+          if ((firstPage.announcements ?? []).some((a: Announcement) => a.id === id)) return old
+          return {
+            ...old,
+            pages: [
+              { ...firstPage, announcements: [detail, ...(firstPage.announcements ?? [])], total: (firstPage.total ?? 0) + 1 },
+              ...old.pages.slice(1),
+            ],
+          }
+        })
+      }
+
+      updateInAllLists(qc, id, (a) =>
+        a.id === id ? { ...a, applications_count: (a.applications_count ?? 0) + 1 } : a,
+      )
     },
 
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.applications.applied() })
+    // Only invalidate byAnnouncement — the server creates the application record
+    // with a server-assigned ID that we cannot know locally.
+    onSettled: (_, __, data) => {
+      qc.invalidateQueries({ queryKey: queryKeys.applications.byAnnouncement(data.announcement_id) })
     },
   })
 }
@@ -161,13 +196,18 @@ export function useApproveApplication() {
     mutationFn: ({ id }: { id: string; announcementId: string }) =>
       announcementsAPI.approveApplicationAPI(id),
     onSuccess: (_, { id, announcementId }) => {
+      const appUpdater = (app: any) => app.id === id ? { ...app, status: 'approved' } : app
       qc.setQueryData<ApplicationListItem[]>(
         queryKeys.applications.byAnnouncement(announcementId),
-        (old) => old?.map(app => app.id === id ? { ...app, status: 'approved' } : app),
+        (old) => old?.map(appUpdater),
       )
-    },
-    onSettled: (_, __, { announcementId }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.applications.byAnnouncement(announcementId) })
+      qc.setQueryData<Announcement>(
+        queryKeys.announcements.detail(announcementId),
+        (old) => old ? { ...old, applications: (old.applications ?? []).map(appUpdater) } : old,
+      )
+      updateInAllLists(qc, announcementId, (a) =>
+        a.id === announcementId ? { ...a, applications: (a.applications ?? []).map(appUpdater) } : a,
+      )
     },
   })
 }
@@ -180,13 +220,18 @@ export function useRejectApplication() {
     mutationFn: ({ id }: { id: string; announcementId: string }) =>
       announcementsAPI.rejectApplicationAPI(id),
     onSuccess: (_, { id, announcementId }) => {
+      const appUpdater = (app: any) => app.id === id ? { ...app, status: 'rejected' } : app
       qc.setQueryData<ApplicationListItem[]>(
         queryKeys.applications.byAnnouncement(announcementId),
-        (old) => old?.map(app => app.id === id ? { ...app, status: 'rejected' } : app),
+        (old) => old?.map(appUpdater),
       )
-    },
-    onSettled: (_, __, { announcementId }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.applications.byAnnouncement(announcementId) })
+      qc.setQueryData<Announcement>(
+        queryKeys.announcements.detail(announcementId),
+        (old) => old ? { ...old, applications: (old.applications ?? []).map(appUpdater) } : old,
+      )
+      updateInAllLists(qc, announcementId, (a) =>
+        a.id === announcementId ? { ...a, applications: (a.applications ?? []).map(appUpdater) } : a,
+      )
     },
   })
 }
@@ -199,39 +244,37 @@ export function useCancelApplication() {
     mutationFn: ({ id }: { id: string; announcementId: string; isOwnApplication: boolean }) =>
       announcementsAPI.cancelApplicationAPI(id),
 
-    onMutate: async ({ id, announcementId, isOwnApplication }) => {
-      // Instant status update in the applications list
-      const previous = qc.getQueryData<ApplicationListItem[]>(
-        queryKeys.applications.byAnnouncement(announcementId),
-      )
-      qc.setQueryData<ApplicationListItem[]>(
-        queryKeys.applications.byAnnouncement(announcementId),
-        (old) => old?.map(app => app.id === id ? { ...app, status: 'CANCELED' } : app),
-      )
-      // Remove from applied/pending if the user cancelled their OWN application
+    onMutate: async ({ announcementId, isOwnApplication }) => {
       let previousApplied: AppliedRaw | undefined
       if (isOwnApplication) {
         previousApplied = qc.getQueryData<AppliedRaw>(queryKeys.applications.applied())
         removeFromApplied(qc, announcementId)
       }
-      return { previous, previousApplied, announcementId, isOwnApplication }
+      return { previousApplied, announcementId, isOwnApplication }
     },
 
     onError: (_, __, context) => {
-      if (context?.previous !== undefined) {
-        qc.setQueryData(
-          queryKeys.applications.byAnnouncement(context.announcementId),
-          context.previous,
-        )
-      }
-      if (context?.previousApplied !== undefined) {
-        qc.setQueryData(queryKeys.applications.applied(), context.previousApplied)
-      }
+      if (context?.previousApplied !== undefined) qc.setQueryData(queryKeys.applications.applied(), context.previousApplied)
     },
 
-    onSettled: (_, __, { announcementId }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.applications.byAnnouncement(announcementId) })
-      qc.invalidateQueries({ queryKey: queryKeys.applications.applied() })
+    onSuccess: (_, { id, announcementId, isOwnApplication }) => {
+      qc.setQueryData<ApplicationListItem[]>(
+        queryKeys.applications.byAnnouncement(announcementId),
+        (old) => old?.map(app => app.id === id ? { ...app, status: 'cancelled' } : app),
+      )
+      qc.setQueryData<Announcement>(
+        queryKeys.announcements.detail(announcementId),
+        (old) => old ? { ...old, applications: (old.applications ?? []).map((app: any) => app.id === id ? { ...app, status: 'cancelled' } : app) } : old,
+      )
+      if (isOwnApplication) {
+        qc.setQueryData(queryKeys.announcements.myList('applied'), (old: any) => {
+          if (!old?.pages) return old
+          return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).filter((a: Announcement) => a.id !== announcementId), total: Math.max(0, (p.total ?? 1) - 1) })) }
+        })
+      }
+      updateInAllLists(qc, announcementId, (a) =>
+        a.id === announcementId ? { ...a, applications_count: Math.max(0, (a.applications_count ?? 1) - 1) } : a,
+      )
     },
   })
 }
@@ -252,20 +295,20 @@ export function useCloseMyApplication() {
     },
 
     onError: (_, __, context) => {
-      if (context?.previous !== undefined) {
-        qc.setQueryData(queryKeys.applications.applied(), context.previous)
-      }
+      if (context?.previous !== undefined) qc.setQueryData(queryKeys.applications.applied(), context.previous)
     },
 
     onSuccess: (_, { announcementId }) => {
       qc.setQueryData<Announcement>(queryKeys.announcements.detail(announcementId), (old) =>
         old ? { ...old, applications_count: Math.max(0, (old.applications_count ?? 1) - 1) } : old,
       )
-      qc.invalidateQueries({ queryKey: queryKeys.announcements.myList('applied') })
-    },
-
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.applications.applied() })
+      qc.setQueryData(queryKeys.announcements.myList('applied'), (old: any) => {
+        if (!old?.pages) return old
+        return { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).filter((a: Announcement) => a.id !== announcementId), total: Math.max(0, (p.total ?? 1) - 1) })) }
+      })
+      updateInAllLists(qc, announcementId, (a) =>
+        a.id === announcementId ? { ...a, applications_count: Math.max(0, (a.applications_count ?? 1) - 1) } : a,
+      )
     },
   })
 }
