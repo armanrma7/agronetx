@@ -33,13 +33,18 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
   const { data: favoriteIds = new Set<string>() } = useFavoriteIds(!!user)
 
   const isFavorite = favoriteIds.has(announcement.id)
+
   const isMyAnnouncement =
     user?.id != null &&
     announcement?.owner_id != null &&
     String(announcement.owner_id) === String(user.id)
 
-  // All users (except the owner) can apply — pending status no longer blocks re-applying
-  const canApply = !isMyAnnouncement
+  const hasPending = !!user && (announcement.applications ?? []).some((app: any) => {
+    const appUserId = String(app.user_id ?? app.userId ?? app.applicant_id ?? '')
+    return appUserId && appUserId === String(user.id) && /^pending$/i.test((app.status || '').trim())
+  })
+
+  const canApply = !isMyAnnouncement && !hasPending
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const addFavorite = useAddFavorite()
@@ -225,7 +230,7 @@ export function AnnouncementCard({ announcement, onApply, onView }: Announcement
           </Text>
         </View>
         <View style={styles.actionButtons}>
-          {canApply && (
+          {canApply  && (
             <TouchableOpacity
               style={styles.buttonPrimary}
               onPress={() => onApply?.(announcement)}
@@ -380,6 +385,20 @@ const styles = StyleSheet.create({
   },
   buttonSecondaryText: {
     color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  buttonApplied: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.buttonPrimary,
+    flexShrink: 1,
+  },
+  buttonAppliedText: {
+    color: colors.buttonPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

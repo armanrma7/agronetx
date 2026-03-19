@@ -54,7 +54,7 @@ export function useAppliedIds(userId: string | undefined, enabled = true) {
           if (hasMyPending) pendingIds.push(a.id)
         }
       })
-
+      console.info('appliedIds', appliedIds)
       return { appliedIds, pendingIds }
     },
     enabled: enabled && !!userId,
