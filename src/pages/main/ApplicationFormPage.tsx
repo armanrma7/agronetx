@@ -293,8 +293,8 @@ export function ApplicationFormPage() {
     const a = announcement as any
     const unit = (a?.rent_unit ?? a?.quantity_unit ?? announcement?.unit ?? '').toString().toLowerCase()
     if (unit.includes('year') || unit === 'yearly') return 'yearly'
-    if (unit.includes('month') || unit === 'monthly' || unit.includes('ամիս')) return 'monthly'
-    if (unit.includes('day') || unit === 'daily' || unit.includes('օր')) return 'daily'
+    if (unit.includes('month') || unit === 'monthly' || unit.includes('month')) return 'monthly'
+    if (unit.includes('day') || unit === 'daily' || unit.includes('day')) return 'daily'
     return 'daily'
   }
 
@@ -619,7 +619,7 @@ export function ApplicationFormPage() {
           )}
 
           {/* Delivery Dates - For goods and rent (rent uses calendar instead of unit dropdown) */}
-          {(announcementType === 'goods' || announcementType === 'rent') && (
+          {(announcementType === 'goods' || announcementType === 'rent' || announcementType === 'service') && (
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>{t('addAnnouncement.availabilityPeriod')}*</Text>
               <TouchableOpacity 
@@ -634,21 +634,6 @@ export function ApplicationFormPage() {
             </View>
           )}
 
-          {/* Unit Selection - Only for service (rent uses calendar) */}
-          {announcementType === 'service' && (
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>{t('applications.serviceUnit')}</Text>
-              <TouchableOpacity 
-                style={styles.unitInput} 
-                onPress={() => setShowUnitPicker(true)}
-              >
-                <Text style={[styles.unitInputText, !selectedUnit && styles.unitInputPlaceholder]}>
-                  {selectedUnit ? getUnitLabel(selectedUnit) : t('common.select')}
-                </Text>
-                <Icon name="chevronDown" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          )}
 
           {/* Quantity - Only for goods */}
           {announcementType === 'goods' && (
@@ -702,8 +687,9 @@ export function ApplicationFormPage() {
    
 
         {/* Calendar Modal - Normal month calendar for goods and rent */}
-        {(announcementType === 'goods' || announcementType === 'rent') && showDatePicker && (() => {
+        {(announcementType === 'goods' || announcementType === 'rent' || announcementType === 'service') && showDatePicker && (() => {
           const viewMode = getCalendarViewMode()
+          console.info('viewMode', viewMode)
           const minKey = getCalendarMinDate()
           const maxKey = getCalendarMaxDate()
           const minYear = parseInt(minKey.split('-')[0], 10) || new Date().getFullYear()
