@@ -332,6 +332,7 @@ export function NewAnnouncementFormFields({
                 </View>
               )}
 
+              <Text style={styles.label}>{t('addAnnouncement.transactionLocation')}</Text>
               <View style={styles.fieldContainer}>
                 <RegionVillageSelector
                   selectedRegions={selectedRegions}
