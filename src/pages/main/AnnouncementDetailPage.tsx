@@ -461,7 +461,7 @@ export function AnnouncementDetailPage() {
                 activeOpacity={1}
                 onPress={() => setImageViewerVisible(false)}
               />
-              <SafeAreaView edges={['top']} style={styles.imageViewerTopBar}>
+              <SafeAreaView style={styles.imageViewerTopBar}>
                 <Text style={styles.imageViewerCounter}>
                   {imageViewerIndex + 1}/{images.length}
                 </Text>
@@ -470,6 +470,7 @@ export function AnnouncementDetailPage() {
                 </TouchableOpacity>
               </SafeAreaView>
               <FlatList
+                contentContainerStyle={{ paddingTop: 26 }}
                 ref={(r) => { imageListRef.current = r }}
                 data={images}
                 keyExtractor={(u, i) => `${i}-${u}`}
@@ -876,7 +877,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 16,
     paddingBottom: 10,
   },
   imageViewerCounter: {
