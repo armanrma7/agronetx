@@ -147,6 +147,7 @@ export function NewAnnouncementFormFields({
               />
             )}
           </View>
+          
 
           <View style={styles.fieldContainer}>
               <Text style={styles.label}>{t('addAnnouncement.unitOfMeasurement')} *</Text>
@@ -159,22 +160,7 @@ export function NewAnnouncementFormFields({
               />
             </View> 
 
-
-           {
-            type === 'rent' && <View style={styles.fieldContainer}>
-            <Text style={styles.label}>{t('addAnnouncement.rentUnit')} *</Text>
-            <Select
-              value={formData.rentUnit}
-              onValueChange={value => setFormData(prev => ({ ...prev, rentUnit: value }))}
-              options={rentMeasurementOptions}
-              placeholder={t('common.select')}
-              disabled={rentMeasurementOptions.length === 0}
-            />
-          </View>
-           }
-
-
-          {(type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) && (
+            {(type === 'goods' || (type === 'rent' && rentMeasurementOptions.length > 0)) && (
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>
                 {type === 'rent' ? t('addAnnouncement.totalArea') : t('addAnnouncement.quantity')}
@@ -206,6 +192,21 @@ export function NewAnnouncementFormFields({
               </View>
             </View>
           )}
+
+           {
+            type === 'rent' && <View style={styles.fieldContainer}>
+            <Text style={styles.label}>{t('addAnnouncement.rentUnit')} *</Text>
+            <Select
+              value={formData.rentUnit}
+              onValueChange={value => setFormData(prev => ({ ...prev, rentUnit: value }))}
+              options={rentMeasurementOptions}
+              placeholder={t('common.select')}
+              disabled={rentMeasurementOptions.length === 0}
+            />
+          </View>
+           }
+
+
 
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>{t('addAnnouncement.price')} *</Text>
