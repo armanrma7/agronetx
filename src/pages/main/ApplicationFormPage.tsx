@@ -81,14 +81,11 @@ export function ApplicationFormPage() {
       const qty = parseFloat(quantity)
       return !!quantity.trim() && !isNaN(qty) && qty > 0
     }
-    if (announcementType === 'rent') {
+    if (announcementType === 'rent' || announcementType === 'service') {
       return deliveryDates.length > 0
     }
-    if (announcementType === 'service') {
-      return !!selectedUnit
-    }
     return false
-  }, [announcementType, deliveryDates.length, quantity, selectedUnit])
+  }, [announcementType, deliveryDates.length, quantity])
 
   const initialSnapshotRef = useRef<string | null>(null)
   const didInitSnapshotRef = useRef(false)
@@ -98,11 +95,10 @@ export function ApplicationFormPage() {
       announcementType,
       deliveryDates: deliveryDates.map(d => d.toISOString().split('T')[0]),
       quantity: quantity ?? '',
-      selectedUnit: selectedUnit ?? '',
       notes: notes ?? '',
     }
     return JSON.stringify(snap)
-  }, [announcementType, deliveryDates, quantity, selectedUnit, notes])
+  }, [announcementType, deliveryDates, quantity, notes])
 
   useEffect(() => {
     if (didInitSnapshotRef.current) return
@@ -146,13 +142,10 @@ export function ApplicationFormPage() {
       setQuantity(String(prefill.count))
     }
     if (prefill.unit) {
-      setSelectedUnit(prefill.unit as UnitType)
-    }
-    if (prefill.notes) {
-      setNotes(prefill.notes)
+      setNotes(prefill.notes ?? '')
     }
     prefillAppliedRef.current = true
-  }, [])
+  }, [prefill])
 
   // Fetch applications for this announcement (for calendar: disable days already in applied applications)
   const { data: applicationsWithDeliveryDates = [] } = useApplicationsByAnnouncement(
@@ -172,32 +165,6 @@ export function ApplicationFormPage() {
         return t('applications.rentApplication')
       default:
         return t('applications.title')
-    }
-  }
-
-  // Get available units based on type
-  const getAvailableUnits = (): UnitType[] => {
-    if (announcementType === 'rent') {
-      return ['daily', 'monthly', 'yearly', 'hourly']
-    } else if (announcementType === 'service') {
-      return ['daily', 'monthly']
-    }
-    return []
-  }
-
-  // Get unit label
-  const getUnitLabel = (unit: UnitType): string => {
-    switch (unit) {
-      case 'daily':
-        return t('units.daily')
-      case 'monthly':
-        return t('units.monthly')
-      case 'yearly':
-        return t('units.yearly')
-      case 'hourly':
-        return t('units.hourly')
-      default:
-        return unit
     }
   }
 
@@ -298,6 +265,34 @@ export function ApplicationFormPage() {
     return 'daily'
   }
 
+  /**
+   * API validates each delivery_date as a calendar day (must be ≥ server "today").
+   * Month/year UI stores the 1st of the period; replace with the effective min day in that period
+   * (same as getCalendarMinDate when it falls inside that month/year).
+   */
+  const formatDeliveryDateForApi = (date: Date, viewMode: CalendarViewMode, minDateKey: string): string => {
+    const rangeMin = keyToDate(minDateKey.split('T')[0])
+    if (viewMode === 'daily') {
+      return formatDateToString(date)
+    }
+    if (viewMode === 'monthly') {
+      const y = date.getFullYear()
+      const m = date.getMonth()
+      if (y === rangeMin.getFullYear() && m === rangeMin.getMonth()) {
+        return formatDateToString(rangeMin)
+      }
+      return formatDateToString(new Date(y, m, 1))
+    }
+    if (viewMode === 'yearly') {
+      const y = date.getFullYear()
+      if (y === rangeMin.getFullYear()) {
+        return formatDateToString(rangeMin)
+      }
+      return formatDateToString(new Date(y, 0, 1))
+    }
+    return formatDateToString(date)
+  }
+
   // Get marked dates for Calendar component
   const getMarkedDates = () => {
     const marked: any = {}
@@ -365,13 +360,15 @@ export function ApplicationFormPage() {
     const minMonthKey = getCalendarMinDate().substring(0, 7)
     const maxMonthKey = getCalendarMaxDate().substring(0, 7)
     if (monthKey < minMonthKey || monthKey > maxMonthKey) return
-    const selectedDate = new Date(pickerDisplayYear, month - 1, 1)
-    const isSelected = deliveryDates.some(d => d.getFullYear() === pickerDisplayYear && d.getMonth() + 1 === month)
-    if (isSelected) {
-      setDeliveryDates(deliveryDates.filter(d => !(d.getFullYear() === pickerDisplayYear && d.getMonth() + 1 === month)))
-    } else {
-      setDeliveryDates([...deliveryDates, selectedDate].sort((a, b) => a.getTime() - b.getTime()))
-    }
+    const y = pickerDisplayYear
+    const selectedDate = new Date(y, month - 1, 1)
+    setDeliveryDates(prev => {
+      const isSelected = prev.some(d => d.getFullYear() === y && d.getMonth() + 1 === month)
+      if (isSelected) {
+        return prev.filter(d => !(d.getFullYear() === y && d.getMonth() + 1 === month))
+      }
+      return [...prev, selectedDate].sort((a, b) => a.getTime() - b.getTime())
+    })
   }
 
   const handleYearPress = (year: number) => {
@@ -379,12 +376,11 @@ export function ApplicationFormPage() {
     const maxYear = parseInt(getCalendarMaxDate().split('-')[0], 10) || new Date().getFullYear() + 3
     if (year < minYear || year > maxYear) return
     const selectedDate = new Date(year, 0, 1)
-    const isSelected = deliveryDates.some(d => d.getFullYear() === year)
-    if (isSelected) {
-      setDeliveryDates(deliveryDates.filter(d => d.getFullYear() !== year))
-    } else {
-      setDeliveryDates([...deliveryDates, selectedDate].sort((a, b) => a.getTime() - b.getTime()))
-    }
+    setDeliveryDates(prev => {
+      const isSelected = prev.some(d => d.getFullYear() === year)
+      if (isSelected) return prev.filter(d => d.getFullYear() !== year)
+      return [...prev, selectedDate].sort((a, b) => a.getTime() - b.getTime())
+    })
   }
 
   // Validate form
@@ -410,14 +406,9 @@ export function ApplicationFormPage() {
         Alert.alert(t('common.error'), t('applications.quantityExceedsLimit', { limit: dailyLimit, unit: announcementData?.quantity_unit ?? announcement?.unit ?? '' }))
         return false
       }
-    } else if (announcementType === 'rent') {
+    } else if (announcementType === 'rent' || announcementType === 'service') {
       if (deliveryDates.length === 0) {
         Alert.alert(t('common.error'), t('applications.selectAtLeastOneDate'))
-        return false
-      }
-    } else if (announcementType === 'service') {
-      if (!selectedUnit) {
-        Alert.alert(t('common.error'), t('applications.selectUnit'))
         return false
       }
     }
@@ -436,21 +427,21 @@ export function ApplicationFormPage() {
         notes: notes.trim() || undefined,
       }
 
+      const minDateKey = getCalendarMinDate()
+      const calendarViewMode = getCalendarViewMode()
+      const toApiDeliveryDate = (date: Date) =>
+        formatDeliveryDateForApi(date, calendarViewMode, minDateKey)
+
       if (announcementType === 'goods') {
         if (deliveryDates.length > 0) {
-          applicationData.delivery_dates = deliveryDates.map(date => formatDateToString(date))
+          applicationData.delivery_dates = deliveryDates.map(toApiDeliveryDate)
         }
         if (quantity) {
           applicationData.count = parseFloat(quantity)
         }
-      } else if (announcementType === 'rent') {
+      } else if (announcementType === 'rent' || announcementType === 'service') {
         if (deliveryDates.length > 0) {
-          applicationData.delivery_dates = deliveryDates.map(date => formatDateToString(date))
-          applicationData.unit = getCalendarViewMode()
-        }
-      } else if (announcementType === 'service') {
-        if (selectedUnit) {
-          applicationData.unit = selectedUnit === 'hourly' ? 'daily' : selectedUnit
+          applicationData.delivery_dates = deliveryDates.map(toApiDeliveryDate)
         }
       }
 
@@ -459,7 +450,6 @@ export function ApplicationFormPage() {
           notes: applicationData.notes,
           delivery_dates: applicationData.delivery_dates,
           count: applicationData.count,
-          unit: applicationData.unit,
         }
         await updateApplicationMutation.mutateAsync({ id: applicationId, announcementId, data: updateData })
       } else {
@@ -502,7 +492,7 @@ export function ApplicationFormPage() {
     if (!dailyLimit) return null
     
     const unit = announcementData?.quantity_unit ?? announcement?.unit ?? 'տն'
-    return `${dailyLimit.toLocaleString('hy-AM', { maximumFractionDigits: 1 })} ${unit}/օրական`
+    return `${dailyLimit.toLocaleString('hy-AM', { maximumFractionDigits: 1 })} ${unit}/${t('common.perDay')}`
   }
 
   if (loading) {
@@ -689,7 +679,6 @@ export function ApplicationFormPage() {
         {/* Calendar Modal - Normal month calendar for goods and rent */}
         {(announcementType === 'goods' || announcementType === 'rent' || announcementType === 'service') && showDatePicker && (() => {
           const viewMode = getCalendarViewMode()
-          console.info('viewMode', viewMode)
           const minKey = getCalendarMinDate()
           const maxKey = getCalendarMaxDate()
           const minYear = parseInt(minKey.split('-')[0], 10) || new Date().getFullYear()

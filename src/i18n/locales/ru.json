@@ -230,6 +230,7 @@
   },
   "addAnnouncement": {
   "title": "Новое объявление",
+  "totalArea": "Общая площадь",
   "newAnnouncement": "Новое",
   "announcement": "объявление",
   "product": "Товар",
