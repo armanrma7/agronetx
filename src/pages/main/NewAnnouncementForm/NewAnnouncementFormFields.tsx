@@ -296,7 +296,7 @@ export function NewAnnouncementFormFields({
                     <Text style={styles.dateLabel}>{t('addAnnouncement.from')}</Text>
                     <TouchableOpacity style={styles.dateInput} onPress={() => openDatePicker('start')}>
                       <Text style={[styles.dateInputText, !formData.periodStart && styles.placeholder]}>
-                        {formData.periodStart ? (formatPeriodDate ? formatPeriodDate(formData.periodStart) : formData.periodStart) : t('addAnnouncement.fillIn')}
+                        {formData.periodStart ? (formatPeriodDate ? formatPeriodDate(formData.periodStart) : formData.periodStart) : t('register.selectContactMethod')}
                       </Text>
                       <Icon name="calendar" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -305,7 +305,7 @@ export function NewAnnouncementFormFields({
                     <Text style={styles.dateLabel}>{t('addAnnouncement.until')}</Text>
                     <TouchableOpacity style={styles.dateInput} onPress={() => openDatePicker('end')}>
                       <Text style={[styles.dateInputText, !formData.salesPeriod && styles.placeholder]}>
-                        {formData.salesPeriod ? (formatPeriodDate ? formatPeriodDate(formData.salesPeriod) : formData.salesPeriod) : t('addAnnouncement.fillIn')}
+                        {formData.salesPeriod ? (formatPeriodDate ? formatPeriodDate(formData.salesPeriod) : formData.salesPeriod) : t('register.selectContactMethod')}
                       </Text>
                       <Icon name="calendar" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
