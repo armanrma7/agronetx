@@ -497,7 +497,7 @@ export function AnnouncementDetailPage() {
           {
             Number(announcement.count || 0) > 0 && (
               <>
-                <Text style={styles.priceAvailabilityLabel}>{t('announcementDetail.availability')}</Text>
+                <Text style={styles.priceAvailabilityLabel}>{t('addAnnouncement.quantity')}</Text>
               <Text style={styles.priceAvailabilityValue}>
               {Number(announcement.count || 0).toLocaleString()} {translateMeasureUnit(announcement.unit, i18n.language)}
             </Text>
@@ -529,14 +529,14 @@ export function AnnouncementDetailPage() {
           {(startDate || endDate) && (
             <View style={styles.dateRow}>
               <Icon name="calendar" size={20} color={colors.textSecondary} />
-              <Text style={styles.dateLabel}>{t('announcementDetail.availableFrom')}</Text>
+              <Text style={styles.dateLabel}>{t('addAnnouncement.availabilityPeriod')}</Text>
               <Text style={styles.dateValue}>{formatDateRange(startDate, endDate)}</Text>
             </View>
           )}
-
           {/* Location Section */}
           {(regionNames.length > 0 || villageNames.length > 0) && (
             <View style={styles.locationSection}>
+              <Text style={styles.locationTitle}>{t('addAnnouncement.transactionLocation')}</Text>
               {/* Regions */}
               {regionNames.length > 0 && (
                 <View style={styles.locationRow}>
@@ -958,7 +958,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   dateValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textPrimary,
     flex: 1,
@@ -992,6 +992,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'right',
+  },
+  locationTitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: 8,
   },
   skeletonText: {
     flex: 1,

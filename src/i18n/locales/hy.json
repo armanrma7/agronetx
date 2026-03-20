@@ -40,7 +40,8 @@
     "notSpecified": "–",
     "unknownUser": "Անհայտ",
     "location": "Գտնվելու վայր",
-    "currency": "դր."
+    "currency": "դր.",
+    "perDay": "օր"
   },
   "register": {
     "title": "Գրանցում",
