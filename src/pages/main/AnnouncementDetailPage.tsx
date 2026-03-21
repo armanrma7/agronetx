@@ -34,6 +34,7 @@ import {
   isReapply,
   canApplicantViewContacts,
   applicationIs,
+  announcementIs,
 } from '../../utils/announcementActions'
 import { translateMeasureUnit } from '../../utils/units'
 
@@ -413,6 +414,20 @@ export function AnnouncementDetailPage() {
   const showApply = canApplyOrApplyAgain(announcement, user?.id, myApplication, hasAnyApprovedApplication)
   const showContact = canApplicantViewContacts(announcement, user?.id, myApplications)
   const applyButtonIsReapply = isReapply(myApplication)
+
+  const myHasApprovedApp = myApplications.some(a => applicationIs.approved(a.status))
+  const myHasPendingLikeApp = myApplications.some(
+    a =>
+      applicationIs.pending(a.status) ||
+      /^to_be_verified$/i.test(String(a.status || '').trim()),
+  )
+  const showPendingApplicationNotice =
+    !isMyAnnouncement &&
+    !!user?.id &&
+    myHasPendingLikeApp &&
+    !myHasApprovedApp &&
+    (announcementIs.active(announcement.status) || announcementIs.closed(announcement.status))
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.buttonPrimary }}>
      <View style={styles.container}>
@@ -721,20 +736,36 @@ export function AnnouncementDetailPage() {
             </View>
           )
         ) : (
-          // Applicant buttons: Contact + Apply/Apply Again
-          (showContact || showApply) && (
-            <View style={styles.actionButtons}>
-              {showContact && (
-                <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-                  <Text style={styles.contactButtonText}>{t('announcementDetail.contact')}</Text>
-                </TouchableOpacity>
-              )}
-              {showApply && (
-                <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-                  <Text style={styles.applyButtonText}>
-                    {applyButtonIsReapply ? t('announcements.applyAgain') : t('announcements.apply')}
+          // Applicant: optional pending notice + Contact / Apply
+          (showContact || showApply || showPendingApplicationNotice) && (
+            <View style={styles.applicantFooter}>
+              {showPendingApplicationNotice && (
+                <View
+                  style={[
+                    styles.pendingApplicationNotice,
+                    !showContact && !showApply && styles.pendingApplicationNoticeSolo,
+                  ]}
+                >
+                  <Text style={styles.pendingApplicationNoticeText}>
+                    {t('announcementDetail.pendingApplicationNotice')}
                   </Text>
-                </TouchableOpacity>
+                </View>
+              )}
+              {(showContact || showApply) && (
+                <View style={styles.applicantActionButtons}>
+                  {showContact && (
+                    <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+                      <Text style={styles.contactButtonText}>{t('announcementDetail.contact')}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {showApply && (
+                    <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+                      <Text style={styles.applyButtonText}>
+                        {applyButtonIsReapply ? t('announcements.applyAgain') : t('announcements.apply')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
             </View>
           )
@@ -1082,6 +1113,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
+  },
+  applicantFooter: {
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  pendingApplicationNotice: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 4,
+    padding: 14,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  pendingApplicationNoticeSolo: {
+    marginBottom: 16,
+  },
+  pendingApplicationNoticeText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  applicantActionButtons: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingTop: 12,
+    gap: 12,
+    backgroundColor: colors.white,
   },
   contactButton: {
     flex: 1,
