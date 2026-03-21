@@ -39,6 +39,59 @@ import { translateMeasureUnit } from '../../utils/units'
 
 const { width } = Dimensions.get('window')
 
+function applicationBelongsToUser(a: ApplicationListItem, userId: string | undefined): boolean {
+  if (!userId) return false
+  const u = String(userId)
+  if (a.user_id != null && String(a.user_id) === u) return true
+  if (a.applicant?.id != null && String(a.applicant.id) === u) return true
+  return false
+}
+
+/** Merge embedded announcement applications with GET /applications/announcement list (API wins on id clash). */
+function mergeAnnouncementApplications(
+  announcement: Announcement,
+  fromApi: ApplicationListItem[],
+): ApplicationListItem[] {
+  const raw = (announcement as any).applications
+  const embedded: ApplicationListItem[] = Array.isArray(raw)
+    ? raw.map(
+        (app: any): ApplicationListItem => ({
+          id: String(app.id ?? ''),
+          user_id: String(app.user_id ?? app.userId ?? app.applicant_id ?? app.applicant?.id ?? ''),
+          status: String(app.status ?? 'pending'),
+          announcement_id: announcement.id,
+          delivery_dates: Array.isArray(app.delivery_dates)
+            ? app.delivery_dates
+            : app.delivery_dates
+              ? [app.delivery_dates]
+              : [],
+          applicant: app.applicant
+            ? {
+                id: app.applicant.id,
+                full_name: app.applicant.full_name,
+                phone: app.applicant.phone,
+                user_type: app.applicant.user_type,
+                profile_picture: app.applicant.profile_picture ?? null,
+              }
+            : undefined,
+        }),
+      )
+    : []
+
+  const byId = new Map<string, ApplicationListItem>()
+  for (const a of embedded) {
+    if (a.id) byId.set(a.id, a)
+  }
+  for (const a of fromApi) {
+    if (a.id) {
+      const prev = byId.get(a.id)
+      byId.set(a.id, prev ? { ...prev, ...a } : a)
+    }
+  }
+  const withoutId = fromApi.filter(a => !a.id)
+  return [...Array.from(byId.values()), ...withoutId]
+}
+
 interface RouteParams {
   announcementId: string
 }
@@ -335,10 +388,13 @@ export function AnnouncementDetailPage() {
   const dailyLimit = announcement.daily_limit ? Number(announcement.daily_limit) : 0
 
   // ── Derive action state from fetched applications ─────────────────────────
-  const allApplications: ApplicationListItem[] = allApplicationsData
+  const allApplications: ApplicationListItem[] = mergeAnnouncementApplications(
+    announcement,
+    allApplicationsData,
+  )
 
   const myApplications = user?.id
-    ? allApplications.filter(a => String(a.user_id) === String(user.id))
+    ? allApplications.filter(a => applicationBelongsToUser(a, user.id))
     : []
 
   // Pick the most relevant application: prefer PENDING, then APPROVED, then latest
@@ -355,7 +411,7 @@ export function AnnouncementDetailPage() {
   const showCancel = canCancelAnnouncement(announcement, user?.id)
   const showClose = canCloseAnnouncement(announcement, user?.id, hasAnyApprovedApplication)
   const showApply = canApplyOrApplyAgain(announcement, user?.id, myApplication, hasAnyApprovedApplication)
-  const showContact = canApplicantViewContacts(announcement, user?.id, myApplication)
+  const showContact = canApplicantViewContacts(announcement, user?.id, myApplications)
   const applyButtonIsReapply = isReapply(myApplication)
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.buttonPrimary }}>

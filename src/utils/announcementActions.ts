@@ -143,20 +143,19 @@ export function isReapply(myApplication: ApplicationListItem | null): boolean {
 /**
  * Contact visibility rule (announcement detail — for applicant's "Contact" button):
  * - Announcement must be PUBLISHED or CLOSED
- * - AND the current user must have an APPROVED application
+ * - AND the current user must have at least one APPROVED application (any of their rows)
  */
 export function canApplicantViewContacts(
   announcement: Announcement,
   userId: string | null | undefined,
-  myApplication: ApplicationListItem | null,
+  myApplications: ApplicationListItem[],
 ): boolean {
   if (isAnnouncementOwner(announcement, userId)) return false
   if (
     !announcementIs.active(announcement.status) &&
     !announcementIs.closed(announcement.status)
   ) return false
-  if (!myApplication) return false
-  return applicationIs.approved(myApplication.status)
+  return myApplications.some(a => applicationIs.approved(a.status))
 }
 
 // ── Application-level actions ─────────────────────────────────────────────────
