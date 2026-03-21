@@ -336,7 +336,7 @@ export function ApplicationFormPage() {
         marked[dateKey] = {
           disabled: true,
           disableTouchEvent: true,
-          textColor: colors.textTertiary,
+          textColor: '#D1D5DB',
         }
       }
     })
@@ -743,7 +743,9 @@ export function ApplicationFormPage() {
                         selectedDayTextColor: colors.white,
                         todayTextColor: colors.buttonPrimary,
                         dayTextColor: colors.textPrimary,
-                        textDisabledColor: colors.textTertiary,
+                        // Out-of-range & other-month days: very light; bold only on active days (see textDayFontWeight + stylesheet)
+                        textDisabledColor: '#D1D5DB',
+                        textInactiveColor: '#E8EAED',
                         dotColor: colors.buttonPrimary,
                         selectedDotColor: colors.white,
                         arrowColor: colors.buttonPrimary,
@@ -754,7 +756,23 @@ export function ApplicationFormPage() {
                         textDayFontSize: 16,
                         textMonthFontSize: 18,
                         textDayHeaderFontSize: 14,
-                      }}
+                        'stylesheet.day.basic': {
+                          disabledText: {
+                            color: '#D1D5DB',
+                            fontWeight: '400',
+                          },
+                          inactiveText: {
+                            color: '#E8EAED',
+                            fontWeight: '400',
+                          },
+                          selectedText: {
+                            fontWeight: '700',
+                          },
+                          todayText: {
+                            fontWeight: '700',
+                          },
+                        },
+                      } as any}
                       style={styles.calendar}
                     />
                   )}
@@ -1239,19 +1257,20 @@ const appPickerStyles = StyleSheet.create({
     backgroundColor: colors.buttonPrimary,
   },
   monthItemDisabled: {
-    opacity: 0.35,
+    opacity: 1,
   },
   monthItemText: {
     fontSize: 16,
     color: '#111827',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   monthItemTextSelected: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
   monthItemTextDisabled: {
-    color: '#9CA3AF',
+    color: '#E8EAED',
+    fontWeight: '400',
   },
   yearGrid: {
     flexDirection: 'row',
@@ -1271,7 +1290,7 @@ const appPickerStyles = StyleSheet.create({
   yearGridItemText: {
     fontSize: 17,
     color: '#111827',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   yearGridItemTextSelected: {
     color: '#FFFFFF',
