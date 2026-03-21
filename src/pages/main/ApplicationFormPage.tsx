@@ -25,6 +25,7 @@ import { useSubmitApplication, useUpdateApplication, useApplicationsByAnnounceme
 import { useAnnouncementDetail } from '../../hooks/useAnnouncementQueries'
 import { translateMeasureUnit } from '../../utils/units'
 import { applicationIs } from '../../utils/announcementActions'
+import { useAuth } from '../../context/AuthContext'
 
 interface PrefillData {
   deliveryDates?: string[]
@@ -46,6 +47,7 @@ type UnitType = 'daily' | 'monthly' | 'yearly' | 'hourly'
 
 export function ApplicationFormPage() {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   const navigation = useNavigation()
   const route = useRoute()
   const { announcementId, announcementType, announcement: paramAnnouncement, applicationId, prefill } = (route.params as RouteParams) || {}
@@ -148,10 +150,13 @@ export function ApplicationFormPage() {
     prefillAppliedRef.current = true
   }, [prefill])
 
-  // Fetch applications for this announcement (for calendar: disable days already in applied applications)
+  // Fetch applications for this announcement (for calendar: disable days taken by approved apps only)
   const { data: applicationsWithDeliveryDates = [] } = useApplicationsByAnnouncement(
     announcementId,
-    (announcementType === 'goods' || announcementType === 'rent') && !!announcementId,
+    (announcementType === 'goods' ||
+      announcementType === 'rent' ||
+      announcementType === 'service') &&
+      !!announcementId,
   )
 
   // Get page title based on type and mode
@@ -196,18 +201,29 @@ export function ApplicationFormPage() {
     return new Date(year, month - 1, day)
   }
 
-  // Get delivery dates from applications to disable on the calendar (goods/rent).
-  // Goods: only APPROVED applications block a day. Pending / rejected / canceled / missing status
-  // do not reserve the slot (API often defaults missing status to "pending" in mappers).
-  // Rent/service: every application with delivery_dates still blocks (unchanged).
-  // In edit mode, the current application's own dates are excluded so they remain selectable.
+  // Get delivery dates from applications to disable on the calendar.
+  // Goods: PENDING and APPROVED both reserve days (only pending blocks re-apply in product rules; rejected/canceled do not block dates).
+  // Rent & service: only APPROVED reserves a slot; pending does not block the calendar.
+  // Own applications never block your calendar (other users' apps still do). Edit mode also skips the row being edited by id.
   const getDisabledDates = (): Set<string> => {
     const disabledDates = new Set<string>()
-    
+    const myId = user?.id != null ? String(user.id).trim() : ''
+
+    const applicantIdFromApp = (app: any) =>
+      String(
+        app.user_id ?? app.userId ?? app.applicant_id ?? app.applicant?.id ?? '',
+      ).trim()
+
     const addDeliveryDatesFromApp = (app: any) => {
       // In edit mode skip the application being edited so its dates stay selectable
       if (isEditMode && app.id != null && String(app.id) === String(applicationId)) return
-      if (announcementType === 'goods' && !applicationIs.approved(app?.status)) return
+      if (myId && applicantIdFromApp(app) === myId) return
+      const status = app?.status
+      if (announcementType === 'rent' || announcementType === 'service') {
+        if (!applicationIs.approved(status)) return
+      } else if (announcementType === 'goods') {
+        if (!applicationIs.pending(status) && !applicationIs.approved(status)) return
+      }
       const deliveryDatesArray = Array.isArray(app.delivery_dates)
         ? app.delivery_dates
         : (app.delivery_dates ? [app.delivery_dates] : [])
