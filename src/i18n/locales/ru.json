@@ -379,6 +379,8 @@
     "rejectConfirm": "Отклонить эту заявку?",
     "status": "Статус",
     "details": "Данные заявки",
+    "counterpartyListingOwner": "Автор объявления",
+    "counterpartyApplicant": "Заявитель",
     "requestedQuantity": "Требуемое количество",
     "applicationDate": "Дата заявки",
     "empty": "Заявок пока нет",

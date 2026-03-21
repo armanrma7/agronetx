@@ -43,6 +43,24 @@ function getInitials(fullName?: string): string {
   return (first + last).toUpperCase()
 }
 
+/** Map API user_type to `common.*` i18n key (farmer | organization). */
+function userTypeToCommonKey(userType?: string): string {
+  const u = (userType || 'farmer').toLowerCase().trim()
+  if (u === 'company' || u === 'organization') return 'organization'
+  if (u === 'buyer') return 'buyer'
+  return 'farmer'
+}
+
+function regionVillageDisplayName(
+  rv: { name_am?: string; name_en?: string; name_ru?: string; name_hy?: string } | undefined,
+  lang: string,
+): string {
+  if (!rv) return ''
+  if (lang.startsWith('hy')) return (rv.name_hy || rv.name_am || rv.name_en || '').trim()
+  if (lang.startsWith('ru')) return (rv.name_ru || rv.name_en || rv.name_am || '').trim()
+  return (rv.name_en || rv.name_am || rv.name_ru || '').trim()
+}
+
 export function ApplicationDetailPage() {
   const { t, i18n } = useTranslation()
   const navigation = useNavigation()
@@ -172,9 +190,22 @@ export function ApplicationDetailPage() {
 
   const applicant = app.applicant
   const applicantName = applicant?.full_name || t('common.unknownUser')
-  const initials = getInitials(applicant?.full_name)
-  const userType = applicant?.user_type ?? 'farmer'
-  const location = [app.region_name || app.region, app.village_name || app.village]
+  const applicantTypeKey = userTypeToCommonKey(applicant?.user_type)
+
+  const owner = announcement?.owner
+  const ownerAny = owner as any
+  const ownerName = owner?.full_name || t('common.unknownUser')
+  const ownerTypeKey = userTypeToCommonKey(ownerAny?.user_type ?? ownerAny?.userType)
+
+  const ownerLocation =
+    owner &&
+    [
+      regionVillageDisplayName(owner.region, i18n.language),
+      regionVillageDisplayName(owner.village, i18n.language),
+    ]
+      .filter(Boolean)
+      .join(', ')
+  const applicantLocation = [app.region_name || app.region, app.village_name || app.village]
     .filter(Boolean)
     .join(', ')
 
@@ -184,6 +215,16 @@ export function ApplicationDetailPage() {
   // Role derived from announcement ownership
   const isAnnouncerUser = announcement != null && isAnnouncementOwner(announcement, user?.id)
   const isMyApplication = user?.id != null && String(app.user_id) === String(user.id)
+
+  /** I applied → show listing owner. I’m the announcer reviewing this app → show applicant. */
+  const showListingOwner = isMyApplication
+  const cardName = showListingOwner ? ownerName : applicantName
+  const cardTypeKey = showListingOwner ? ownerTypeKey : applicantTypeKey
+  const cardPicture = showListingOwner
+    ? (ownerAny?.profile_picture ?? ownerAny?.profilePicture ?? null)
+    : (applicant?.profile_picture ?? null)
+  const cardInitials = getInitials(showListingOwner ? owner?.full_name : applicant?.full_name)
+  const cardLocation = showListingOwner ? ownerLocation : applicantLocation
 
   // Case 2f: BLOCKED — no actions for anyone
   const isBlockedApp = /^blocked$/i.test((app.status || '').trim())
@@ -204,26 +245,24 @@ export function ApplicationDetailPage() {
         <AppHeader showBack />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Applicant info */}
+          {/* Counterparty: listing owner (when I applied) or applicant (when I’m the announcer) */}
           <View style={styles.applicantCard}>
             <View style={styles.avatar}>
-              {applicant?.profile_picture ? (
-                <Image
-                  source={{ uri: applicant.profile_picture }}
-                  style={styles.avatarImage}
-                />
+              {cardPicture ? (
+                <Image source={{ uri: cardPicture }} style={styles.avatarImage} />
               ) : (
-                <Text style={styles.avatarText}>{initials}</Text>
+                <Text style={styles.avatarText}>{cardInitials}</Text>
               )}
             </View>
             <View style={styles.applicantInfo}>
-              <Text style={styles.applicantName}>{applicantName}</Text>
-              <Text style={styles.applicantRole}>{t(`common.${userType}`) || userType}</Text>
-              {location ? (
+              <Text style={styles.applicantName}>{cardName}</Text>
+              <Text style={styles.applicantRole}>{t(`common.${cardTypeKey}`)}</Text>
+              {/* {cardLocation ? (
                 <Text style={styles.applicantLocation}>
-                  {t('common.location')}: <Text style={styles.applicantLocationValue}>{location}</Text>
+                  {t('common.location')}:{' '}
+                  <Text style={styles.applicantLocationValue}>{cardLocation}</Text>
                 </Text>
-              ) : null}
+              ) : null} */}
             </View>
           </View>
 
@@ -420,6 +459,14 @@ const styles = StyleSheet.create({
   applicantInfo: {
     flex: 1,
     gap: 2,
+  },
+  counterpartyLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 2,
   },
   applicantName: {
     fontSize: 16,

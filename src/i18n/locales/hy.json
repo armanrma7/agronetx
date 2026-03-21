@@ -432,6 +432,8 @@
     "rejectConfirm": "Մերժե՞լ այս դիմումը:",
     "status": "Կարգավիճակ",
     "details": "Դիմումի տվյալներ",
+    "counterpartyListingOwner": "Գովազդի հեղինակ",
+    "counterpartyApplicant": "Դիմող",
     "requestedQuantity": "Պահանջված քանակ",
     "applicationDate": "Դիմումի ամսաթիվ",
     "empty": "Դիմումներ չկան",

@@ -419,6 +419,8 @@
     "view": "View",
     "status": "Status",
     "details": "Application details",
+    "counterpartyListingOwner": "Announcement owner",
+    "counterpartyApplicant": "Applicant",
     "requestedQuantity": "Required quantity",
     "applicationDate": "Application date",
     "empty": "No applications yet",
