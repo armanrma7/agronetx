@@ -24,6 +24,7 @@ import { Announcement } from '../../types'
 import { useSubmitApplication, useUpdateApplication, useApplicationsByAnnouncement } from '../../hooks/useApplicationQueries'
 import { useAnnouncementDetail } from '../../hooks/useAnnouncementQueries'
 import { translateMeasureUnit } from '../../utils/units'
+import { applicationIs } from '../../utils/announcementActions'
 
 interface PrefillData {
   deliveryDates?: string[]
@@ -195,14 +196,18 @@ export function ApplicationFormPage() {
     return new Date(year, month - 1, day)
   }
 
-  // Get delivery dates from all applied applications (to disable those days); days after announcement end date are handled via maxDate
-  // In edit mode, the current application's own dates are excluded so they remain selectable
+  // Get delivery dates from applications to disable on the calendar (goods/rent).
+  // Goods: only APPROVED applications block a day. Pending / rejected / canceled / missing status
+  // do not reserve the slot (API often defaults missing status to "pending" in mappers).
+  // Rent/service: every application with delivery_dates still blocks (unchanged).
+  // In edit mode, the current application's own dates are excluded so they remain selectable.
   const getDisabledDates = (): Set<string> => {
     const disabledDates = new Set<string>()
     
     const addDeliveryDatesFromApp = (app: any) => {
       // In edit mode skip the application being edited so its dates stay selectable
       if (isEditMode && app.id != null && String(app.id) === String(applicationId)) return
+      if (announcementType === 'goods' && !applicationIs.approved(app?.status)) return
       const deliveryDatesArray = Array.isArray(app.delivery_dates)
         ? app.delivery_dates
         : (app.delivery_dates ? [app.delivery_dates] : [])
