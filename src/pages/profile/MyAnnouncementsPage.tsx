@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, paddingVertical: 16, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: colors.buttonPrimary },
-  tabText: { fontSize: 16, color: colors.textTertiary, fontWeight: '500' },
+  tabText: { fontSize: 15, color: colors.textSecondary, fontWeight: '500' },
   tabTextActive: { color: colors.buttonPrimary, fontWeight: '600' },
   listContainer: { padding: 16 },
   emptyContainer: { padding: 40, alignItems: 'center' },

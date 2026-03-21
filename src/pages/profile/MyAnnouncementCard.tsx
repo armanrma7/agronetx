@@ -193,7 +193,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
 
           return (
             <TouchableOpacity
-              style={styles.participantsRow}
+              style={[styles.participantsRow, styles.participantsRowFlex]}
               onPress={() => {
                 if (!onApplicationsPress) return
                 if (showMyApplications || hasApps) onApplicationsPress(announcement)
@@ -202,7 +202,14 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
               disabled={!onApplicationsPress || (!showMyApplications && !hasApps)}
             >
               <Icon name={showMyApplications ? 'document' : 'people'} size={16} color={iconColor} />
-              <Text style={textStyle}>{label}</Text>
+              <View style={styles.participantsLabelWrap}>
+                <Text style={textStyle} numberOfLines={1}>
+                  {label}
+                </Text>
+                {announcement.isApplied ? (
+                  <Icon name="schedule" size={16} color={iconColor} style={styles.scheduleIcon} />
+                ) : null}
+              </View>
             </TouchableOpacity>
           )
         })()}
@@ -372,6 +379,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  participantsRowFlex: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  participantsLabelWrap: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  scheduleIcon: {
+    flexShrink: 0,
   },
   participantsText: {
     fontSize: 14,
