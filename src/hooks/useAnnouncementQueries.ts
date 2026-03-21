@@ -73,6 +73,7 @@ export function useAnnouncementsList(tab: AnnouncementsTab, filters?: FilterValu
 export function flattenAnnouncementPages(
   data?: InfiniteData<announcementsAPI.PaginatedResponse<Announcement>>,
 ): Announcement[] {
+  console.info('data', data)
   return data?.pages.flatMap(p => p.announcements ?? []) ?? []
 }
 

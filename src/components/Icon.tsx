@@ -53,6 +53,8 @@ const ICON_MAP: Record<string, string> = {
   description: 'description',
   /** Clock / pending / “in progress” indicator */
   schedule: 'schedule',
+  'hourglass-bottom': 'hourglass-bottom',
+  'hourglass-top': 'hourglass-top',
 }
 
 export function Icon({ name, size = 18, style, color }: Props) {

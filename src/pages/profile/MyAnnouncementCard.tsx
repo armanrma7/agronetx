@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Easing } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../../theme/colors'
 import { Announcement } from '../../types'
@@ -7,6 +7,85 @@ import Icon from '../../components/Icon'
 import { announcementIs, applicationIs } from '../../utils/announcementActions'
 import { useAuth } from '../../context/AuthContext'
 import { translateMeasureUnit } from '../../utils/units'
+
+/**
+ * Hourglass alternates `hourglass-bottom` ↔ `hourglass-top` with a vertical flip (rotateX):
+ * the icon turns top-toward-bottom, swaps at the edge, then opens back.
+ */
+function AnimatedScheduleIcon({ color }: { color: string }) {
+  const tiltDeg = useRef(new Animated.Value(0)).current
+  const rotateX = tiltDeg.interpolate({
+    inputRange: [-90, 0, 90],
+    outputRange: ['-90deg', '0deg', '90deg'],
+  })
+  const [showTop, setShowTop] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const runTopToBottomFlip = (nextIsTop: boolean) =>
+      new Promise<void>(resolve => {
+        Animated.timing(tiltDeg, {
+          toValue: 90,
+          duration: 240,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (!finished || cancelled) {
+            resolve()
+            return
+          }
+          if (!cancelled) setShowTop(nextIsTop)
+          tiltDeg.setValue(-90)
+          Animated.timing(tiltDeg, {
+            toValue: 0,
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start(() => resolve())
+        })
+      })
+
+    const pause = (ms: number) =>
+      new Promise<void>(resolve => {
+        setTimeout(() => {
+          if (!cancelled) resolve()
+        }, ms)
+      })
+
+    ;(async () => {
+      while (!cancelled) {
+        await runTopToBottomFlip(true)
+        if (cancelled) break
+        await pause(420)
+        if (cancelled) break
+        await runTopToBottomFlip(false)
+        if (cancelled) break
+        await pause(420)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      tiltDeg.stopAnimation()
+    }
+  }, [tiltDeg])
+
+  return (
+    <View style={styles.scheduleIconWrap}>
+      <Animated.View
+        style={[
+          styles.scheduleIcon,
+          {
+            transform: [{ perspective: 280 }, { rotateX }],
+          },
+        ]}
+      >
+        <Icon name={showTop ? 'hourglass-top' : 'hourglass-bottom'} size={16} color={color} />
+      </Animated.View>
+    </View>
+  )
+}
 
 interface MyAnnouncementCardProps {
   announcement: Announcement
@@ -23,7 +102,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
 
-
+  // console.info('announcement', announcement)
   const getRegionVillageLabel = (rv: any | undefined | null): string => {
     if (!rv) return ''
     const lang = (i18n.language || 'hy').toLowerCase()
@@ -191,6 +270,41 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
             ? t('announcements.myApplications')
             : `${t('announcements.applicants')}: ${appCount}`
 
+          const ann = announcement as any
+          const pendingOwnerCount = Number(ann.pending_application_count ?? 0) || 0
+          const approvedOwnerCount = Number(ann.approved_application_count ?? 0) || 0
+          const scheduleFromOwnerCounts =
+            !showMyApplications && (pendingOwnerCount > 0 || approvedOwnerCount > 0)
+
+          const applicationsEmbedded = Array.isArray(ann.applications) ? ann.applications : []
+          const scheduleFromOwnerEmbedded =
+            !showMyApplications &&
+            applicationsEmbedded.some(
+              (appItem: any) =>
+                applicationIs.pending(appItem?.status) || applicationIs.approved(appItem?.status),
+            )
+
+          const myUid = user?.id != null ? String(user.id) : ''
+          const scheduleFromMyApplication =
+            showMyApplications &&
+            applicationsEmbedded.some((appItem: any) => {
+              const uid = String(
+                appItem.user_id ?? appItem.applicant_id ?? appItem.userId ?? '',
+              ).trim()
+              if (!myUid || uid !== myUid) return false
+              return (
+                applicationIs.pending(appItem?.status) || applicationIs.approved(appItem?.status)
+              )
+            })
+          const scheduleFromAppliedFlag =
+            showMyApplications && announcement.isApplied && applicationsEmbedded.length === 0
+
+          const showScheduleIcon =
+            scheduleFromOwnerCounts ||
+            scheduleFromOwnerEmbedded ||
+            scheduleFromMyApplication ||
+            scheduleFromAppliedFlag
+
           return (
             <TouchableOpacity
               style={[styles.participantsRow, styles.participantsRowFlex]}
@@ -206,9 +320,7 @@ export function MyAnnouncementCard({ announcement, onCancel, onView, onCloseAppl
                 <Text style={textStyle} numberOfLines={1}>
                   {label}
                 </Text>
-                {announcement.isApplied ? (
-                  <Icon name="schedule" size={16} color={iconColor} style={styles.scheduleIcon} />
-                ) : null}
+                {showScheduleIcon ? <AnimatedScheduleIcon color={iconColor} /> : null}
               </View>
             </TouchableOpacity>
           )
@@ -391,6 +503,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  scheduleIconWrap: {
+    width: 18,
+    height: 18,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scheduleIcon: {
     flexShrink: 0,

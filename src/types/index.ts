@@ -208,6 +208,10 @@ export interface Announcement {
   villages_data: RegionVillage[];
 
   applications_count: number;
+  /** Owner "my announcements" list: applications in pending review */
+  pending_application_count?: number;
+  /** Owner "my announcements" list: approved applications */
+  approved_application_count?: number;
   applications: AnnouncementApplication[];
 
   /** Server-provided flag: current user has favorited this announcement */

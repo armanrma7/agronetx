@@ -260,6 +260,8 @@ function mapAnnouncementResponse(data: any): Announcement {
     regions_data: regionsData,
     villages_data: villagesData,
     applications_count: applicationsCount,
+    pending_application_count: toNum(data.pending_application_count ?? data.pendingApplicationCount),
+    approved_application_count: toNum(data.approved_application_count ?? data.approvedApplicationCount),
     applications: applications as AnnouncementApplication[],
     isFavorite: data.isFavorite ?? data.is_favorite ?? false,
     isApplied: data.isApplied ?? data.is_applied ?? false,
