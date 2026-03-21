@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 import { colors } from '../../../theme/colors'
 import { AppHeader } from '../../../components/AppHeader'
+import { ContactBottomSheet, type ContactSheetRow } from '../../../components/ContactBottomSheet'
 import { useAuth } from '../../../context/AuthContext'
 import { useApplicationsByAnnouncement, useApproveApplication, useRejectApplication, useCancelApplication } from '../../../hooks/useApplicationQueries'
 import { useAnnouncementDetail } from '../../../hooks/useAnnouncementQueries'
@@ -75,7 +76,25 @@ export function ApplicationDetailPage() {
   const rejectApp = useRejectApplication()
   const cancelApp = useCancelApplication()
 
+  const [applicantContactOpen, setApplicantContactOpen] = useState(false)
+
   const app = applications.find(a => a.id === appId)
+
+  const applicantContactSheetRows = useMemo((): ContactSheetRow[] => {
+    if (!app) return []
+    const phone = (
+      app.applicant?.phone ||
+      (app as any).applicant_phone ||
+      (app as any).phone ||
+      ''
+    ).trim()
+    const rows: ContactSheetRow[] = [
+      { label: t('profile.primaryNumber'), value: phone || '-' },
+    ]
+    const loc = [app.region_name, app.village_name].filter(Boolean).join(', ')
+    if (loc) rows.push({ label: t('common.location'), value: loc })
+    return rows
+  }, [app, t])
   const announcementStatus = announcement?.status ?? ''
 
   // Per-button loading via mutation variables
@@ -239,6 +258,15 @@ export function ApplicationDetailPage() {
     !isBlockedApp &&
     canApplyAgainFromApplication(announcementStatus, app, user?.id) &&
     !isMyApplication
+
+  const showAnnouncerApplicantContact = canAnnouncerViewApplicantContact(
+    announcementStatus,
+    app,
+    isAnnouncerUser,
+  )
+  const applicantPhone =
+    (applicant?.phone || (app as any).applicant_phone || (app as any).phone || '').trim()
+
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.container}>
@@ -324,7 +352,12 @@ export function ApplicationDetailPage() {
         </ScrollView>
 
         {/* Action buttons */}
-        {(showApprove || showReject || showCancelApp || showEdit || showApplyAgain) && (
+        {(showApprove ||
+          showReject ||
+          showCancelApp ||
+          showEdit ||
+          showApplyAgain ||
+          showAnnouncerApplicantContact) && (
           <View style={styles.actions}>
             {/* Applicant: Edit (only when own application and PENDING) */}
             {showEdit && (
@@ -392,8 +425,33 @@ export function ApplicationDetailPage() {
                 <Text style={styles.approveButtonText}>{t('announcements.applyAgain')}</Text>
               </TouchableOpacity>
             )}
+
+            {/* Announcer: contact sheet (same UI as announcement detail) */}
+            {showAnnouncerApplicantContact && (
+              <TouchableOpacity
+                style={styles.contactFooterButton}
+                onPress={() => setApplicantContactOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('announcementDetail.contact')}
+              >
+                <Text style={styles.contactFooterButtonText}>{t('announcementDetail.contact')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
+
+        <ContactBottomSheet
+          visible={applicantContactOpen}
+          onClose={() => setApplicantContactOpen(false)}
+          title={t('applications.applicantContactTitle')}
+          displayName={applicantName}
+          roleLabel={t(`common.${applicantTypeKey}`)}
+          avatarUri={applicant?.profile_picture ?? null}
+          rows={applicantContactSheetRows}
+          phone={applicantPhone}
+          callButtonLabel={t('announcementDetail.call')}
+          callFailedMessage={t('applications.callFailed')}
+        />
       </View>
     </SafeAreaView>
   )
@@ -436,6 +494,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+  },
+  contactFooterButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.buttonPrimary,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactFooterButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.buttonPrimary,
   },
   avatar: {
     width: 48,

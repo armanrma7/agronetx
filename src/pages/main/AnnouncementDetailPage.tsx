@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Linking,
   Dimensions,
   Image,
   Alert,
@@ -23,6 +22,7 @@ import Icon from '../../components/Icon'
 import * as announcementsAPI from '../../lib/api/announcements.api'
 import type { ApplicationListItem } from '../../lib/api/announcements.api'
 import { AppHeader } from '../../components/AppHeader'
+import { ContactBottomSheet, type ContactSheetRow } from '../../components/ContactBottomSheet'
 import { useAnnouncementDetail, useCancelAnnouncement, useCloseAnnouncement } from '../../hooks/useAnnouncementQueries'
 import { useApplicationsByAnnouncement } from '../../hooks/useApplicationQueries'
 import {
@@ -118,6 +118,31 @@ export function AnnouncementDetailPage() {
   const [imageViewerVisible, setImageViewerVisible] = useState(false)
   const [imageViewerIndex, setImageViewerIndex] = useState(0)
   const imageListRef = useRef<FlatList<string> | null>(null)
+
+  const ownerContactSheetRows = useMemo((): ContactSheetRow[] => {
+    if (!announcement) return []
+    const owner = announcement.owner
+    const regionVal = owner?.region
+      ? String(owner.region.name_am || owner.region.name_en || owner.region.name_ru || '')
+      : String((announcement as any).owner_region_name || '')
+    const villageVal = owner?.village
+      ? String(owner.village.name_am || owner.village.name_en || owner.village.name_ru || '')
+      : String((announcement as any).owner_village_name || '')
+    return [
+      { label: t('profile.primaryNumber'), value: owner?.phone || '-' },
+      { label: t('addAnnouncement.region'), value: regionVal.trim() ? regionVal : '-' },
+      { label: t('addAnnouncement.village'), value: villageVal.trim() ? villageVal : '-' },
+    ]
+  }, [announcement, t])
+
+  const ownerDisplayRoleKey = useMemo(() => {
+    if (!announcement?.owner) return 'farmer'
+    const o = announcement.owner as any
+    const u = String(o?.user_type ?? o?.userType ?? 'farmer').toLowerCase()
+    if (u === 'company' || u === 'organization') return 'organization'
+    if (u === 'buyer') return 'buyer'
+    return 'farmer'
+  }, [announcement])
 
   useEffect(() => {
     if (announcementId) {
@@ -264,18 +289,8 @@ export function AnnouncementDetailPage() {
     return (item?.name_am || item?.name_en || item?.name_ru) || (announcementData.title || announcementData.item_name) || t('announcementDetail.defaultItemName')
   }
 
-  const getInitials = (name?: string, surname?: string) => {
-    const first = name?.charAt(0) || ''
-    const last = surname?.charAt(0) || ''
-    return (first + last).toUpperCase()
-  }
-
   const handleContact = () => {
     setContactModalVisible(true)
-  }
-
-  const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone}`)
   }
 
   const handleApply = () => {
@@ -771,67 +786,18 @@ export function AnnouncementDetailPage() {
           )
         )}
 
-      
-        {/* Contact Modal */}
-      <Modal
-        visible={contactModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setContactModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setContactModalVisible(false)}
-          />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('profile.contactDetails')}</Text>
-              <TouchableOpacity onPress={() => setContactModalVisible(false)}>
-                <Icon name="close" size={24} color={colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.contactProfile}>
-              <View style={styles.profileAvatar}>
-                <Text style={styles.profileAvatarText}>
-                  {announcement.owner?.full_name ? getInitials(announcement.owner.full_name.trim().split(/\s+/)[0], announcement.owner.full_name.trim().split(/\s+/)[1]) : '-'}
-                </Text>
-              </View>
-              <Text style={styles.contactName}>
-                {announcement.owner?.full_name ?? '-'}
-              </Text>
-              <Text style={styles.contactProfession}>{t('common.farmer')}</Text>
-            </View>
-
-            <View style={styles.contactInfo}>
-              <View style={styles.contactRow}>
-                <Text style={styles.contactLabel}>{t('profile.primaryNumber')}</Text>
-                <Text style={styles.contactValue}>{announcement.owner?.phone || '-'}</Text>
-              </View>
-
-              <View style={styles.contactRow}>
-                <Text style={styles.contactLabel}>{t('addAnnouncement.region')}</Text>
-                <Text style={styles.contactValue}>{announcement.owner?.region ? (announcement.owner.region.name_am || announcement.owner.region.name_en || announcement.owner.region.name_ru) : (announcement as any).owner_region_name || '-'}</Text>
-              </View>
-
-              <View style={styles.contactRow}>
-                <Text style={styles.contactLabel}>{t('addAnnouncement.village')}</Text>
-                <Text style={styles.contactValue}>{announcement.owner?.village ? (announcement.owner.village.name_am || announcement.owner.village.name_en || announcement.owner.village.name_ru) : (announcement as any).owner_village_name || '-'}</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.callButton}
-              onPress={() => handleCall(announcement.owner?.phone || '')}
-            >
-              <Icon name="phone" size={20} color={colors.white} />
-              <Text style={styles.callButtonText}>{t('announcementDetail.call')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        <ContactBottomSheet
+          visible={contactModalVisible}
+          onClose={() => setContactModalVisible(false)}
+          title={t('profile.contactDetails')}
+          displayName={announcement.owner?.full_name ?? '-'}
+          roleLabel={t(`common.${ownerDisplayRoleKey}`)}
+          avatarUri={(announcement.owner as any)?.profile_picture ?? (announcement.owner as any)?.profilePicture ?? null}
+          rows={ownerContactSheetRows}
+          phone={(announcement.owner?.phone || '').trim()}
+          callButtonLabel={t('announcementDetail.call')}
+          callFailedMessage={t('applications.callFailed')}
+        />
       </View>
    </SafeAreaView>
   )
@@ -1193,90 +1159,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  contactProfile: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  profileAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.buttonPrimary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  profileAvatarText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  contactName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  contactProfession: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  contactInfo: {
-    marginBottom: 24,
-  },
-  contactRow: {
-    marginBottom: 16,
-  },
-  contactLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  contactValue: {
-    fontSize: 16,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  callButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.buttonPrimary,
-    paddingVertical: 16,
-    borderRadius: 24,
-    gap: 8,
-  },
-  callButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.white,
