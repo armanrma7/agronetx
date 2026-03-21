@@ -577,12 +577,19 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
               />
               <View style={styles.pickerSheet}>
                 <View style={styles.pickerHeader}>
-                  <TouchableOpacity onPress={() => setShowFromDatePicker(false)}>
-                    <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleFromDateDone}>
-                    <Text style={styles.pickerDone}>{t('applications.selectDates')}</Text>
-                  </TouchableOpacity>
+                  <View style={styles.pickerHeaderSide}>
+                    <TouchableOpacity onPress={() => setShowFromDatePicker(false)}>
+                      <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.pickerHeaderTitle} numberOfLines={1}>
+                    {t('filters.startDate')}
+                  </Text>
+                  <View style={[styles.pickerHeaderSide, styles.pickerHeaderSideEnd]}>
+                    <TouchableOpacity onPress={handleFromDateDone}>
+                      <Text style={styles.pickerDone}>{t('applications.selectDates')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <DateTimePicker
                   value={tempFromDate}
@@ -614,12 +621,19 @@ export function FilterModal({ visible, onClose, onApply, initialFilters }: Filte
               />
               <View style={styles.pickerSheet}>
                 <View style={styles.pickerHeader}>
-                  <TouchableOpacity onPress={() => setShowToDatePicker(false)}>
-                    <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleToDateDone}>
-                    <Text style={styles.pickerDone}>{t('applications.selectDates')}</Text>
-                  </TouchableOpacity>
+                  <View style={styles.pickerHeaderSide}>
+                    <TouchableOpacity onPress={() => setShowToDatePicker(false)}>
+                      <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.pickerHeaderTitle} numberOfLines={1}>
+                    {t('filters.endDate')}
+                  </Text>
+                  <View style={[styles.pickerHeaderSide, styles.pickerHeaderSideEnd]}>
+                    <TouchableOpacity onPress={handleToDateDone}>
+                      <Text style={styles.pickerDone}>{t('applications.selectDates')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <DateTimePicker
                   value={tempToDate}
@@ -850,6 +864,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+  },
+  pickerHeaderSide: {
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  pickerHeaderSideEnd: {
+    alignItems: 'flex-end',
+  },
+  pickerHeaderTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    paddingHorizontal: 8,
   },
   pickerCancel: {
     fontSize: 17,

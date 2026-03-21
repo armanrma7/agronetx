@@ -720,11 +720,19 @@ export function ApplicationFormPage() {
                 />
                 <View style={styles.calendarSheet}>
                   <View style={styles.pickerHeader}>
-                    <View style={styles.pickerHeaderBack} />
-                    <Text style={styles.pickerTitle}>{t('applications.deliveryDates')}</Text>
-                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                      <Text style={styles.doneButton}>{t('common.done')}</Text>
-                    </TouchableOpacity>
+                    <View style={styles.pickerHeaderSide}>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Text style={styles.pickerCancel}>{t('common.cancel')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.pickerTitle} numberOfLines={1}>
+                      {t('applications.deliveryDates')}
+                    </Text>
+                    <View style={[styles.pickerHeaderSide, styles.pickerHeaderSideEnd]}>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Text style={styles.pickerSelect}>{t('applications.selectDates')}</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   {viewMode === 'daily' && (
@@ -1109,9 +1117,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  pickerHeaderBack: {
-    width: 24,
-    height: 24,
+  pickerHeaderSide: {
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  pickerHeaderSideEnd: {
+    alignItems: 'flex-end',
+  },
+  pickerCancel: {
+    fontSize: 17,
+    color: colors.textSecondary,
   },
   calendarListContent: {
     padding: 16,
@@ -1180,8 +1195,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
+    paddingHorizontal: 8,
   },
-  doneButton: {
+  pickerSelect: {
     fontSize: 17,
     fontWeight: '600',
     color: colors.buttonPrimary,

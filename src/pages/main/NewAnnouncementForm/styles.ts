@@ -246,17 +246,27 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
+  datePickerHeaderSide: {
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  datePickerHeaderSideEnd: {
+    alignItems: 'flex-end',
+  },
   datePickerTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
+    textAlign: 'center',
+    paddingHorizontal: 8,
   },
   datePickerCancel: {
-    fontSize: 16,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   datePickerConfirm: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.buttonPrimary,
   },

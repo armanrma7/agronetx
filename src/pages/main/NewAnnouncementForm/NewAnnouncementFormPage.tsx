@@ -122,15 +122,19 @@ export function NewAnnouncementFormPage() {
             <View style={styles.modalOverlay}>
               <View style={styles.datePickerModal}>
                 <View style={styles.datePickerHeader}>
-                  <TouchableOpacity onPress={cancelDatePicker}>
-                    <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.datePickerTitle}>
+                  <View style={styles.datePickerHeaderSide}>
+                    <TouchableOpacity onPress={cancelDatePicker}>
+                      <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.datePickerTitle} numberOfLines={1}>
                     {currentDateField === 'start' ? t('addAnnouncement.from') : t('addAnnouncement.until')}
                   </Text>
-                  <TouchableOpacity onPress={() => confirmDate()}>
-                    <Text style={styles.datePickerConfirm}>{t('applications.selectDates')}</Text>
-                  </TouchableOpacity>
+                  <View style={[styles.datePickerHeaderSide, styles.datePickerHeaderSideEnd]}>
+                    <TouchableOpacity onPress={() => confirmDate()}>
+                      <Text style={styles.datePickerConfirm}>{t('applications.selectDates')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <DateTimePicker
                   value={tempDate}
@@ -175,13 +179,19 @@ export function NewAnnouncementFormPage() {
             <View style={styles.modalOverlay}>
               <View style={styles.datePickerModal}>
                 <View style={styles.datePickerHeader}>
-                  <TouchableOpacity onPress={cancelDatePicker}>
-                    <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.datePickerTitle}>
+                  <View style={styles.datePickerHeaderSide}>
+                    <TouchableOpacity onPress={cancelDatePicker}>
+                      <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.datePickerTitle} numberOfLines={1}>
                     {currentDateField === 'start' ? t('addAnnouncement.from') : t('addAnnouncement.until')}
                   </Text>
-                  <View style={{ width: 60 }} />
+                  <View style={[styles.datePickerHeaderSide, styles.datePickerHeaderSideEnd]}>
+                    <TouchableOpacity onPress={() => confirmDate()}>
+                      <Text style={styles.datePickerConfirm}>{t('applications.selectDates')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <View style={announcementPickerStyles.yearNavRow}>
                   <TouchableOpacity
@@ -239,13 +249,19 @@ export function NewAnnouncementFormPage() {
             <View style={styles.modalOverlay}>
               <View style={styles.datePickerModal}>
                 <View style={styles.datePickerHeader}>
-                  <TouchableOpacity onPress={cancelDatePicker}>
-                    <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.datePickerTitle}>
+                  <View style={styles.datePickerHeaderSide}>
+                    <TouchableOpacity onPress={cancelDatePicker}>
+                      <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.datePickerTitle} numberOfLines={1}>
                     {currentDateField === 'start' ? t('addAnnouncement.from') : t('addAnnouncement.until')}
                   </Text>
-                  <View style={{ width: 60 }} />
+                  <View style={[styles.datePickerHeaderSide, styles.datePickerHeaderSideEnd]}>
+                    <TouchableOpacity onPress={() => confirmDate()}>
+                      <Text style={styles.datePickerConfirm}>{t('applications.selectDates')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <ScrollView contentContainerStyle={announcementPickerStyles.yearGrid}>
                   {years.map(year => (
