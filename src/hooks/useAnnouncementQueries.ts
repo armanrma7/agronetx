@@ -73,7 +73,6 @@ export function useAnnouncementsList(tab: AnnouncementsTab, filters?: FilterValu
 export function flattenAnnouncementPages(
   data?: InfiniteData<announcementsAPI.PaginatedResponse<Announcement>>,
 ): Announcement[] {
-  console.info('data', data)
   return data?.pages.flatMap(p => p.announcements ?? []) ?? []
 }
 
@@ -108,30 +107,60 @@ export function useMyAnnouncements(tab: MyAnnouncementsTab) {
   })
 }
 
-// ─── Cancel announcement ─────────────────────────────────────────────────────
+// ─── Keep list/detail cache in sync after mutations ─────────────────────────
 
-function updateAnnouncementStatusInLists(qc: ReturnType<typeof useQueryClient>, id: string, status: string) {
-  const updater = (a: Announcement) => a.id === id ? { ...a, status } : a
+function patchAnnouncementInInfiniteData(
+  old: InfiniteData<announcementsAPI.PaginatedResponse<Announcement>> | undefined,
+  id: string,
+  merge: (a: Announcement) => Announcement,
+): InfiniteData<announcementsAPI.PaginatedResponse<Announcement>> | undefined {
+  if (!old?.pages) return old
+  return {
+    ...old,
+    pages: old.pages.map(page => ({
+      ...page,
+      announcements: (page.announcements ?? []).map(a => (a.id === id ? merge(a) : a)),
+    })),
+  }
+}
+
+/** Updates in-memory React Query cache for browse lists + both My Announcements tabs */
+function patchAnnouncementEverywhere(
+  qc: ReturnType<typeof useQueryClient>,
+  id: string,
+  merge: (a: Announcement) => Announcement,
+) {
+  ;(['published', 'applied'] as const).forEach(tab => {
+    qc.setQueryData(
+      queryKeys.announcements.myList(tab),
+      old =>
+        patchAnnouncementInInfiniteData(
+          old as InfiniteData<announcementsAPI.PaginatedResponse<Announcement>> | undefined,
+          id,
+          merge,
+        ),
+    )
+  })
   qc.setQueriesData(
     { queryKey: queryKeys.announcements.lists() },
-    (old: any) => old?.pages ? { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map(updater) })) } : old,
-  )
-  qc.setQueriesData(
-    { queryKey: queryKeys.announcements.myLists() },
-    (old: any) => old?.pages ? { ...old, pages: old.pages.map((p: any) => ({ ...p, announcements: (p.announcements ?? []).map(updater) })) } : old,
+    old =>
+      patchAnnouncementInInfiniteData(
+        old as InfiniteData<announcementsAPI.PaginatedResponse<Announcement>> | undefined,
+        id,
+        merge,
+      ),
   )
 }
+
+// ─── Cancel announcement ─────────────────────────────────────────────────────
 
 export function useCancelAnnouncement() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => announcementsAPI.cancelAnnouncementAPI(id),
-    onSuccess: (_, id) => {
-      qc.setQueryData<Announcement>(
-        queryKeys.announcements.detail(id),
-        (old) => old ? { ...old, status: 'CANCELED' } : old,
-      )
-      updateAnnouncementStatusInLists(qc, id, 'CANCELED')
+    onSuccess: (data, id) => {
+      qc.setQueryData<Announcement>(queryKeys.announcements.detail(id), data)
+      patchAnnouncementEverywhere(qc, id, prev => ({ ...prev, ...data }))
     },
   })
 }
@@ -142,12 +171,9 @@ export function useCloseAnnouncement() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => announcementsAPI.closeAnnouncementAPI(id),
-    onSuccess: (_, id) => {
-      qc.setQueryData<Announcement>(
-        queryKeys.announcements.detail(id),
-        (old) => old ? { ...old, status: 'CLOSED' } : old,
-      )
-      updateAnnouncementStatusInLists(qc, id, 'CLOSED')
+    onSuccess: (data, id) => {
+      qc.setQueryData<Announcement>(queryKeys.announcements.detail(id), data)
+      patchAnnouncementEverywhere(qc, id, prev => ({ ...prev, ...data }))
     },
   })
 }

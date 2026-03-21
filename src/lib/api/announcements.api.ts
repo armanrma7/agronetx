@@ -692,20 +692,28 @@ export async function deleteAnnouncementAPI(id: string): Promise<void> {
   await apiClient.delete(`/announcements/${id}`)
 }
 
+/** POST /cancel|/close may return `{ message, announcement }` or a raw announcement object */
+function unwrapAnnouncementPostResponse(data: any): any {
+  if (data && typeof data === 'object' && data.announcement != null) {
+    return data.announcement
+  }
+  return data
+}
+
 /**
  * Cancel an announcement
  */
 export async function cancelAnnouncementAPI(id: string): Promise<Announcement> {
-  const response = await apiClient.post<Announcement>(`/announcements/${id}/cancel`)
-  return mapAnnouncementResponse(response.data)
+  const response = await apiClient.post<any>(`/announcements/${id}/cancel`)
+  return mapAnnouncementResponse(unwrapAnnouncementPostResponse(response.data))
 }
 
 /**
  * Close an announcement (Case 2c: announcer closes when approved application exists)
  */
 export async function closeAnnouncementAPI(id: string): Promise<Announcement> {
-  const response = await apiClient.post<Announcement>(`/announcements/${id}/close`)
-  return mapAnnouncementResponse(response.data)
+  const response = await apiClient.post<any>(`/announcements/${id}/close`)
+  return mapAnnouncementResponse(unwrapAnnouncementPostResponse(response.data))
 }
 
 /**
