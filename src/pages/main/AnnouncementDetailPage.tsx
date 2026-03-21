@@ -470,7 +470,6 @@ export function AnnouncementDetailPage() {
                 </TouchableOpacity>
               </SafeAreaView>
               <FlatList
-                contentContainerStyle={{ paddingTop: 26 }}
                 ref={(r) => { imageListRef.current = r }}
                 data={images}
                 keyExtractor={(u, i) => `${i}-${u}`}
@@ -869,7 +868,7 @@ const styles = StyleSheet.create({
   },
   imageViewerTopBar: {
     position: 'absolute',
-    top: 0,
+    top: 40,
     left: 0,
     right: 0,
     zIndex: 2,

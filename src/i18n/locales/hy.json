@@ -79,7 +79,9 @@
       "passwordMatch": "Գաղտնաբառերը չեն համընկնում",
       "agreeTerms": "Համաձայնվեք պայմաններին",
       "registerFailed": "Գրանցման ժամանակ սխալ է տեղի ունեցել",
-      "registerError": "Գրանցման սխալ"
+      "registerError": "Գրանցման սխալ",
+      "regionRequired": "Խնդրում ենք ընտրել մարզը",
+      "villageRequired": "Խնդրում ենք ընտրել գյուղը"
     }
   },
   "login": {
@@ -233,6 +235,9 @@
     "images": "Նկարներ",
     "uploadImages": "Վերբեռնել",
     "uploadImagesInfo": "Վերբեռնել մինչև 3 լուսանկար • Առավելագույն չափը՝ 5MB",
+    "camera": "Տեսախցիկ",
+    "gallery": "Պատկերասրահ",
+    "cameraPermissionDenied": "Լուսանկար վերցնելու համար անհրաժեշտ է տեսախցիկի թույլտվությունը։",
     "availabilityPeriod": "Գործարքի ժամկետ",
     "dailyMaxQuantity": "Գործարքի օրական առավելագույն ծավալ",
     "from": "Սկսած",

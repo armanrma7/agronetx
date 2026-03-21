@@ -93,7 +93,7 @@ export function Select({
         accessibilityRole="button"
         accessibilityState={{ disabled }}
       >
-        <Text style={[styles.selectText, !selectedOption && styles.placeholder]}>
+        <Text style={[styles.selectText, !selectedOption && styles.placeholder]} numberOfLines={1}>
           {selectedOption ? (
             selectedOption.icon ? (
               <>

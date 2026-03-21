@@ -41,6 +41,8 @@ export interface RegisterRequest {
   full_name: string // (required)
   phone: string // (required)
   password: string // (required)
+  region_id?: string
+  village_id?: string
 }
 
 export interface RegisterResponse {

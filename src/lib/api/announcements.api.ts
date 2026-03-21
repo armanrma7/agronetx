@@ -3,7 +3,13 @@
  * Handles announcements-related API calls
  */
 
+import { Platform } from 'react-native'
 import apiClient from './client'
+
+/** Multipart upload: Android keeps `file://` / `content://`; iOS expects `file://` stripped */
+function pickerUriForMultipartUpload(uri: string): string {
+  return Platform.OS === 'android' ? uri : uri.replace('file://', '')
+}
 import type { Announcement, Owner, Group, Item, RegionVillage, ClosedByUser, AnnouncementApplication } from '../../types'
 
 // API Category interface (name_am = Armenian, used for current language display)
@@ -571,19 +577,16 @@ export async function createAnnouncementAPI(
         
         // Use provided fileName or generate one
         const fileName = image.fileName || `image.${fileExtension}`
-        
+
         formData.append('images', {
-          uri: imageUri,
+          uri: pickerUriForMultipartUpload(imageUri),
           type: imageType,
           name: fileName,
         } as any)
       })
 
-    const response = await apiClient.post<{ announcement: Announcement }>('/announcements', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    const response = await apiClient.post<{ announcement: Announcement }>('/announcements', formData)
+
     return response.data.announcement
   } else {
     // No images, send as JSON
@@ -661,9 +664,9 @@ export async function updateAnnouncementAPI(
             
             // Use provided fileName or generate one
             const fileName = image.fileName || `image.${fileExtension}`
-            
+
             formData.append('images', {
-              uri: imageUri,
+              uri: pickerUriForMultipartUpload(imageUri),
               type: imageType,
               name: fileName,
             } as any)
@@ -671,11 +674,7 @@ export async function updateAnnouncementAPI(
         })
     }
 
-    const response = await apiClient.patch<Announcement>(`/announcements/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    const response = await apiClient.patch<Announcement>(`/announcements/${id}`, formData)
     return response.data
   } else {
     // No images at all, send as JSON (but still include empty images array if needed)

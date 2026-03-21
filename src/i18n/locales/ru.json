@@ -75,7 +75,9 @@
       "passwordMatch": "Пароли не совпадают",
       "agreeTerms": "Вы должны согласиться с условиями",
       "registerFailed": "Во время регистрации произошла ошибка",
-      "registerError": "Ошибка регистрации"
+      "registerError": "Ошибка регистрации",
+      "regionRequired": "Пожалуйста, выберите область",
+      "villageRequired": "Пожалуйста, выберите населённый пункт"
     }
   },
   "forgotPassword": {
@@ -249,7 +251,10 @@
   "onlyJPEGPNGWebPAllowed": "Разрешены только JPEG, PNG и WebP",
   "maximumImagesAllowed": "Максимальное количество изображений: {{count}}",
   "createSuccess": "Объявление успешно создано.\n\nВ течение 24 часов оно будет проверено и опубликовано.",
-  "updateSuccess": "Объявление успешно обновлено."
+  "updateSuccess": "Объявление успешно обновлено.",
+  "camera": "Камера",
+  "gallery": "Галерея",
+  "cameraPermissionDenied": "Для съёмки фото нужно разрешение на использование камеры."
   },
   "announcementSubtype": {
     "title": "Тип объявления",

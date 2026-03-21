@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Alert, Platform } from 'react-native'
+import { Alert, Platform, PermissionsAndroid } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
@@ -580,6 +580,7 @@ export function useNewAnnouncementForm() {
         Alert.alert("", t('addAnnouncement.createSuccess'), [{ text: t('common.ok'), onPress: () => { skipUnsavedPromptRef.current = true; navigation.goBack() } }])
       }
     } catch (error: any) {
+      console.info(error)
       Alert.alert(
         "",
         error.response?.data?.message || error.message || (isEditMode ? t('addAnnouncement.updateError') : t('addAnnouncement.publishError'))
@@ -659,24 +660,34 @@ export function useNewAnnouncementForm() {
   }
 
   const validateImage = (asset: Asset): boolean => {
-    if (!asset.fileSize) return false
-    if (asset.fileSize > MAX_FILE_SIZE) {
+    if (!asset.uri?.trim()) return false
+    // Android often omits fileSize; only enforce when present
+    if (typeof asset.fileSize === 'number' && asset.fileSize > MAX_FILE_SIZE) {
       Alert.alert(t('common.error'), t('addAnnouncement.fileSizeExceedsLimit'))
       return false
     }
-    const uri = (asset.uri || '').toLowerCase()
-    if (!/\.(jpg|jpeg|png|webp)$/.test(uri)) {
-      Alert.alert(t('common.error'), t('addAnnouncement.onlyJPEGPNGWebPAllowed'))
-      return false
+    const mime = (asset.type || '').toLowerCase()
+    if (mime.startsWith('image/')) {
+      const allowed = /^image\/(jpeg|jpg|png|webp)$/i.test(mime)
+      if (!allowed) {
+        Alert.alert(t('common.error'), t('addAnnouncement.onlyJPEGPNGWebPAllowed'))
+        return false
+      }
+      return true
     }
-    return true
+    const uri = asset.uri.toLowerCase()
+    // content:// from camera/gallery on Android has no path extension
+    if (uri.startsWith('content://')) return true
+    if (/\.(jpg|jpeg|png|webp)(\?|#|$)/i.test(uri)) return true
+    Alert.alert(t('common.error'), t('addAnnouncement.onlyJPEGPNGWebPAllowed'))
+    return false
   }
 
   const showImagePickerOptions = () => {
     Alert.alert(t('addAnnouncement.images'), t('addAnnouncement.uploadImagesInfo'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: 'Camera', onPress: openCamera },
-      { text: 'Gallery', onPress: openGallery },
+      { text: t('addAnnouncement.camera'), onPress: openCamera },
+      { text: t('addAnnouncement.gallery'), onPress: openGallery },
     ])
   }
 
@@ -685,11 +696,45 @@ export function useNewAnnouncementForm() {
       Alert.alert(t('common.error'), t('addAnnouncement.maximumImagesAllowed', { count: MAX_IMAGES }))
       return
     }
-    launchCamera({ mediaType: 'photo', quality: 0.8, maxWidth: 1920, maxHeight: 1920 }, res => {
-      if (res.didCancel || res.errorCode) return
-      const asset = res.assets?.[0]
-      if (asset && validateImage(asset)) setSelectedImages(prev => [...prev, asset])
-    })
+
+    const runLaunchCamera = () => {
+      launchCamera(
+        {
+          mediaType: 'photo',
+          quality: 0.8,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          saveToPhotos: false,
+        },
+        res => {
+          if (res.didCancel) return
+          if (res.errorCode) {
+            if (res.errorCode === 'permission') {
+              Alert.alert(t('common.error'), t('addAnnouncement.cameraPermissionDenied'))
+            } else if (res.errorMessage) {
+              Alert.alert(t('common.error'), res.errorMessage)
+            }
+            return
+          }
+          const asset = res.assets?.[0]
+          if (asset && validateImage(asset)) setSelectedImages(prev => [...prev, asset])
+        },
+      )
+    }
+
+    // Manifest declares CAMERA → Android requires runtime grant before opening camera (image-picker docs).
+    if (Platform.OS === 'android') {
+      void PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA).then(granted => {
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(t('common.error'), t('addAnnouncement.cameraPermissionDenied'))
+          return
+        }
+        // Let the image-picker Alert finish dismissing so the camera activity can show reliably
+        setTimeout(runLaunchCamera, 300)
+      })
+    } else {
+      runLaunchCamera()
+    }
   }
 
   const openGallery = () => {

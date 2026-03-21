@@ -13,6 +13,12 @@ const USER_KEY = '@agronetx:user'
 
 type RefreshResult = { access_token: string; refresh_token: string }
 
+function isFormDataBody(data: unknown): boolean {
+  if (data == null || typeof data !== 'object') return false
+  if (typeof FormData !== 'undefined' && data instanceof FormData) return true
+  return typeof (data as { append?: unknown }).append === 'function'
+}
+
 // Single-flight token refresh (prevents multiple simultaneous /auth/refresh calls)
 let refreshPromise: Promise<RefreshResult> | null = null
 
@@ -68,6 +74,15 @@ apiClient.interceptors.request.use(
       }
     } catch (error) {
       console.error('Error getting token from storage:', error)
+    }
+    // Axios + RN: avoid JSON / x-www-form-urlencoded on FormData (Android upload failures)
+    if (isFormDataBody(config.data) && config.headers) {
+      const h = config.headers as any
+      if (typeof h.set === 'function') {
+        h.set('Content-Type', false)
+      } else {
+        h['Content-Type'] = false
+      }
     }
     return config
   },

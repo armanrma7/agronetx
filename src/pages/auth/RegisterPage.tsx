@@ -8,6 +8,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 
@@ -17,8 +18,9 @@ import { Select } from '../../components/Select'
 import { Button } from '../../components/Button'
 import { Checkbox } from '../../components/Checkbox'
 import { useTranslation } from 'react-i18next'
-import { RegisterFormData, ContactMethod, AccountType } from '../../types'
+import { RegisterFormData, AccountType } from '../../types'
 import { colors } from '../../theme/colors'
+import { useRegions, useVillagesByRegion } from '../../hooks/useProfileQueries'
 
 /* ---------- COMPONENT ---------- */
 
@@ -43,11 +45,39 @@ export function RegisterPage() {
     agreeToTerms: false,
   })
 
-  const [errors, setErrors] =
-    useState<Partial<Record<keyof RegisterFormData, string>>>({})
+  type RegisterFieldErrors = Partial<Record<keyof RegisterFormData, string>> & {
+    region?: string
+    village?: string
+  }
+  const [errors, setErrors] = useState<RegisterFieldErrors>({})
 
-  // Always show phone input (no selection needed)
-  const hasVerificationType = true
+  const [region, setRegion] = useState('')
+  const [village, setVillage] = useState('')
+  const [regionChangedManually, setRegionChangedManually] = useState(false)
+
+  const { data: regions = [], isLoading: loadingRegions } = useRegions()
+  const { data: villages = [], isLoading: loadingVillages } = useVillagesByRegion(
+    region || undefined,
+  )
+
+  useEffect(() => {
+    if (regionChangedManually) setVillage('')
+  }, [region, regionChangedManually])
+
+  const handleRegionChange = (value: string) => {
+    setRegionChangedManually(true)
+    setRegion(value)
+  }
+
+  const regionOptions = regions.map(r => ({
+    value: r.id,
+    label: r.name_hy || r.name || r.name_en || '',
+  }))
+
+  const villageOptions = villages.map(v => ({
+    value: v.id,
+    label: v.name_hy || v.name || v.name_en || '',
+  }))
 
   /* ---------- ROUTE PARAM ---------- */
 
@@ -61,10 +91,15 @@ export function RegisterPage() {
   /* ---------- VALIDATION ---------- */
 
   const validate = () => {
-    const e: Partial<Record<keyof RegisterFormData, string>> = {}
+    const e: RegisterFieldErrors = {}
 
     if (!formData.accountType) e.accountType = t('register.errors.required')
     if (!formData.fullname.trim()) e.fullname = t('register.errors.fullname')
+
+    if (!region.trim()) e.region = t('register.errors.regionRequired')
+    if (region.trim() && !loadingVillages && villages.length > 0 && !village.trim()) {
+      e.village = t('register.errors.villageRequired')
+    }
 
     if (!formData.emailOrPhone.trim()) {
       e.emailOrPhone = t('register.errors.phoneRequired')
@@ -99,7 +134,14 @@ export function RegisterPage() {
       const phone = `+374${formData.emailOrPhone.trim()}`
       console.info('accountType', formData.accountType)
 
-      await register(phone, formData.password, formData.fullname, formData.accountType as AccountType)
+      await register(
+        phone,
+        formData.password,
+        formData.fullname,
+        formData.accountType as AccountType,
+        region.trim() || undefined,
+        village.trim() || undefined,
+      )
       ;(navigation as any).navigate('Verification', { phone: phone })
     } catch (err: any) {
       const errorMessage = err?.message || error || t('register.errors.registerFailed')
@@ -135,8 +177,9 @@ export function RegisterPage() {
         {/* ACCOUNT TYPE */}
         <Select
           label={t('register.accountType')}
+          placeholder={t('common.select')}
           required
-          value={formData.accountType}
+          value={formData.accountType || ''}
           options={accountTypeOptions}
           onValueChange={v =>
             setFormData({ ...formData, accountType: v as AccountType })
@@ -159,8 +202,7 @@ export function RegisterPage() {
           error={errors.fullname}
         />
 
-        {/* PHONE NUMBER */}
-        <Input
+         <Input
           label={contactLabel}
           placeholder={contactPlaceholder}
           required
@@ -174,11 +216,57 @@ export function RegisterPage() {
           maxLength={8}
         />
         
-        {/* PHONE NOTE */}
-        <Text style={styles.phoneNote}>
-          {t('register.phoneNote')}
-        </Text>
+        {/* REGION — label + row; loading matches Profile (inside select slot) */}
+        <View style={styles.selectFieldSlot}>
+          <Text style={styles.selectFieldLabel}>
+            {t('addAnnouncement.region')}
+            <Text style={styles.selectFieldRequired}> *</Text>
+          </Text>
+          {loadingRegions ? (
+            <View style={styles.selectLoadingShell}>
+              <ActivityIndicator size="small" color={colors.buttonPrimary} />
+              <Text style={styles.selectLoadingText}>{t('common.loading')}</Text>
+            </View>
+          ) : (
+            <Select
+              label=""
+              value={region}
+              onValueChange={handleRegionChange}
+              options={regionOptions}
+              placeholder={t('addAnnouncement.region')}
+              error={errors.region}
+            />
+          )}
+        </View>
 
+        {/* VILLAGE — same slot pattern; loading inside row when fetching villages */}
+        <View style={styles.selectFieldSlot}>
+          <Text style={styles.selectFieldLabel}>
+            {t('addAnnouncement.village')}
+            <Text style={styles.selectFieldRequired}> *</Text>
+          </Text>
+          {region && loadingVillages ? (
+            <View style={styles.selectLoadingShell}>
+              <ActivityIndicator size="small" color={colors.buttonPrimary} />
+              <Text style={styles.selectLoadingText}>{t('common.loading')}</Text>
+            </View>
+          ) : (
+            <Select
+              label=""
+              value={village}
+              onValueChange={setVillage}
+              options={villageOptions}
+              placeholder={t('addAnnouncement.village')}
+              disabled={
+                loadingRegions ||
+                !region ||
+                villageOptions.length === 0
+              }
+              error={errors.village}
+            />
+          )}
+        </View>
+       
         {/* PASSWORD */}
         <Input
           required
@@ -231,8 +319,12 @@ export function RegisterPage() {
           loading={loading}
           disabled={
             loading ||
+            loadingRegions ||
             !formData.accountType ||
             !formData.fullname.trim() ||
+            !region.trim() ||
+            (region && loadingVillages) ||
+            (villageOptions.length > 0 && !village.trim()) ||
             !formData.emailOrPhone.trim() ||
             !formData.password ||
             !formData.confirmPassword ||
@@ -287,6 +379,35 @@ const styles = StyleSheet.create({
     marginTop: -16,
     marginBottom: 8,
     lineHeight: 16,
+  },
+
+  /** Same slot + loading shell as Profile location fields */
+  selectFieldSlot: {
+    width: '100%',
+  },
+  selectFieldLabel: {
+    fontSize: 14,
+    color: colors.textTile,
+    marginBottom: 7,
+  },
+  selectFieldRequired: {
+    color: colors.error,
+  },
+  selectLoadingShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 56,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  selectLoadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: colors.textSecondary,
   },
 
   error: {

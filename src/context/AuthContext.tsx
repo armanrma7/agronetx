@@ -53,6 +53,8 @@ interface AuthContextType {
     password: string,
     fullname: string,
     accountType: string,
+    regionId?: string,
+    villageId?: string,
   ) => Promise<{ success: boolean; phone: string; requiresVerification: boolean }>
   verifyOTP: (phone: string, token: string) => Promise<void>
   sendOTP: (phone: string) => Promise<void>
@@ -187,7 +189,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Register ─────────────────────────────────────────────────────────────────
 
   const register = useCallback(
-    async (phone: string, password: string, fullname: string, accountType: string) => {
+    async (
+      phone: string,
+      password: string,
+      fullname: string,
+      accountType: string,
+      regionId?: string,
+      villageId?: string,
+    ) => {
       setLoading(true)
       try {
         if (!accountType?.trim()) throw new Error('Օգտագործողի տեսակը պարտադիր է')
@@ -200,6 +209,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: fullname.trim(),
           phone: phone.trim(),
           password,
+          ...(regionId?.trim() ? { region_id: regionId.trim() } : {}),
+          ...(villageId?.trim() ? { village_id: villageId.trim() } : {}),
         })
         setLoading(false)
         return { success: response.success, phone, requiresVerification: response.requiresVerification ?? false }

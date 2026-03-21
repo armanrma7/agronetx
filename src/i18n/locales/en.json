@@ -78,7 +78,9 @@
       "passwordMatch": "Passwords do not match",
       "agreeTerms": "You must agree to the terms",
       "registerFailed": "An error occurred during registration",
-      "registerError": "Registration error"
+      "registerError": "Registration error",
+      "regionRequired": "Please select a region",
+      "villageRequired": "Please select a village"
     }
   },
   "login": {
@@ -189,7 +191,10 @@
     "transactionLocation": "Transaction Location",
     "fileSizeExceedsLimit": "File size exceeds 5MB limit.",
     "onlyJPEGPNGWebPAllowed": "Only JPEG, PNG, and WebP allowed.",
-    "maximumImagesAllowed": "Maximum {{count}} images allowed."
+    "maximumImagesAllowed": "Maximum {{count}} images allowed.",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "cameraPermissionDenied": "Camera permission is required to take a photo."
   },
   "announcementSubtype": {
     "title": "Announcement Type",
